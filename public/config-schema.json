@@ -1,0 +1,257 @@
+{
+  "type": "object",
+  "required": [
+    "datasets"
+  ],
+  "allOf": [
+    {
+      "title": "Source de données",
+      "properties": {
+        "datasets": {
+          "type": "array",
+          "items": [
+            {
+              "title": "Jeu de données",
+              "description": "Ce jeu doit contenir au moins une colonne avec valeur numérique",
+              "type": "object",
+              "x-fromUrl": "api/v1/datasets?status=finalized&field-type=integer,number&q={q}&select=id,title&{context.datasetFilter}&concepts=http://schema.org/Date,https://schema.org/endDate,https://schema.org/startDate",
+              "x-itemsProp": "results",
+              "x-itemTitle": "title",
+              "x-itemKey": "href",
+              "additionalProperties": false,
+              "properties": {
+                "href": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "finalizedAt": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "properties": {
+                "labelsField": {
+                  "type": "object",
+                  "title": "Colonne de libellé",
+                  "description": "Choisissez la colonne représentant le libellé d'un évènement.",
+                  "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
+                  "x-itemTitle": "label",
+                  "x-itemKey": "key"
+                }
+              }
+            },
+            {
+              "properties": {
+                "color": {
+                  "type": "object",
+                  "title": "Type de couleur",
+                  "required": [
+                    "type"
+                  ],
+                  "oneOf": [
+                    {
+                      "title": "Calendrier multicolore",
+                      "additionalProperties": false,
+                      "properties": {
+                        "type": {
+                          "const": "multicolore"
+                        },
+                        "categoryField": {
+                          "type": "object",
+                          "title": "Colonne de catégorie",
+                          "description": "Choisissez la colonne permettant de distinguer plusieurs catégories d'évènements. Chaque évènement se verra attribuer une valeur distincte.",
+                          "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
+                          "x-itemTitle": "label",
+                          "x-itemKey": "key"
+                        },
+                        "colors": {
+                          "type": "object",
+                          "title": "Couleurs",
+                          "oneOf": [
+                            {
+                              "title": "Palette précalculée",
+                              "required": [
+                                "type",
+                                "name"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "type": {
+                                  "const": "palette"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "oneOf": [
+                                    {
+                                      "const": "Accent",
+                                      "title": "Accent"
+                                    },
+                                    {
+                                      "const": "Dark2",
+                                      "title": "Foncé"
+                                    },
+                                    {
+                                      "const": "Paired",
+                                      "title": "Paires"
+                                    },
+                                    {
+                                      "const": "Set1",
+                                      "title": "Ensemble 1"
+                                    },
+                                    {
+                                      "const": "Set2",
+                                      "title": "Ensemble 2"
+                                    },
+                                    {
+                                      "const": "Set3",
+                                      "title": "Ensemble 3"
+                                    },
+                                    {
+                                      "const": "Pastel1",
+                                      "title": "Pastel 1"
+                                    },
+                                    {
+                                      "const": "Pastel2",
+                                      "title": "Pastel 2"
+                                    }
+                                  ],
+                                  "default": "Accent"
+                                },
+                                "offset": {
+                                  "type": "integer",
+                                  "title": "Décallage",
+                                  "default": 0
+                                }
+                              }
+                            },
+                            {
+                              "title": "Palette personnalisée",
+                              "required": [
+                                "type",
+                                "styles"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "type": {
+                                  "const": "manual"
+                                },
+                                "styles": {
+                                  "title": "Couleurs et ordre",
+                                  "type": "array",
+                                  "x-fromUrl": "{datasets.0.href}/values_agg?field={parent.parent.parent.value.categoryField.key}&agg_size=12&size=0",
+                                  "x-display": "list",
+                                  "x-itemTitle": "value",
+                                  "x-itemKey": "value",
+                                  "x-itemsProp": "aggs",
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "value"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "value": {
+                                        "type": "string",
+                                        "x-display": "hidden"
+                                      },
+                                      "color": {
+                                        "type": "string",
+                                        "title": "Couleur",
+                                        "format": "hexcolor",
+                                        "default": "#828282",
+                                        "x-display": "color-picker"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          ],
+                          "default": {
+                            "type": "palette",
+                            "name": "Accent",
+                            "offset": 0
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "title": "Calendrier monochrome",
+                      "additionalProperties": false,
+                      "properties": {
+                        "type": {
+                          "const": "monochrome"
+                        },
+                        "colors": {
+                          "type": "object",
+                          "title": "Couleur",
+                          "required": [
+                            "type"
+                          ],
+                          "oneOf": [
+                            {
+                              "title": "Thème",
+                              "additionalProperties": false,
+                              "properties": {
+                                "type": {
+                                  "const": "theme"
+                                },
+                                "strValue": {
+                                  "title": "Couleur",
+                                  "type": "string",
+                                  "oneOf": [
+                                    {
+                                      "const": "primary",
+                                      "title": "Primaire"
+                                    },
+                                    {
+                                      "const": "secondary",
+                                      "title": "Secondaire"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            {
+                              "title": "Personnalisée",
+                              "additionalProperties": false,
+                              "properties": {
+                                "type": {
+                                  "const": "custom"
+                                },
+                                "hexValue": {
+                                  "type": "string",
+                                  "title": "Couleur",
+                                  "format": "hexcolor",
+                                  "default": "#828282",
+                                  "x-display": "color-picker"
+                                }
+                              }
+                            }
+                          ],
+                          "default": {
+                            "type": "theme",
+                            "strValue": "primary"
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "default": {
+                    "type": "monochrome"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
