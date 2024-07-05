@@ -28,36 +28,20 @@ export async function getColor () {
       colorSchemes[category.value] = `${category.color}`
     })
   }
-  console.log(colorSchemes)
   return colorSchemes
 }
-export async function getParams (dateBegin, dateEnd) {
-  let url = `${dataUrl}/safe-schema?calculated=false`
+export async function getParams () {
+  const url = `${dataUrl}/safe-schema?calculated=false`
   const request = await fetch(url)
   const reponse = await request.json()
-  let startDate, endDate, evtDate
+  let startDate, endDate, evtDate, description
   reponse.forEach((value) => {
     if (value['x-concept'] !== undefined) {
       if (value['x-concept'].id === 'startDate') startDate = value.key
       else if (value['x-concept'].id === 'endDate') endDate = value.key
       else if (value['x-concept'].id === 'date') evtDate = value.key
+      else if (value['x-concept'].id === 'description') description = value.key
     }
-  }
-  )
-  const captureMonth = `[${dateBegin.getFullYear()}\\-${String(dateBegin.getMonth() + 1).padStart(2, '0')}\\-${String(dateBegin.getDate()).padStart(2, '0')} TO 
-  ${dateEnd.getFullYear()}\\-${String(dateEnd.getMonth() + 1).padStart(2, '0')}\\-${String(dateEnd.getDate()).padStart(2, '0')}]`
-  const beforeMonth = `[* TO ${dateBegin.getFullYear()}\\-${String(dateBegin.getMonth() + 1).padStart(2, '0')}\\-${String(dateBegin.getDate()).padStart(2, '0')}]`
-  const afterMonth = `[${dateEnd.getFullYear()}\\-${String(dateEnd.getMonth() + 1).padStart(2, '0')}\\-${String(dateEnd.getDate()).padStart(2, '0')} TO *]`
-  url = `${dataUrl}/lines?q_mode=complete&qs=(${startDate}:${captureMonth}) OR
-  (${endDate}:${captureMonth}) OR
-  (${startDate}:${beforeMonth} AND ${endDate}:${afterMonth})`
-  const url2 = url.concat('&size=0')
-  const request2 = await fetch(url2)
-  let size = 100
-  if (request2.ok) {
-    const reponse = await request2.json()
-    size = reponse.total
-  }
-  url = url.concat(`&size=${size}`)
-  return { startDate, endDate, evtDate, url }
+  })
+  return { startDate, endDate, evtDate, description }
 }

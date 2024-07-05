@@ -6,7 +6,8 @@ const { screenSize } = useAppInfo()
 <template>
   <div
     :style="{
-      height:`${screenSize}`+'px'
+      height:`${screenSize}`+'px',
+      overflowY:'auto'
     }"
   >
     <calendar />

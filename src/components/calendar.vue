@@ -7,45 +7,51 @@ import { reactive, ref, watch } from 'vue'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import listPlugin from '@fullcalendar/list'
-// import interactionPlugin from '@fullcalendar/interaction'
 import frLocale from '@fullcalendar/core/locales/fr'
 import reactiveSearchParams from '@data-fair/lib/vue/reactive-search-params-global.js'
 const theme = useTheme()
 const dateBegin = ref(reactiveSearchParams.date === undefined ? new Date() : new Date(reactiveSearchParams.date))
-const dateEnd = ref(new Date(dateBegin.value.getTime() + 6 * 7 * 24 * 60 * 60 * 1000))
-const resolveView = function (view) {
-  if (view === 'dayGridMonth') return 'Mois'
-  if (view === 'timeGridWeek') return 'Semaine'
-  if (view === 'timeGridDay') return 'Jour'
-  if (view === 'listMonth') return 'Liste'
-}
-const view = ref(reactiveSearchParams.view === undefined ? 'Mois' : resolveView(reactiveSearchParams.view))
-
-const changeTimePeriod = function (date, view) {
-  reactiveSearchParams.date = date
-  if (view === 'Mois' || view === 'Liste') {
-    // add 6 weeks
-    dateBegin.value = date
-    dateEnd.value = new Date(dateBegin.value.getTime() + 6 * 7 * 24 * 60 * 60 * 1000)
-  } else if (view === 'Semaine') {
-    // add 7 days
-    dateBegin.value = date
-    dateEnd.value = new Date(dateBegin.value.getTime() + 7 * 24 * 60 * 60 * 1000)
-  } else if (view === 'Jour') {
-    // add 24 hours
-    dateBegin.value = date
-    dateEnd.value = new Date(dateBegin.value.getTime() + 24 * 60 * 60 * 1000)
-  }
-}
+dateBegin.value.setDate(1) // necessary to handle display order : day -> month -> refresh page
+const dateEnd = ref(new Date(dateBegin.value.getTime() + 31 * 24 * 60 * 60 * 1000))
 const calendar = ref(null)
 const selectedEvent = ref(null)
 const menuActivator = ref(null)
-
 const menu = ref(false)
+const items = [{
+  title: 'Mois',
+  value: 'dayGridMonth'
+},
+{
+  title: 'Semaine',
+  value: 'timeGridWeek'
+},
+{
+  title: 'Jour',
+  value: 'timeGridDay'
+},
+{
+  title: 'Liste',
+  value: 'listMonth'
+}]
 const events = computedAsync(async () => {
   const events = await getData(dateBegin.value, dateEnd.value, theme)
   return events
 }, null, null)
+watch(reactiveSearchParams, () => {
+  calendar.value.calendar.changeView(reactiveSearchParams.view)
+  dateBegin.value = new Date(reactiveSearchParams.date)
+  const view = reactiveSearchParams.view
+  if (view === 'dayGridMonth' || view === 'listMonth') {
+    // add 31 days
+    dateBegin.value.setDate(1) // go to first day of the month
+    dateEnd.value = new Date(dateBegin.value.getTime() + 31 * 24 * 60 * 60 * 1000)
+  } else if (view === 'timeGridWeek') {
+    // add 7 days
+    dateBegin.value.setDate(dateBegin.value.getDate() - dateBegin.value.getUTCDay()) // go to monday
+    dateEnd.value = new Date(dateBegin.value.getTime() + 7 * 24 * 60 * 60 * 1000)
+  } else if (view === 'timeGridDay' || view === 'dayGridDay') dateEnd.value = new Date(dateBegin.value.getTime() + 24 * 60 * 60 * 1000) // add 24 hours
+})
+
 const calendarOptions = reactive({
   plugins: [
     dayGridPlugin,
@@ -57,8 +63,7 @@ const calendarOptions = reactive({
       click: function (e) {
         calendar.value.calendar.prev()
         reactiveSearchParams.view = calendar.value.calendar.currentData.currentViewType
-        const date = calendar.value.calendar.getDate()
-        changeTimePeriod(date, view.value)
+        reactiveSearchParams.date = calendar.value.calendar.getDate()
       },
       icon: 'chevron-left'
     },
@@ -66,8 +71,7 @@ const calendarOptions = reactive({
       click: function (e) {
         calendar.value.calendar.next()
         reactiveSearchParams.view = calendar.value.calendar.currentData.currentViewType
-        const date = calendar.value.calendar.getDate()
-        changeTimePeriod(date, view.value)
+        reactiveSearchParams.date = calendar.value.calendar.getDate()
       },
       icon: 'chevron-right'
     }
@@ -81,62 +85,53 @@ const calendarOptions = reactive({
   initialDate: reactiveSearchParams.date === undefined ? new Date() : new Date(reactiveSearchParams.date),
   dayMaxEvents: true, // limit number of displayed events
   fixedWeekCount: false,
+  showNonCurrentDates: false,
   events,
   locale: frLocale,
   height: '100%',
-  eventClick: function handleClickEvent (e) {
+  eventClick: function (e) {
     selectedEvent.value = e.event
     menuActivator.value = e.el
     menu.value = true
-  }
-})
-watch(view, () => {
-  if (view.value === 'Mois') {
-    calendar.value.calendar.changeView('dayGridMonth')
-    reactiveSearchParams.view = 'dayGridMonth'
-    const date = calendar.value.calendar.getDate()
-    changeTimePeriod(date, view.value)
-  }
-  if (view.value === 'Semaine') {
-    calendar.value.calendar.changeView('timeGridWeek')
-    reactiveSearchParams.view = 'timeGridWeek'
-    const date = calendar.value.calendar.getDate()
-    changeTimePeriod(date, view.value)
-  }
-  if (view.value === 'Jour') {
-    calendar.value.calendar.changeView('timeGridDay')
+  },
+  moreLinkClick: function (e) {
+    reactiveSearchParams.view = 'dayGridDay'
+  },
+  navLinks: true,
+  weekNumbers: true,
+  navLinkDayClick: function (date, jsEvent) {
+    calendar.value.calendar.gotoDate(date)
+    reactiveSearchParams.date = date
     reactiveSearchParams.view = 'timeGridDay'
-    const date = calendar.value.calendar.getDate()
-    changeTimePeriod(date, view.value)
-  }
-  if (view.value === 'Liste') {
-    calendar.value.calendar.changeView('listMonth')
-    reactiveSearchParams.view = 'listMonth'
-    const date = calendar.value.calendar.getDate()
-    changeTimePeriod(date, view.value)
+  },
+  navLinkWeekClick: function (date, jsEvent) {
+    calendar.value.calendar.gotoDate(date)
+    reactiveSearchParams.date = date
+    reactiveSearchParams.view = 'timeGridWeek'
   }
 })
+
 </script>
 <template>
   <v-select
-    v-model="view"
+    v-model="reactiveSearchParams.view"
     :style="{
       position: 'absolute',
       width: '10em',
       right:'20px',
     }"
     class="pt-2"
-    density="comfortable"
     variant="outlined"
-    :items="['Mois','Semaine','Jour','Liste']"
+    :items="items"
+    label="Affichage"
   />
   <full-calendar
     ref="calendar"
     :options="calendarOptions"
   >
-    <template #eventContent="arg">
-      <b>{{ arg.timeText }}</b>
-      {{ arg.event.title }}
+    <template #eventContent="evt">
+      <b>{{ evt.timeText }}</b>
+      {{ evt.event.title }}
     </template>
   </full-calendar>
   <v-menu
@@ -157,10 +152,21 @@ watch(view, () => {
         <br>
         Debut : {{ selectedEvent?.start.toLocaleString() }}
         <br>
-        Fin : {{ selectedEvent?.end.toLocaleString() }}
+        <span v-if="selectedEvent?.end">Fin : {{ selectedEvent?.end.toLocaleString() }}</span>
+        <br>
+        Description : <span
+          class="d-inline"
+          v-html="selectedEvent?.extendedProps.description"
+        />
       </v-card-text>
-      <v-card-actions>
+      <v-card-actions
+        class="px-2 py-1"
+        :style="{
+          minHeight : '30px'
+        }"
+      >
         <v-btn
+          density="compact"
           @click="menu = false"
         >
           Fermer
@@ -181,5 +187,11 @@ watch(view, () => {
 }
 .fc-toolbar-title{
   padding-right: 7em
+}
+.fc-popover{
+  z-index: 1000 !important
+}
+.v-overlay__content{
+  min-width: 20px !important
 }
 </style>

@@ -12,9 +12,9 @@
           "items": [
             {
               "title": "Jeu de données",
-              "description": "Ce jeu doit contenir au moins une colonne avec valeur numérique",
+              "description": "Ce jeu doit contenir au moins une colonne avec le concept de date",
               "type": "object",
-              "x-fromUrl": "api/v1/datasets?status=finalized&field-type=integer,number&q={q}&select=id,title&{context.datasetFilter}&concepts=http://schema.org/Date,https://schema.org/endDate,https://schema.org/startDate",
+              "x-fromUrl": "api/v1/datasets?status=finalized&q={q}&select=id,title&{context.datasetFilter}&short-concept=date,startDate,endDate,description",
               "x-itemsProp": "results",
               "x-itemTitle": "title",
               "x-itemKey": "href",
@@ -36,7 +36,7 @@
             },
             {
               "properties": {
-                "labelsField": {
+                "labelField": {
                   "type": "object",
                   "title": "Colonne de libellé",
                   "description": "Choisissez la colonne représentant le libellé d'un évènement.",
@@ -60,7 +60,7 @@
                       "additionalProperties": false,
                       "properties": {
                         "type": {
-                          "const": "multicolore"
+                          "const": "multicolor"
                         },
                         "categoryField": {
                           "type": "object",
@@ -144,7 +144,7 @@
                                 "styles": {
                                   "title": "Couleurs et ordre",
                                   "type": "array",
-                                  "x-fromUrl": "{datasets.0.href}/values_agg?field={parent.parent.parent.value.categoryField.key}&agg_size=12&size=0",
+                                  "x-fromUrl": "{datasets.0.href}/values_agg?field={parent.parent.parent.value.categoryField.key}&size=0&agg_size=15",
                                   "x-display": "list",
                                   "x-itemTitle": "value",
                                   "x-itemKey": "value",
