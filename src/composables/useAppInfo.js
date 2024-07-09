@@ -6,16 +6,19 @@ export default function useAppInfo () {
   const dataset = config.datasets?.[0]
   if (!dataset) throw new Error('Veuillez sélectionner une source de données')
   const dataUrl = config.datasets[0].href
+  const isRest = config.datasets[0].isRest
   const screenSize = window.innerHeight
-  const datasetId = config.datasets[0].id
+  const labelField = config.datasets[1].labelField
+  const categoryField = config.datasets[1].categoryField
+  const descriptionField = config.datasets[1].descriptionField
   const color = config.datasets[2].color
-  const label = config.datasets[1].labelField
   return {
-    color,
     dataUrl,
-    datasetId,
-    dataset,
+    isRest,
     screenSize,
-    label
+    labelField,
+    categoryField,
+    descriptionField,
+    color
   }
 }

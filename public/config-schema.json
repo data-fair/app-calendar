@@ -14,7 +14,7 @@
               "title": "Jeu de données",
               "description": "Ce jeu doit contenir au moins une colonne avec le concept de date",
               "type": "object",
-              "x-fromUrl": "api/v1/datasets?status=finalized&q={q}&select=id,title&{context.datasetFilter}&short-concept=date,startDate,endDate,description",
+              "x-fromUrl": "api/v1/datasets?status=finalized&q={q}&select=id,title,isRest&{context.datasetFilter}&short-concept=date,startDate,endDate,description",
               "x-itemsProp": "results",
               "x-itemTitle": "title",
               "x-itemKey": "href",
@@ -29,8 +29,8 @@
                 "id": {
                   "type": "string"
                 },
-                "finalizedAt": {
-                  "type": "string"
+                "isRest":{
+                  "type": "boolean"
                 }
               }
             },
@@ -39,9 +39,25 @@
                 "labelField": {
                   "type": "object",
                   "title": "Colonne de libellé",
-                  "description": "Choisissez la colonne représentant le libellé d'un évènement.",
+                  "description": "Choisissez la colonne représentant le libellé d'un événement.",
                   "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
                   "x-itemTitle": "label",
+                  "x-itemKey": "key"
+                },
+                "categoryField": {
+                  "type": "object",
+                  "title": "Colonne de catégorie",
+                  "description": "Choisissez la colonne permettant de distinguer plusieurs catégories d'événements. Chaque événement se verra attribuer une valeur distincte.",
+                  "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
+                  "x-itemTitle": "category",
+                  "x-itemKey": "key"
+                },
+                "descriptionField": {
+                  "type": "object",
+                  "title": "Colonne de description",
+                  "description": "Choisissez la colonne permettant de fournir une description plus détaillée de l'événement",
+                  "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
+                  "x-itemTitle": "description",
                   "x-itemKey": "key"
                 }
               }
@@ -61,14 +77,6 @@
                       "properties": {
                         "type": {
                           "const": "multicolor"
-                        },
-                        "categoryField": {
-                          "type": "object",
-                          "title": "Colonne de catégorie",
-                          "description": "Choisissez la colonne permettant de distinguer plusieurs catégories d'évènements. Chaque évènement se verra attribuer une valeur distincte.",
-                          "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
-                          "x-itemTitle": "label",
-                          "x-itemKey": "key"
                         },
                         "colors": {
                           "type": "object",
@@ -144,7 +152,7 @@
                                 "styles": {
                                   "title": "Couleurs et ordre",
                                   "type": "array",
-                                  "x-fromUrl": "{datasets.0.href}/values_agg?field={parent.parent.parent.value.categoryField.key}&size=0&agg_size=15",
+                                  "x-fromUrl": "{datasets.0.href}/values_agg?field={datasets.1.categoryField.key}&size=0&agg_size=15",
                                   "x-display": "list",
                                   "x-itemTitle": "value",
                                   "x-itemKey": "value",

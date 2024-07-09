@@ -30,4 +30,3 @@ coverage
 .vscode
 .dev-config.json
 .package.json
-config-schema.json
