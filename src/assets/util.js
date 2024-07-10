@@ -1,6 +1,7 @@
 import useAppInfo from '@/composables/useAppInfo'
 import chroma from 'chroma-js'
 const { dataUrl, color, categoryField, descriptionField, labelField } = useAppInfo()
+const categorySet = new Set()
 export async function getColor (newCategory) {
   const colorSchemes = {}
   if (color.colors.type === 'palette') {
@@ -8,11 +9,16 @@ export async function getColor (newCategory) {
     const request = await fetch(url)
     if (request.ok) {
       const reponse = await request.json()
-      if (newCategory !== undefined) reponse.push(newCategory)
+      if (newCategory) categorySet.add(newCategory)
       const nbColor = Math.max(reponse.length, 12)
       const palette = chroma.scale(color.colors.name).mode('lch').colors(nbColor)
-      reponse.forEach((category, i) => {
-        colorSchemes[category] = `${palette[i + color.colors.offset]}`
+      reponse.forEach((category) => {
+        categorySet.add(category)
+      })
+      let i = 0
+      categorySet.forEach((cat) => {
+        colorSchemes[cat] = `${palette[i + color.colors.offset]}`
+        i++
       })
     }
   } else {
@@ -37,8 +43,8 @@ export async function getParams () {
       if (value['x-concept'].id === 'startDate') startDate = value.key
       else if (value['x-concept'].id === 'endDate') endDate = value.key
       else if (value['x-concept'].id === 'date') evtDate = value.key
-      else if (value['x-concept'].id === 'label' && labelField === undefined) label = value.key
-      else if (value['x-concept'].id === 'description' && descriptionField === undefined) description = value.key
+      else if (value['x-concept'].id === 'label' && !labelField) label = value.key
+      else if (value['x-concept'].id === 'description' && !descriptionField) description = value.key
     }
   })
   return { startDate, endDate, evtDate, label, description, category }

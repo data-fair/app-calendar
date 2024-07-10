@@ -4,7 +4,8 @@ const { color, dataUrl } = useAppInfo()
 const { startDate, endDate, evtDate, label, description, category } = await getParams()
 
 export async function getData (dateBegin, dateEnd, theme) {
-  if (label === undefined) throw new Error('Veuillez remplir le champ libellé ou bien assignez le concept Libellé à l\'une de vos colonnes')
+  if (!evtDate && !startDate && !endDate) throw new Error('Ajoutez au moins un concept de type Date à vos données')
+  if (!label) throw new Error('Veuillez remplir le champ libellé ou bien assignez le concept Libellé à l\'une de vos colonnes')
   const events = []
   let url = `${dataUrl}/lines?_c_date_match=${Date.parse(dateBegin)},${Date.parse(dateEnd)}`
   const urlSize = url.concat('&size=0') // get the total of events to display
@@ -16,23 +17,23 @@ export async function getData (dateBegin, dateEnd, theme) {
     const reponse = await request.json()
     let colors
     if (color.type === 'multicolor') {
-      if (category === undefined) throw new Error('Veuillez remplir le champ : colonne de catégorie')
+      if (!category) throw new Error('Veuillez remplir le champ : colonne de catégorie')
       else {
         colors = await getColor()
       }
     }
     reponse.results.forEach(async (value) => {
       let event
-      if (value[evtDate] !== undefined) { // event
+      if (value[evtDate]) { // event
         event = {
           id: value._id,
-          title: label === undefined ? '' : value[label],
+          title: !label ? '' : value[label],
           start: value[evtDate]
         }
       } else { // timed event
         event = {
           id: value._id,
-          title: label === undefined ? '' : value[label],
+          title: !label ? '' : value[label],
           start: value[startDate],
           end: value[endDate]
         }
@@ -40,16 +41,17 @@ export async function getData (dateBegin, dateEnd, theme) {
         const de = new Date(value[endDate])
         if (Math.abs(de.getDate() - db.getDate()) > 2 || db.getMonth() !== de.getMonth()) {
           // if the timed event is more than 2 days long, we set the allDay property to true
-          // but we loose the information on start and end hours, the format change from this : (YYY-MM-DD HH-MM) to (YYY-MM-DD) on display
+          // but we may loose the information on start and end hours, the format change from this : (YYY-MM-DD HH-MM) to (YYY-MM-DD 00:00)
           event.allDay = true
         }
       }
       if (color.type === 'monochrome') {
         event.color = color.colors.type === 'custom' ? color.colors.hexValue : theme.current.value.colors[color.colors.strValue]
       } else {
+        event.category = value[category]
         event.color = colors[value[category]]
       }
-      event.description = description === undefined ? '' : value[description]
+      event.description = !description ? '' : value[description]
       events.push(event)
     })
   }

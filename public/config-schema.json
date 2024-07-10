@@ -47,7 +47,7 @@
                 "categoryField": {
                   "type": "object",
                   "title": "Colonne de catégorie",
-                  "description": "Choisissez la colonne permettant de distinguer plusieurs catégories d'événements. Chaque événement se verra attribuer une valeur distincte.",
+                  "description": "Choisissez la colonne permettant de distinguer plusieurs catégories d'événements. Chaque catégorie se verra attribuer une couleur distincte si l'option multicolore est séléctionnée.",
                   "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
                   "x-itemTitle": "category",
                   "x-itemKey": "key"

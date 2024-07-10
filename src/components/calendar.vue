@@ -26,11 +26,12 @@ const patch = ref(false)
 const check = ref(false)
 const displayError = ref(false)
 const errorMessage = ref('')
-const newEvent = reactive({
-  hoursStart: '00:00',
-  hoursEnd: '00:00'
+const newEvent = reactive({ // use as payload for event post and patch in the 2 menus
+  hoursStart: '00:00', // allow user to set hours with a input type=time and modify start consequently
+  hoursEnd: '00:00',
+  allDay: true
 })
-const items = [{
+const items = [{ // list of different display modes
   title: 'Mois',
   value: 'dayGridMonth'
 },
@@ -46,7 +47,9 @@ const items = [{
   title: 'Liste',
   value: 'listMonth'
 }]
-const paramField = computedAsync(async () => { return await getParams() }, null)
+const formatDate = date => `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}` // get format like YYYY-MM-DD
+const formatHours = date => date.getHours().toString().padStart(2, '0') + ':' + date.getMinutes().toString().padStart(2, '0') // get format like 'HH:MM'
+const paramField = computedAsync(async () => { return await getParams() }, null) // fullcalendar dont allow await operation inside <script setup>
 const events = computedAsync(async () => {
   const events = await getData(dateBegin.value, dateEnd.value, theme)
   return events
@@ -68,7 +71,7 @@ watch(reactiveSearchParams, () => { // watch which period and which view is disp
     // add 7 days
     dateBegin.value.setDate(dateBegin.value.getDate() - dateBegin.value.getUTCDay()) // go to monday
     dateEnd.value = new Date(dateBegin.value.getTime() + 7 * 24 * 60 * 60 * 1000)
-  } else if (view === 'timeGridDay' || view === 'dayGridDay') dateEnd.value = new Date(dateBegin.value.getTime() + 24 * 60 * 60 * 1000) // add 24 hours
+  } else if (view === 'timeGridDay') dateEnd.value = new Date(dateBegin.value.getTime() + 24 * 60 * 60 * 1000) // add 24 hours
 })
 
 const calendarOptions = reactive({ // standard options for the calendar, allows to use the calendar in read only mode
@@ -109,8 +112,8 @@ const calendarOptions = reactive({ // standard options for the calendar, allows 
     end: ''
   },
   initialView: reactiveSearchParams.view || 'dayGridMonth',
-  initialDate: reactiveSearchParams.date === undefined ? new Date() : new Date(reactiveSearchParams.date),
-  dayMaxEvents: true, // limit number of displayed events
+  initialDate: !reactiveSearchParams.date ? new Date() : new Date(reactiveSearchParams.date),
+  dayMaxEvents: true, // limit number of displayed events in one cell
   fixedWeekCount: false,
   showNonCurrentDates: false,
   events,
@@ -120,11 +123,14 @@ const calendarOptions = reactive({ // standard options for the calendar, allows 
     selectedEvent.value = e.event
     menuActivator.value = e.el
     menu.value = true
-    newEvent.hoursStart = e.event.start.getHours().toString().padStart(2, '0') + ':' + e.event.start.getMinutes().toString().padStart(2, '0')
-    newEvent.hoursEnd = e.event.end.getHours().toString().padStart(2, '0') + ':' + e.event.end.getMinutes().toString().padStart(2, '0')
+    // for edit mode
+    newEvent.hoursStart = formatHours(e.event.start)
+    if (!e.event.allDay) newEvent.hoursEnd = formatHours(e.event.end)
   },
   moreLinkClick: function (e) {
-    reactiveSearchParams.view = 'dayGridDay'
+    calendar.value.calendar.gotoDate(e.date)
+    reactiveSearchParams.date = e.date
+    reactiveSearchParams.view = 'timeGridDay'
   },
   navLinks: true,
   weekNumbers: true,
@@ -141,30 +147,29 @@ const calendarOptions = reactive({ // standard options for the calendar, allows 
 })
 if (isRest !== undefined) { // options for edit mode, user can do all CRUD operations on calendar
   calendarOptions.plugins.push(interactionPlugin)
-  calendarOptions.editable = true // event can be moved
+  calendarOptions.editable = true
   calendarOptions.eventResizableFromStart = true
   calendarOptions.selectable = true
-  calendarOptions.select = function (e) { // work when select dates (no when click on event)
+  calendarOptions.select = function (e) { // call when selectiong a zone
     newEvent.db = e.start
     newEvent.df = e.end
-    newEvent.hoursStart = e.start.getHours().toString().padStart(2, '0') + ':' + e.start.getMinutes().toString().padStart(2, '0')
-    newEvent.hoursEnd = e.end.getHours().toString().padStart(2, '0') + ':' + e.end.getMinutes().toString().padStart(2, '0')
-    newEvent.cat = undefined
+    newEvent.hoursStart = formatHours(e.start)
+    newEvent.hoursEnd = formatHours(e.end)
     newEvent.allDay = e.allDay
     post.value = true
   }
   calendarOptions.eventDrop = async function (e) {
-    const obj = {
-      db: e.event.start,
-      df: e.event.end,
-      id: e.event.id
-    }
+    selectedEvent.value = e.event
     if (e.oldEvent.allDay && !e.event.allDay) { // if we drag from the allDay zone to non allDay, default duration is one hour
-      obj.df = new Date(e.event.start)
-      obj.df.setHours(e.event.start.getHours() + 1)
+      if (!paramField.value.startDate) e.event.setAllDay(true) // if time period doesn't exist, event remains all day
+      else {
+        const d = selectedEvent.value.start
+        d.setHours(selectedEvent.value.start.getHours() + 1)
+        selectedEvent.value.setEnd(d)
+      }
     }
     try {
-      await patchEvent(obj)
+      await patchEvent()
     } catch (r) {
       e.revert()
       displayError.value = true
@@ -172,13 +177,9 @@ if (isRest !== undefined) { // options for edit mode, user can do all CRUD opera
     }
   }
   calendarOptions.eventResize = async function (e) {
-    const obj = {
-      db: e.event.start,
-      df: e.event.end,
-      id: e.event.id
-    }
+    selectedEvent.value = e.event
     try {
-      await patchEvent(obj)
+      await patchEvent()
     } catch (r) {
       e.revert()
       displayError.value = true
@@ -187,34 +188,44 @@ if (isRest !== undefined) { // options for edit mode, user can do all CRUD opera
   }
 }
 async function postEvent () {
+  const params = paramField.value
   const tab1 = newEvent.hoursStart.split(':')
   const tab2 = newEvent.hoursEnd.split(':')
   newEvent.db.setHours(tab1[0], tab1[1])
   newEvent.df.setHours(tab2[0], tab2[1])
-  console.log(newEvent)
   const url = `${dataUrl}/lines`
-  const evt = {}
-  evt[paramField.value.startDate] = newEvent.db
-  evt[paramField.value.endDate] = newEvent.df
-  evt[paramField.value.description] = newEvent.desc || ''
-  evt[paramField.value.label] = newEvent.lib || ''
-  if (newEvent.cat !== undefined) evt[paramField.value.category] = newEvent.cat
-  const params = {
+  const event = {}
+  // fill right fields depending on concepts that are used
+  // if both concepts are used, timed-format is prioritized
+  if (newEvent.allDay) {
+    event[params.startDate || params.evtDate] = params.startDate ? newEvent.db : formatDate(newEvent.db)
+    if (params.startDate) event[params.endDate] = newEvent.df
+  } else {
+    if (params.startDate) {
+      event[params.startDate] = newEvent.db
+      event[params.endDate] = newEvent.df
+    } else {
+      event[params.evtDate] = formatDate(newEvent.db)
+    }
+  }
+  event[params.label] = newEvent.lib || ''
+  if (newEvent.cat) event[params.category] = newEvent.cat
+  const param = {
     method: 'POST',
-    body: JSON.stringify(evt),
+    body: JSON.stringify(event),
     headers: {
       'Content-type': 'application/json'
     }
   }
-  const request = await fetch(url, params)
+  const request = await fetch(url, param)
   if (request.ok) {
     const reponse = await request.json()
     const obj = {
       id: reponse._id,
-      title: reponse[paramField.value.label],
-      start: reponse[paramField.value.startDate],
-      end: reponse[paramField.value.endDate],
-      allDay: newEvent.allDay
+      title: reponse[params.label],
+      start: reponse[params.evtDate] || reponse[params.startDate],
+      end: reponse[params.endDate],
+      allDay: reponse[params.evtDate] ? true : newEvent.allDay
     }
     obj.description = newEvent.desc || ''
     if (color.type === 'monochrome') {
@@ -226,7 +237,6 @@ async function postEvent () {
     calendar.value.calendar.addEvent(obj)
     newEvent.cat = undefined
     newEvent.lib = undefined
-    newEvent.desc = undefined
   }
 }
 async function deleteEvent (id) {
@@ -243,38 +253,65 @@ async function deleteEvent (id) {
     displayError.value = true
   }
 }
-async function patchEvent (payload) {
-  const { db, df, id } = payload
-  const url = `${dataUrl}/lines/${id}`
+async function patchEvent () { // patch event by resizing or moving it
+  const event = selectedEvent.value
+  const params = paramField.value
+  const url = `${dataUrl}/lines`
   const formData = new FormData()
-  formData.append(paramField.value.startDate, db.toISOString())
-  formData.append(paramField.value.endDate, df.toISOString())
+  if (event.end && params.startDate) {
+    formData.append(params.endDate, event.end.toISOString())
+    formData.append(params.startDate, event.start.toISOString())
+  } else {
+    formData.append(params.evtDate || params.startDate, params.evtDate ? formatDate(event.start) : event.start.toISOString())
+  }
+  formData.append(params.label, event.title)
+  if (event.extendedProps.category) formData.append(params.category, event.extendedProps.category)
+  formData.append('_id', event.id)
+  formData.append('_action', 'update')
   const param = {
-    method: 'PATCH',
+    method: 'POST',
     body: formData
   }
   const request = await fetch(url, param)
   if (!request.ok) throw new Error('Erreur modification événement')
   newEvent.cat = undefined
   newEvent.lib = undefined
-  newEvent.desc = undefined
 }
-async function patchParamEvent () {
-  const url = `${dataUrl}/lines/${selectedEvent.value.id}`
+async function patchParamEvent () { // patch an event via the menu
+  const event = selectedEvent.value
+  const params = paramField.value
+  const url = `${dataUrl}/lines/${event.id}`
   const tab1 = newEvent.hoursStart.split(':')
   const tab2 = newEvent.hoursEnd.split(':')
-  selectedEvent.value.start.setHours(tab1[0], tab1[1])
-  selectedEvent.value.end.setHours(tab2[0], tab2[1])
+  const t1 = event.start
+  t1.setHours(tab1[0], tab1[1])
   const formData = new FormData()
-  formData.append(paramField.value.startDate, selectedEvent.value.start.setHours(tab1[0], tab1[1]).toISOString())
-  formData.append(paramField.value.endDate, selectedEvent.value.end.setHours(tab2[0], tab2[1]).toISOString())
-  // todo add lib and cat
+  let t2
+  // we cant patch the hour of a non-timed event so we necessarily patch startDate field if date has changed
+  if (t1.getTime() !== event.start.getTime()) formData.append(params.startDate, t1.toISOString())
+  if (event.end) {
+    t2 = event.end
+    t2.setHours(tab2[0], tab2[1])
+    formData.append(params.endDate, t2.toISOString())
+  }
+  if (newEvent.lib) formData.append(params.label, newEvent.lib)
+  if (newEvent.cat) formData.append(params.category, newEvent.cat)
   const param = {
     method: 'PATCH',
     body: formData
   }
   const request = await fetch(url, param)
-  if (!request.ok) throw new Error('Erreur modification événement')
+  if (request.ok) {
+    event.setStart(t1)
+    if (event.end) event.setEnd(t2)
+    if (newEvent.lib) event.setProp('title', newEvent.lib)
+    if (newEvent.cat) {
+      const colors = await getColor(newEvent.cat)
+      event.setProp('color', colors[newEvent.cat])
+    }
+  } else throw new Error('Erreur modification événement')
+  newEvent.cat = undefined
+  newEvent.lib = undefined
 }
 </script>
 <template>
@@ -314,15 +351,15 @@ async function patchParamEvent () {
             color: `${selectedEvent?.backgroundColor}`
           }"
           icon="mdi-calendar"
-        /><span class="text-subtitle-1 font-weight-medium">{{ selectedEvent?.title }}</span>
+        /><span class="text-subtitle-1 font-weight-medium">{{ selectedEvent.title }}</span>
         <br>
-        Debut : {{ selectedEvent?.start.toLocaleString() }}
+        Debut : {{ selectedEvent.start.toLocaleString() }}
         <br>
-        <span v-if="selectedEvent?.end">Fin : {{ selectedEvent?.end.toLocaleString() }}</span>
+        <span v-if="selectedEvent.end">Fin : {{ selectedEvent.end.toLocaleString() }}</span>
         <br>
         Description : <span
           class="d-inline"
-          v-html="selectedEvent?.extendedProps.description"
+          v-html="selectedEvent.extendedProps.description"
         />
       </v-card-text>
       <v-card-actions
@@ -377,6 +414,7 @@ async function patchParamEvent () {
         :prefix="newEvent.db.toLocaleDateString()"
       />
       <v-text-field
+        v-if="!newEvent.allDay"
         v-model="newEvent.hoursEnd"
         label="Horaire de fin"
         type="time"
@@ -386,11 +424,6 @@ async function patchParamEvent () {
         v-model="newEvent.lib"
         type="text"
         label="Libellé"
-      />
-      <v-text-field
-        v-model="newEvent.desc"
-        type="text"
-        label="Description"
       />
       <v-checkbox
         v-model="check"
@@ -456,12 +489,14 @@ async function patchParamEvent () {
         Modifier l'événement
       </div>
       <v-text-field
+        v-if="selectedEvent.end"
         v-model="newEvent.hoursStart"
         label="Horaire de début"
         type="time"
         :prefix="selectedEvent.start.toLocaleDateString()"
       />
       <v-text-field
+        v-if="selectedEvent.end"
         v-model="newEvent.hoursEnd"
         label="Horaire de fin"
         type="time"
@@ -474,7 +509,7 @@ async function patchParamEvent () {
       />
       <v-checkbox
         v-model="check"
-        label="Ajouter une catégorie ?"
+        label="Modifier la catégorie ?"
         hide-details
       />
       <div
@@ -502,13 +537,13 @@ async function patchParamEvent () {
           variant="plain"
           readonly="true"
         >
-          Ajouter
+          Modifier
         </v-btn>
         <v-btn
           v-else
-          @click="patchParamEvent(selectedEvent),patch = false"
+          @click="patchParamEvent(),patch = false"
         >
-          Ajouter
+          Modifier
         </v-btn>
         <v-btn
           @click="patch = false"
