@@ -12,6 +12,7 @@ export default function useAppInfo () {
   const categoryField = config.datasets[1].categoryField
   const descriptionField = config.datasets[1].descriptionField
   const color = config.datasets[2].color
+  const additionalFields = config.additionalFields
   return {
     dataUrl,
     isRest,
@@ -19,6 +20,7 @@ export default function useAppInfo () {
     labelField,
     categoryField,
     descriptionField,
-    color
+    color,
+    additionalFields
   }
 }

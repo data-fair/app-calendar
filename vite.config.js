@@ -2,6 +2,7 @@ import vue from '@vitejs/plugin-vue'
 import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
 import { defineConfig } from 'vite'
 import { fileURLToPath, URL } from 'node:url'
+import { commonjsDeps, commonjsDepsPaths } from '@koumoul/vjsf/utils/build.js'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -29,6 +30,14 @@ export default defineConfig({
     hmr: {
       port: 3000,
       protocol: 'ws'
+    }
+  },
+  optimizeDeps: {
+    include: commonjsDeps
+  },
+  build: {
+    commonjsOptions: {
+      include: commonjsDepsPaths
     }
   }
 })

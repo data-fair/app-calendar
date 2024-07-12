@@ -1,6 +1,7 @@
 <script setup>
-import calendar from '@/components/calendar.vue'
+import calendar from '@/components/Calendar.vue'
 import useAppInfo from './composables/useAppInfo'
+import { displayError, errorMessage } from './context'
 const { screenSize } = useAppInfo()
 </script>
 <template>
@@ -12,4 +13,13 @@ const { screenSize } = useAppInfo()
   >
     <calendar />
   </div>
+  <v-snackbar
+    v-model="displayError"
+    :timeout="'5000'"
+    color="red"
+  >
+    <div>
+      {{ errorMessage }}
+    </div>
+  </v-snackbar>
 </template>

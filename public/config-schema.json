@@ -29,7 +29,7 @@
                 "id": {
                   "type": "string"
                 },
-                "isRest":{
+                "isRest": {
                   "type": "boolean"
                 }
               }
@@ -260,6 +260,30 @@
           ]
         }
       }
+    },
+    {
+      "title": "Champs additionnels à renseigner lors de l'ajout d'un événement",
+      "description": "Ces champs s'ajouteront au libellé, aux concepts de Date utilisés et aux champs description et catégorie, si ceux-ci sont déjà rensiegnés, lors de la création d'un événement.",
+      "x-if": "datasets.0.isRest",
+      "properties": {
+        "additionalFields": {
+          "type": "array",
+          "title": "Champs Additionnels",
+          "items": {
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "object",
+                "title": "Champ",
+                "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
+                "x-itemTitle": "label",
+                "x-itemKey": "key"
+              }
+            }
+          }
+        }
+      }
     }
+    
   ]
 }

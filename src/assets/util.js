@@ -1,6 +1,6 @@
 import useAppInfo from '@/composables/useAppInfo'
 import chroma from 'chroma-js'
-const { dataUrl, color, categoryField, descriptionField, labelField } = useAppInfo()
+const { dataUrl, color, categoryField, descriptionField, labelField, additionalFields } = useAppInfo()
 const categorySet = new Set()
 export async function getColor (newCategory) {
   const colorSchemes = {}
@@ -29,23 +29,36 @@ export async function getColor (newCategory) {
   return colorSchemes
 }
 export async function getParams () {
-  const url = `${dataUrl}/safe-schema?calculated=false`
+  const url = `${dataUrl}/safe-schema?calculated=false&mimeType=application%2Fschema%2Bjson`
   const request = await fetch(url)
   const reponse = await request.json()
   let startDate, endDate, evtDate
   let label = labelField?.key
   let description = descriptionField?.key
   const category = categoryField?.key
-  const keys = []
-  reponse.forEach((value) => {
-    keys.push(value.key)
-    if (value['x-concept'] !== undefined) {
-      if (value['x-concept'].id === 'startDate') startDate = value.key
-      else if (value['x-concept'].id === 'endDate') endDate = value.key
-      else if (value['x-concept'].id === 'date') evtDate = value.key
-      else if (value['x-concept'].id === 'label' && !labelField) label = value.key
-      else if (value['x-concept'].id === 'description' && !descriptionField) description = value.key
+  const additionalParams = {
+    type: 'object',
+    required: [],
+    properties: {}
+  } // vjsf form params
+  for (const field in reponse.properties) {
+    if (reponse.properties[field].title === '') reponse.properties[field].title = reponse.properties[field].key // fill the title field to display name in the vjsf form
+    if (reponse.properties[field]['x-concept'] !== undefined) {
+      if (reponse.properties[field]['x-concept'].id === 'startDate') startDate = field
+      else if (reponse.properties[field]['x-concept'].id === 'endDate') endDate = field
+      else if (reponse.properties[field]['x-concept'].id === 'date') evtDate = field
+      else if (reponse.properties[field]['x-concept'].id === 'label' && !labelField) label = field
+      else if (reponse.properties[field]['x-concept'].id === 'description' && !descriptionField) description = field
     }
+  }
+  if (label) additionalParams.properties[label] = reponse.properties[label]
+  if (category) additionalParams.properties[category] = reponse.properties[category]
+  if (description) additionalParams.properties[description] = reponse.properties[description]
+  additionalFields.forEach((f) => {
+    additionalParams.properties[f.field.key] = reponse.properties[f.field.key]
   })
-  return { startDate, endDate, evtDate, label, description, category }
+  return { startDate, endDate, evtDate, label, description, category, additionalParams }
 }
+
+export const formatDate = date => `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}` // get format like YYYY-MM-DD
+export const formatHours = date => date.getHours().toString().padStart(2, '0') + ':' + date.getMinutes().toString().padStart(2, '0') // get format like 'HH:MM'

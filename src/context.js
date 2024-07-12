@@ -1,8 +1,10 @@
 import useAppInfo from './composables/useAppInfo'
 import { getParams, getColor } from '@/assets/util.js'
+import { ref } from 'vue'
 const { color, dataUrl } = useAppInfo()
 const { startDate, endDate, evtDate, label, description, category } = await getParams()
-
+export const displayError = ref(false)
+export const errorMessage = ref('')
 export async function getData (dateBegin, dateEnd, theme) {
   if (!evtDate && !startDate && !endDate) throw new Error('Ajoutez au moins un concept de type Date à vos données')
   if (!label) throw new Error('Veuillez remplir le champ libellé ou bien assignez le concept Libellé à l\'une de vos colonnes')
