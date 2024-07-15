@@ -1,14 +1,13 @@
 <script setup>
-import Vjsf from '@koumoul/vjsf'
-import { ref, reactive } from 'vue'
-import { getParams, getColor, formatHours, formatDate } from '@/assets/util'
+import { getParams, getColor, formatDate } from '@/assets/util'
 import { ofetch } from 'ofetch'
 import useAppInfo from '@/composables/useAppInfo'
 import { useTheme } from 'vuetify'
 import { displayError, errorMessage } from '@/context'
+import MenuInterface from './MenuInterface.vue'
 const theme = useTheme()
 const { dataUrl, color } = useAppInfo()
-const { startDate, endDate, evtDate, label, description, category, additionalParams } = await getParams()
+const { startDate, endDate, evtDate, label, description, category } = await getParams()
 const props = defineProps({
   selectedEvent: {
     type: Object,
@@ -16,38 +15,27 @@ const props = defineProps({
   }
 })
 const emit = defineEmits(['close-post'])
-
-const newEvent = reactive({
-  hoursStart: formatHours(props.selectedEvent.start),
-  hoursEnd: formatHours(props.selectedEvent.end),
-  db: props.selectedEvent.start,
-  df: props.selectedEvent.end
-})
-const options = {
-  density: 'compact',
-  locale: 'fr'
-}
-const data = ref(null)
-async function postEvent () {
+async function postEvent (obj) {
+  const { newEvent, data } = obj
   const tab1 = newEvent.hoursStart.split(':')
   const tab2 = newEvent.hoursEnd.split(':')
-  newEvent.db.setHours(tab1[0], tab1[1])
-  newEvent.df.setHours(tab2[0], tab2[1])
+  newEvent.date_begin.setHours(tab1[0], tab1[1])
+  newEvent.date_end.setHours(tab2[0], tab2[1])
   const formData = new FormData()
   // fill right fields depending on concepts that are used
   // if both concepts are used, timed-format is prioritized
   if (props.selectedEvent.allDay) {
-    formData.append(startDate || evtDate, startDate ? newEvent.db.toISOString() : formatDate(newEvent.db))
-    if (startDate) formData.append(endDate, newEvent.df.toISOString())
+    formData.append(startDate || evtDate, startDate ? newEvent.date_begin.toISOString() : formatDate(newEvent.date_begin))
+    if (startDate) formData.append(endDate, newEvent.date_end.toISOString())
   } else {
     if (startDate) {
-      formData.append(startDate, newEvent.db.toISOString())
-      formData.append(endDate, newEvent.df.toISOString())
+      formData.append(startDate, newEvent.date_begin.toISOString())
+      formData.append(endDate, newEvent.date_end.toISOString())
     } else {
-      formData.append(evtDate, newEvent.db)
+      formData.append(evtDate, formatDate(newEvent.date_begin))
     }
   }
-  for (const [key, value] of Object.entries(data.value)) {
+  for (const [key, value] of Object.entries(data)) {
     formData.append(key, value)
   }
   const param = {
@@ -63,12 +51,12 @@ async function postEvent () {
       end: reponse[endDate],
       allDay: reponse[evtDate] ? true : props.selectedEvent.allDay
     }
-    obj.description = data.value[description]
+    obj.description = data[description]
     if (color.type === 'monochrome') {
       obj.color = color.colors.type === 'custom' ? color.colors.hexValue : theme.current.value.colors[color.colors.strValue]
     } else {
-      const colors = await getColor(data.value[category])
-      obj.color = colors[data.value[category]]
+      const colors = await getColor(data[category])
+      obj.color = colors[data[category]]
     }
     emit('close-post', obj)
   } catch (e) {
@@ -78,45 +66,10 @@ async function postEvent () {
 }
 </script>
 <template>
-  <v-card
-    class="pa-3 menu"
-  >
-    <div class="text-h6 text-center pb-2">
-      Ajouter un événement
-    </div>
-    <v-text-field
-      v-model="newEvent.hoursStart"
-      label="Horaire de début"
-      type="time"
-      density="comfortable"
-      :prefix="newEvent.db?.toLocaleDateString()"
-    />
-    <v-text-field
-      v-if="!props.selectedEvent.allDay"
-      v-model="newEvent.hoursEnd"
-      label="Horaire de fin"
-      density="comfortable"
-      type="time"
-      :prefix="newEvent.df?.toLocaleDateString()"
-    />
-    <vjsf
-      v-model="data"
-      :schema="additionalParams"
-      :options="options"
-    />
-    <div class="d-flex justify-space-between mt-3">
-      <v-btn
-        class="ml-3"
-        @click="postEvent()"
-      >
-        Ajouter
-      </v-btn>
-      <v-btn
-        class="mr-3"
-        @click="emit('close-post')"
-      >
-        Annuler
-      </v-btn>
-    </div>
-  </v-card>
+  <menu-interface
+    :selected-event="selectedEvent"
+    param="Ajouter"
+    @action-event="postEvent"
+    @close="emit('close-post')"
+  />
 </template>

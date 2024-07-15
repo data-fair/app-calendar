@@ -12,7 +12,7 @@
           "items": [
             {
               "title": "Jeu de données",
-              "description": "Ce jeu doit contenir au moins une colonne avec le concept de date",
+              "description": "Ce jeu doit contenir au moins un champ avec le concept de date",
               "type": "object",
               "x-fromUrl": "api/v1/datasets?status=finalized&q={q}&select=id,title,isRest&{context.datasetFilter}&short-concept=date,startDate,endDate,description",
               "x-itemsProp": "results",
@@ -38,26 +38,18 @@
               "properties": {
                 "labelField": {
                   "type": "object",
-                  "title": "Colonne de libellé",
-                  "description": "Choisissez la colonne représentant le libellé d'un événement.",
+                  "title": "Champ de libellé",
+                  "description": "Choisissez le champ représentant le libellé d'un événement.",
                   "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
                   "x-itemTitle": "label",
                   "x-itemKey": "key"
                 },
                 "categoryField": {
                   "type": "object",
-                  "title": "Colonne de catégorie",
-                  "description": "Choisissez la colonne permettant de distinguer plusieurs catégories d'événements. Chaque catégorie se verra attribuer une couleur distincte si l'option multicolore est séléctionnée.",
+                  "title": "Champ de catégorie",
+                  "description": "Choisissez le champ permettant de distinguer plusieurs catégories d'événements. Chaque catégorie se verra attribuer une couleur distincte si l'option multicolore est séléctionnée.",
                   "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
                   "x-itemTitle": "category",
-                  "x-itemKey": "key"
-                },
-                "descriptionField": {
-                  "type": "object",
-                  "title": "Colonne de description",
-                  "description": "Choisissez la colonne permettant de fournir une description plus détaillée de l'événement",
-                  "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
-                  "x-itemTitle": "description",
                   "x-itemKey": "key"
                 }
               }
@@ -262,13 +254,43 @@
       }
     },
     {
-      "title": "Champs additionnels à renseigner lors de l'ajout d'un événement",
-      "description": "Ces champs s'ajouteront au libellé, aux concepts de Date utilisés et aux champs description et catégorie, si ceux-ci sont déjà rensiegnés, lors de la création d'un événement.",
+      "title": "Vignette d'événement",
+      "description": "Gérer le contenu de l'affichage lors du clic sur un événement (en plus du libellé).",
+      "properties": {
+        "descriptionField": {
+          "type": "object",
+          "title": "Champ de description",
+          "description": "Choisissez le champ permettant de fournir une description de l'événement, interprète le html et le markdown",
+          "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
+          "x-itemTitle": "description",
+          "x-itemKey": "key"
+        },
+        "thumbnailFields": {
+          "type": "array",
+          "title": "Champs à afficher",
+          "items": {
+            "type": "object",
+            "properties": {
+              "thumb": {
+                "type": "object",
+                "title": "Champ",
+                "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
+                "x-itemTitle": "label",
+                "x-itemKey": "key"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "title": "Champs additionnels",
+      "description": "Champs à renseigner lors de la création d'un événement",
       "x-if": "datasets.0.isRest",
       "properties": {
         "additionalFields": {
           "type": "array",
-          "title": "Champs Additionnels",
+          "title": "Champs additionnels",
           "items": {
             "type": "object",
             "properties": {
@@ -284,6 +306,5 @@
         }
       }
     }
-    
   ]
 }

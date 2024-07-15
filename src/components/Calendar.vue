@@ -9,7 +9,7 @@ import useAppInfo from '@/composables/useAppInfo'
 import { getParams, formatDate } from '@/assets/util'
 import AddEvent from './AddEvent.vue'
 import PatchEvent from './PatchEvent.vue'
-import MenuEvent from './MenuEvent.vue'
+import EventDetails from './EventDetails.vue'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
@@ -190,7 +190,8 @@ async function deleteEvent (id) {
     displayError.value = true
   }
 }
-async function patchEventCalendar () { // patch event by resizing or moving it, we do a post with _action param to create a new entry, necessary when we witch between timed and non-timed events
+// patch event by resizing or moving it, we do a post with _action param to create a new entry, necessary when we witch between timed and non-timed events
+async function patchEventCalendar () {
   const event = selectedEvent.value
   const params = paramField.value
   const url = `${dataUrl}/lines`
@@ -205,12 +206,31 @@ async function patchEventCalendar () { // patch event by resizing or moving it, 
   if (event.extendedProps.category) formData.append(params.category, event.extendedProps.category)
   if (event.extendedProps.description) formData.append(params.description, event.extendedProps.description)
   formData.append('_id', event.id)
-  formData.append('_acton', 'update')
+  formData.append('_action', 'update')
   const param = {
     method: 'POST',
     body: formData
   }
   await ofetch(url, param)
+}
+function addEventButton () {
+  const d = new Date()
+  if (paramField.value.startDate) {
+    selectedEvent.value = {
+      start: d,
+      end: new Date(d.getTime() + 1000 * 60 * 60), // default duration is one hour
+      allDay: false,
+      menu: true
+    }
+  } else {
+    selectedEvent.value = {
+      start: d,
+      end: null,
+      allDay: true,
+      menu: true
+    }
+  }
+  post.value = true
 }
 function menuAction (action) {
   menu.value = false
@@ -223,6 +243,24 @@ function addCalendarEvent (event) {
 }
 </script>
 <template>
+  <v-btn
+    v-if="isRest"
+    v-tooltip="{
+      text: 'Ajouter un événement',
+      location: 'left',
+      openDelay:'500'
+    }"
+    density="default"
+    class="elevation-5 bg-blue-darken-1 mt-2"
+    :style="{
+      position: 'absolute',
+      right: '11em',
+      fontSize:'20px'
+    }"
+    color="white"
+    icon="mdi-calendar-plus"
+    @click="addEventButton"
+  />
   <v-select
     v-model="reactiveSearchParams.view"
     :style="{
@@ -251,7 +289,7 @@ function addCalendarEvent (event) {
     :activator="menuActivator"
     offset-y
   >
-    <menu-event
+    <event-details
       :selected-event="selectedEvent"
       @action-menu="menuAction"
     />
@@ -306,5 +344,11 @@ function addCalendarEvent (event) {
   transform: translate(-50%,-50%);
   z-index: 2000;
   width: 22em
+}
+.fc-timegrid-slot{
+  height: 1.5em !important;
+}
+.fc-daygrid-event-harness{
+  overflow: hidden
 }
 </style>

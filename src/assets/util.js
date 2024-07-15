@@ -3,7 +3,7 @@ import chroma from 'chroma-js'
 const { dataUrl, color, categoryField, descriptionField, labelField, additionalFields } = useAppInfo()
 const categorySet = new Set()
 export async function getColor (newCategory) {
-  const colorSchemes = {}
+  const colorSchemes = {} // create an object who associates a category and a color
   if (color.colors.type === 'palette') {
     const url = `${dataUrl}/values/${categoryField.key}?size=100`
     const request = await fetch(url)
@@ -42,7 +42,7 @@ export async function getParams () {
     properties: {}
   } // vjsf form params
   for (const field in reponse.properties) {
-    if (reponse.properties[field].title === '') reponse.properties[field].title = reponse.properties[field].key // fill the title field to display name in the vjsf form
+    if (reponse.properties[field].title === '') reponse.properties[field].title = reponse.properties[field].key // fill the title field to improve the display in the vjsf form
     if (reponse.properties[field]['x-concept'] !== undefined) {
       if (reponse.properties[field]['x-concept'].id === 'startDate') startDate = field
       else if (reponse.properties[field]['x-concept'].id === 'endDate') endDate = field
@@ -54,7 +54,7 @@ export async function getParams () {
   if (label) additionalParams.properties[label] = reponse.properties[label]
   if (category) additionalParams.properties[category] = reponse.properties[category]
   if (description) additionalParams.properties[description] = reponse.properties[description]
-  additionalFields.forEach((f) => {
+  additionalFields?.forEach((f) => {
     additionalParams.properties[f.field.key] = reponse.properties[f.field.key]
   })
   return { startDate, endDate, evtDate, label, description, category, additionalParams }

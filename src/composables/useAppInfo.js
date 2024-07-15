@@ -10,9 +10,10 @@ export default function useAppInfo () {
   const screenSize = window.innerHeight
   const labelField = config.datasets[1].labelField
   const categoryField = config.datasets[1].categoryField
-  const descriptionField = config.datasets[1].descriptionField
+  const descriptionField = config.descriptionField
   const color = config.datasets[2].color
   const additionalFields = config.additionalFields
+  const thumbnailFields = config.thumbnailFields
   return {
     dataUrl,
     isRest,
@@ -21,6 +22,7 @@ export default function useAppInfo () {
     categoryField,
     descriptionField,
     color,
+    thumbnailFields,
     additionalFields
   }
 }
