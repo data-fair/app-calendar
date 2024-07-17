@@ -1,8 +1,7 @@
 import useAppInfo from './composables/useAppInfo'
-import { getParams, getColor } from '@/assets/util.js'
+import { getColor } from '@/assets/util.js'
 import { ref } from 'vue'
-const { color, dataUrl, thumbnailFields } = useAppInfo()
-const { startDate, endDate, evtDate, label, description, category } = await getParams()
+const { color, dataUrl, thumbnailFields, startDate, endDate, evtDate, label, description, category } = useAppInfo()
 export const displayError = ref(false)
 export const errorMessage = ref('')
 export async function getData (dateBegin, dateEnd, theme) {
@@ -44,19 +43,18 @@ export async function getData (dateBegin, dateEnd, theme) {
         if (Math.abs(de.getDate() - db.getDate()) > 2 || db.getMonth() !== de.getMonth()) {
           // if the timed event is more than 2 days long, we set the allDay property to true
           // but we may loose the information on start and end hours,
-          // the format change from this : (YYY-MM-DD HH-MM) to (YYY-MM-DD 00:00), this is a full calendar functionnality
+          // the format change from this : (YYY-MM-DD HH-mm) to (YYY-MM-DD 00:00), this is a full calendar functionnality
           event.allDay = true
         }
       }
       if (color.type === 'monochrome') {
         event.color = color.colors.type === 'custom' ? color.colors.hexValue : theme.current.value.colors[color.colors.strValue]
       } else {
-        event.category = value[category]
+        event[category] = value[category]
         event.color = colors[value[category]]
       }
       event.description = !description ? '' : value[description]
-      // eslint-disable-next-line no-unused-vars
-      for (const [_, v] of Object.entries(thumbnailFields)) {
+      for (const [, v] of Object.entries(thumbnailFields)) {
         event[v.thumb.key] = value[v.thumb.key]
       }
       events.push(event)

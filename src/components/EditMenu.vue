@@ -1,9 +1,13 @@
 <script setup>
 import Vjsf from '@koumoul/vjsf'
-import { ref, reactive } from 'vue'
-import { getParams, formatHours } from '@/assets/util'
+import { reactive } from 'vue'
+import { getSchema, formatHours, formatDate } from '@/assets/util'
 import { VDateInput } from 'vuetify/labs/VDateInput'
-const { startDate, additionalParams } = await getParams()
+import useAppInfo from '@/composables/useAppInfo'
+import { computedAsync } from '@vueuse/core'
+import { ofetch } from 'ofetch'
+const { evtDate, startDate, endDate, label, dataUrl } = useAppInfo()
+const { schema } = await getSchema()
 const props = defineProps({
   selectedEvent: {
     type: Object,
@@ -14,18 +18,51 @@ const props = defineProps({
     required: true
   }
 })
+
 const emit = defineEmits(['action-event', 'close'])
-const newEvent = reactive({
+const eventTimeRange = reactive({
   hoursStart: formatHours(props.selectedEvent.start),
   hoursEnd: props.selectedEvent.end ? formatHours(props.selectedEvent.end) : formatHours(new Date()),
   date_begin: props.selectedEvent.start,
   date_end: props.selectedEvent.end
 })
+function buildEvent () {
+  const event = {}
+  for (const [key, value] of Object.entries(data.value)) {
+    event[key] = value
+  }
+  const tab1 = eventTimeRange.hoursStart.split(':')
+  const tab2 = eventTimeRange.hoursEnd?.split(':')
+  eventTimeRange.date_begin.setHours(tab1[0], tab1[1])
+  eventTimeRange.date_end?.setHours(tab2[0], tab2[1])
+  if (props.selectedEvent.allDay) {
+    event[startDate || evtDate] = startDate ? eventTimeRange.date_begin.toISOString() : formatDate(eventTimeRange.date_begin)
+    if (startDate) event[endDate] = eventTimeRange.date_end.toISOString()
+  } else {
+    if (startDate) {
+      event[startDate] = eventTimeRange.date_begin.toISOString()
+      event[endDate] = eventTimeRange.date_end.toISOString()
+    } else {
+      event[evtDate] = formatDate(eventTimeRange.date_begin)
+    }
+  }
+  emit('action-event', event)
+}
 const options = {
   density: 'compact',
   locale: 'fr'
 }
-const data = ref(null)
+const data = computedAsync(async () => {
+  const temp = {}
+  if (props.param === 'Modifier') {
+    const reponse = await ofetch(dataUrl + '/lines/' + props.selectedEvent.id)
+    temp[label] = props.selectedEvent.title
+    for (const f in schema.properties) {
+      temp[f] = reponse[f]
+    }
+  }
+  return temp
+})
 </script>
 <template>
   <v-card
@@ -48,7 +85,7 @@ const data = ref(null)
       />
       <v-text-field
         v-if="startDate"
-        v-model="newEvent.hoursStart"
+        v-model="eventTimeRange.hoursStart"
         :style="{
           position: 'absolute',
           right: '0'
@@ -61,11 +98,11 @@ const data = ref(null)
     </div>
     <v-text-field
       v-else-if="startDate"
-      v-model="newEvent.hoursStart"
+      v-model="eventTimeRange.hoursStart"
       label="Horaire de début"
       density="comfortable"
       type="time"
-      :prefix="newEvent.date_begin?.toLocaleDateString()"
+      :prefix="eventTimeRange.date_begin?.toLocaleDateString()"
     />
     <div
       v-if="props.selectedEvent.menu && props.selectedEvent.end"
@@ -80,7 +117,7 @@ const data = ref(null)
         density="comfortable"
       />
       <v-text-field
-        v-model="newEvent.hoursEnd"
+        v-model="eventTimeRange.hoursEnd"
         :style="{
           position: 'absolute',
           right: '0'
@@ -93,21 +130,21 @@ const data = ref(null)
     </div>
     <v-text-field
       v-if="!props.selectedEvent.allDay && !props.selectedEvent.menu && startDate"
-      v-model="newEvent.hoursEnd"
+      v-model="eventTimeRange.hoursEnd"
       label="Horaire de fin"
       density="comfortable"
       type="time"
-      :prefix="newEvent.date_end?.toLocaleDateString()"
+      :prefix="eventTimeRange.date_end?.toLocaleDateString()"
     />
     <vjsf
       v-model="data"
-      :schema="additionalParams"
+      :schema="schema"
       :options="options"
     />
     <div class="d-flex justify-space-between mt-3">
       <v-btn
         class="ml-3"
-        @click="emit('action-event', {newEvent: newEvent, data: data})"
+        @click="buildEvent"
       >
         {{ param }}
       </v-btn>

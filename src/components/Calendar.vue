@@ -6,27 +6,28 @@ import { ofetch } from 'ofetch'
 import { reactive, ref, watch } from 'vue'
 import reactiveSearchParams from '@data-fair/lib/vue/reactive-search-params-global.js'
 import useAppInfo from '@/composables/useAppInfo'
-import { getParams, formatDate } from '@/assets/util'
-import AddEvent from './AddEvent.vue'
-import PatchEvent from './PatchEvent.vue'
-import EventDetails from './EventDetails.vue'
+import { formatDate } from '@/assets/util'
+import EditEvent from './EditEvent.vue'
+import ThumbnailEvent from './ThumbnailEvent.vue'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import listPlugin from '@fullcalendar/list'
 import frLocale from '@fullcalendar/core/locales/fr'
 import FullCalendar from '@fullcalendar/vue3'
-const { dataUrl, isRest } = useAppInfo()
+const { dataUrl, isRest, label, startDate, evtDate, endDate, description } = useAppInfo()
 const theme = useTheme()
 const dateBegin = ref(reactiveSearchParams.date === undefined ? new Date() : new Date(reactiveSearchParams.date))
 dateBegin.value.setDate(1) // necessary to handle display order : day -> month -> refresh page
 const dateEnd = ref(new Date(dateBegin.value.getTime() + 31 * 24 * 60 * 60 * 1000))
 const calendar = ref(null)
 const selectedEvent = ref(null)
-const menuActivator = ref(null)
-const menu = ref(false)
-const post = ref(false)
-const patch = ref(false)
+const thumbnailActivator = ref(null)
+const thumbnail = ref(false)
+const action = reactive({
+  activate: false,
+  type: null
+})
 const items = [{ // list of different display modes
   title: 'Mois',
   value: 'dayGridMonth'
@@ -43,7 +44,6 @@ const items = [{ // list of different display modes
   title: 'Liste',
   value: 'listMonth'
 }]
-const paramField = computedAsync(async () => { return await getParams() }, null)
 const events = computedAsync(async () => {
   const events = await getData(dateBegin.value, dateEnd.value, theme)
   return events
@@ -112,11 +112,11 @@ const calendarOptions = reactive({ // standard options for the calendar, allows 
   showNonCurrentDates: false,
   events,
   locale: frLocale,
-  height: '100%',
+  height: window.innerHeight,
   eventClick: function (e) {
     selectedEvent.value = e.event
-    menuActivator.value = e.el
-    menu.value = true
+    thumbnailActivator.value = e.el
+    thumbnail.value = true
   },
   moreLinkClick: function (e) {
     calendar.value.calendar.gotoDate(e.date)
@@ -141,14 +141,15 @@ if (isRest !== undefined) { // options for edit mode, user can do all CRUD opera
   calendarOptions.editable = true
   calendarOptions.eventResizableFromStart = true
   calendarOptions.selectable = true
-  calendarOptions.select = function (e) { // call when selectiong a zone
+  calendarOptions.select = function (e) { // call when selecting a zone
     selectedEvent.value = e
-    post.value = true
+    action.activate = true
+    action.type = 'post'
   }
   calendarOptions.eventDrop = async function (e) {
     selectedEvent.value = e.event
     if (e.oldEvent.allDay && !e.event.allDay) { // if we drag from the allDay zone to non allDay, default duration is one hour
-      if (!paramField.value.startDate) e.event.setAllDay(true) // if time period doesn't exist, event remains all day
+      if (!startDate) e.event.setAllDay(true) // if time period doesn't exist, event remains all day
       else {
         const d = selectedEvent.value.start
         d.setHours(selectedEvent.value.start.getHours() + 1)
@@ -158,7 +159,6 @@ if (isRest !== undefined) { // options for edit mode, user can do all CRUD opera
     try {
       await patchEventCalendar()
     } catch (r) {
-      console.log(r)
       e.revert()
       displayError.value = true
       errorMessage.value = r.status + ' - ' + r.data
@@ -190,21 +190,21 @@ async function deleteEvent (id) {
     displayError.value = true
   }
 }
-// patch event by resizing or moving it, we do a post with _action param to create a new entry, necessary when we witch between timed and non-timed events
 async function patchEventCalendar () {
   const event = selectedEvent.value
-  const params = paramField.value
   const url = `${dataUrl}/lines`
   const formData = new FormData()
-  if (event.end && params.startDate) {
-    formData.append(params.endDate, event.end.toISOString())
-    formData.append(params.startDate, event.start.toISOString())
+  if (event.end && startDate) {
+    formData.append(endDate, event.end.toISOString())
+    formData.append(startDate, event.start.toISOString())
   } else {
-    formData.append(params.evtDate || params.startDate, params.evtDate ? formatDate(event.start) : event.start.toISOString())
+    formData.append(evtDate || startDate, evtDate ? formatDate(event.start) : event.start.toISOString())
   }
-  formData.append(params.label, event.title)
-  if (event.extendedProps.category) formData.append(params.category, event.extendedProps.category)
-  if (event.extendedProps.description) formData.append(params.description, event.extendedProps.description)
+  formData.append(label, event.title)
+  for (const field in event.extendedProps) {
+    if (field !== 'description') formData.append(field, event.extendedProps[field])
+  }
+  if (event.extendedProps.description) formData.append(description, event.extendedProps.description || '')
   formData.append('_id', event.id)
   formData.append('_action', 'update')
   const param = {
@@ -215,7 +215,7 @@ async function patchEventCalendar () {
 }
 function addEventButton () {
   const d = new Date()
-  if (paramField.value.startDate) {
+  if (startDate) {
     selectedEvent.value = {
       start: d,
       end: new Date(d.getTime() + 1000 * 60 * 60), // default duration is one hour
@@ -230,17 +230,19 @@ function addEventButton () {
       menu: true
     }
   }
-  post.value = true
+  action.activate = true
+  action.type = 'post'
 }
-function menuAction (action) {
-  menu.value = false
-  if (action === 'patch') patch.value = true
-  if (action === 'delete') deleteEvent(selectedEvent.value.id)
+function addCalendarEvent (newEvent) {
+  action.activate = false
+  if (newEvent) calendar.value.calendar.addEvent(newEvent)
 }
-function addCalendarEvent (event) {
-  post.value = false
-  if (event) calendar.value.calendar.addEvent(event)
+function thumbnailAction (value) {
+  thumbnail.value = false
+  if (value === 'patch') { action.activate = true; action.type = 'patch' }
+  if (value === 'delete') deleteEvent(selectedEvent.value.id)
 }
+
 </script>
 <template>
   <v-btn
@@ -284,28 +286,22 @@ function addCalendarEvent (event) {
     </template>
   </full-calendar>
   <v-menu
-    v-model="menu"
+    v-model="thumbnail"
     :close-on-content-click="false"
-    :activator="menuActivator"
+    :activator="thumbnailActivator"
     offset-y
   >
-    <event-details
+    <thumbnail-event
       :selected-event="selectedEvent"
-      @action-menu="menuAction"
+      @action-menu="thumbnailAction"
     />
   </v-menu>
   <suspense>
-    <add-event
-      v-if="post"
+    <edit-event
+      v-if="action.activate"
       :selected-event="selectedEvent"
+      :param="action.type"
       @close-post="addCalendarEvent"
-    />
-  </suspense>
-  <suspense>
-    <patch-event
-      v-if="patch"
-      :selected-event="selectedEvent"
-      @close-patch="patch = false"
     />
   </suspense>
 </template>
