@@ -1,6 +1,6 @@
 import useAppInfo from '@/composables/useAppInfo'
 import chroma from 'chroma-js'
-const { dataUrl, color, category, editionFields, label } = useAppInfo()
+const { dataUrl, color, category, editionFields } = useAppInfo()
 const categorySet = new Set()
 export async function getColor (newCategory) {
   const colorSchemes = {} // create an object who associates a category and a color
@@ -37,13 +37,9 @@ export async function getSchema () {
     required: [],
     properties: {}
   }
-  if (label) {
-    if (reponse.properties[label].title === '') reponse.properties[label].title = reponse.properties[label].key
-    schema.properties[label] = reponse.properties[label]
-  }
-  editionFields.forEach(f => {
-    if (reponse.properties[f.field.key].title === '') reponse.properties[f.field.key].title = reponse.properties[f.field.key].key
-    schema.properties[f.field.key] = reponse.properties[f.field.key]
+  editionFields.forEach(field => {
+    if (reponse.properties[field].title === '') reponse.properties[field].title = reponse.properties[field].key
+    schema.properties[field] = reponse.properties[field]
   })
   return { schema }
 }

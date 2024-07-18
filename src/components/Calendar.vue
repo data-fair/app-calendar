@@ -1,7 +1,7 @@
 <script setup>
 import { getData, displayError, errorMessage } from '@/context'
 import { computedAsync } from '@vueuse/core'
-import { useTheme } from 'vuetify'
+import { useTheme, useDisplay } from 'vuetify'
 import { ofetch } from 'ofetch'
 import { reactive, ref, watch } from 'vue'
 import reactiveSearchParams from '@data-fair/lib/vue/reactive-search-params-global.js'
@@ -15,15 +15,19 @@ import interactionPlugin from '@fullcalendar/interaction'
 import listPlugin from '@fullcalendar/list'
 import frLocale from '@fullcalendar/core/locales/fr'
 import FullCalendar from '@fullcalendar/vue3'
-const { dataUrl, isRest, label, startDate, evtDate, endDate, description } = useAppInfo()
+import EditContrib from './contribs/EditContribution.vue'
+import ThumbnailContrib from './contribs/ThumbnailContribution'
+const { dataUrl, isRest, label, startDate, evtDate, endDate, description, layout } = useAppInfo()
 const theme = useTheme()
+const { height } = useDisplay()
 const dateBegin = ref(reactiveSearchParams.date === undefined ? new Date() : new Date(reactiveSearchParams.date))
 dateBegin.value.setDate(1) // necessary to handle display order : day -> month -> refresh page
 const dateEnd = ref(new Date(dateBegin.value.getTime() + 31 * 24 * 60 * 60 * 1000))
 const calendar = ref(null)
 const selectedEvent = ref(null)
 const thumbnailActivator = ref(null)
-const thumbnail = ref(false)
+const thumbnailC = ref(false)
+const thumbnailE = ref(false)
 const action = reactive({
   activate: false,
   type: null
@@ -112,11 +116,12 @@ const calendarOptions = reactive({ // standard options for the calendar, allows 
   showNonCurrentDates: false,
   events,
   locale: frLocale,
-  height: window.innerHeight,
+  height,
   eventClick: function (e) {
     selectedEvent.value = e.event
     thumbnailActivator.value = e.el
-    thumbnail.value = true
+    if (e.event.extendedProps.contrib) thumbnailC.value = true
+    else thumbnailE.value = true
   },
   moreLinkClick: function (e) {
     calendar.value.calendar.gotoDate(e.date)
@@ -238,7 +243,8 @@ function addCalendarEvent (newEvent) {
   if (newEvent) calendar.value.calendar.addEvent(newEvent)
 }
 function thumbnailAction (value) {
-  thumbnail.value = false
+  thumbnailE.value = false
+  thumbnailC.value = false
   if (value === 'patch') { action.activate = true; action.type = 'patch' }
   if (value === 'delete') deleteEvent(selectedEvent.value.id)
 }
@@ -246,7 +252,7 @@ function thumbnailAction (value) {
 </script>
 <template>
   <v-btn
-    v-if="isRest"
+    v-if="isRest && layout === 'admin'"
     v-tooltip="{
       text: 'Ajouter un événement',
       location: 'left',
@@ -263,6 +269,8 @@ function thumbnailAction (value) {
     icon="mdi-calendar-plus"
     @click="addEventButton"
   />
+  <edit-contrib v-if="isRest && layout === 'edit'"
+  ></edit-contrib>
   <v-select
     v-model="reactiveSearchParams.view"
     :style="{
@@ -286,13 +294,24 @@ function thumbnailAction (value) {
     </template>
   </full-calendar>
   <v-menu
-    v-model="thumbnail"
+    v-model="thumbnailE"
     :close-on-content-click="false"
     :activator="thumbnailActivator"
     offset-y
   >
     <thumbnail-event
       :selected-event="selectedEvent"
+      @action-menu="thumbnailAction"
+    />
+  </v-menu>
+  <v-menu
+    v-model="thumbnailC"
+    :close-on-content-click="false"
+    :activator="thumbnailActivator"
+    offset-y
+  >
+    <thumbnail-contrib
+      :selected-contrib="selectedEvent"
       @action-menu="thumbnailAction"
     />
   </v-menu>

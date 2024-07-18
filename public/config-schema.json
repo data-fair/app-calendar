@@ -32,7 +32,7 @@
                 "isRest": {
                   "type": "boolean"
                 },
-                "schema":{
+                "schema": {
                   "type": "array"
                 }
               }
@@ -270,19 +270,13 @@
           "x-itemKey": "key"
         },
         "thumbnailFields": {
+          "title": "Champs à afficher dans la vignette",
           "type": "array",
-          "title": "Champs à afficher",
+          "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
+          "x-itemTitle": "label",
+          "x-itemKey": "key",
           "items": {
-            "type": "object",
-            "properties": {
-              "thumb": {
-                "type": "object",
-                "title": "Champ",
-                "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
-                "x-itemTitle": "label",
-                "x-itemKey": "key"
-              }
-            }
+            "type": "string"
           }
         }
       }
@@ -291,11 +285,15 @@
       "title": "Edition",
       "x-if": "datasets.0.isRest",
       "properties": {
+        "crowdSourcing": {
+          "type": "boolean",
+          "title": "Activer le crowd sourcing"
+        },
         "contribution": {
-          "title": "Jeu des contributions",
-          "description": "Ce jeu doit correspondre au schéma des contributions",
+          "title": "Jeu de données des contributions externes",
+          "x-if": "parent.value.crowdSourcing",
           "type": "object",
-          "x-fromUrl": "api/v1/datasets?status=finalized&select=id,title,isRest,schema&isRest=true&{context.datasetFilter}",
+          "x-fromUrl": "api/v1/datasets?status=finalized&q={q}&select=id,title,isRest,schema&{context.datasetFilter}",
           "x-itemsProp": "results",
           "x-itemTitle": "title",
           "x-itemKey": "href",
@@ -313,25 +311,36 @@
             "isRest": {
               "type": "boolean"
             },
-            "schema":{
-              "type": "object"
+            "schema": {
+              "type": "array"
             }
           }
         },
-        "editionFields": {
-          "type": "array",
-          "title": "Champs à renseigner lors de l'édition",
-          "items": {
-            "type": "object",
-            "properties": {
-              "field": {
-                "type": "object",
-                "title": "Champ",
-                "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
-                "x-itemTitle": "label",
-                "x-itemKey": "key"
-              }
+        "contribMode": {
+          "title": "Type de contributions acceptées",
+          "description": "Si le compte n'est pas requis, l'application doit être partagée via un lien de partage. Si le compte est requis, les contributeurs doivent avoir un accès en lecture sur le jeu de données principal.",
+          "type": "string",
+          "x-if": "parent.value.crowdSourcing",
+          "oneOf": [
+            {
+              "const": "simple-cud",
+              "title": "Ajouts, modifications et suppressions"
+            },
+            {
+              "const": "advanced",
+              "title": "Workflow de contribution avancé (compte requis)"
             }
+          ],
+          "default":"advanced"
+        },
+        "editionFields": {
+          "title": "Champs ouverts à l'édition",
+          "type": "array",
+          "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
+          "x-itemTitle": "label",
+          "x-itemKey": "key",
+          "items": {
+            "type": "string"
           }
         }
       }

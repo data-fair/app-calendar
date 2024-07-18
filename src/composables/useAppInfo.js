@@ -18,7 +18,14 @@ export default function useAppInfo () {
   const color = config.color
   const editionFields = config.editionFields
   const thumbnailFields = config.thumbnailFields
-  const contribution = config.contribution
+  const contribsDataset = datasets[1]
+  const contribUrl = contribsDataset?.href
+  const crowdSourcing = config.crowdSourcing
+  if (crowdSourcing) {
+    const missingFields = ['operation', 'submit_date', 'user_name', 'target_id', 'comment', 'validation_status', 'validation_date', 'update', 'original'].filter(fid => !contribsDataset?.schema.map(f => f.key).includes(fid))
+    if (missingFields.length) throw new Error('Champs manquants dans le jeu de données des contributions : ' + missingFields.join(', '))
+  }
+  const layout = config.contribMode === 'simple-cud' ? 'edit' : 'admin'
   return {
     startDate,
     evtDate,
@@ -33,6 +40,9 @@ export default function useAppInfo () {
     color,
     thumbnailFields,
     editionFields,
-    contribution
+    contribsDataset,
+    layout,
+    crowdSourcing,
+    contribUrl
   }
 }
