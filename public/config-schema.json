@@ -333,6 +333,12 @@
           ],
           "default":"advanced"
         },
+        "deleteValidatedContribs": {
+          "title": "Supprimer les contributions après validation",
+          "type": "boolean",
+          "default": false,
+          "x-if": "parent.value.crowdSourcing"
+        },
         "editionFields": {
           "title": "Champs ouverts à l'édition",
           "type": "array",

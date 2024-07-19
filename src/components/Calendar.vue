@@ -7,8 +7,8 @@ import { reactive, ref, watch } from 'vue'
 import reactiveSearchParams from '@data-fair/lib/vue/reactive-search-params-global.js'
 import useAppInfo from '@/composables/useAppInfo'
 import { formatDate } from '@/assets/util'
-import EditEvent from './EditEvent.vue'
-import ThumbnailEvent from './ThumbnailEvent.vue'
+import EditEvent from './events/EditEvent.vue'
+import ThumbnailEvent from './events/ThumbnailEvent.vue'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
@@ -25,12 +25,14 @@ dateBegin.value.setDate(1) // necessary to handle display order : day -> month -
 const dateEnd = ref(new Date(dateBegin.value.getTime() + 31 * 24 * 60 * 60 * 1000))
 const calendar = ref(null)
 const selectedEvent = ref(null)
-const thumbnailActivator = ref(null)
+const thumbnailContribActivator = ref(null)
+const thumbnailEventActivator = ref(null)
 const thumbnailC = ref(false)
 const thumbnailE = ref(false)
 const action = reactive({
   activate: false,
-  type: null
+  type: null,
+  contrib: layout === 'edit'
 })
 const items = [{ // list of different display modes
   title: 'Mois',
@@ -119,9 +121,13 @@ const calendarOptions = reactive({ // standard options for the calendar, allows 
   height,
   eventClick: function (e) {
     selectedEvent.value = e.event
-    thumbnailActivator.value = e.el
-    if (e.event.extendedProps.contrib) thumbnailC.value = true
-    else thumbnailE.value = true
+    if (e.event.extendedProps.contrib) {
+      thumbnailContribActivator.value = e.el
+      thumbnailC.value = true
+    } else {
+      thumbnailE.value = true
+      thumbnailEventActivator.value = e.el
+    }
   },
   moreLinkClick: function (e) {
     calendar.value.calendar.gotoDate(e.date)
@@ -248,7 +254,6 @@ function thumbnailAction (value) {
   if (value === 'patch') { action.activate = true; action.type = 'patch' }
   if (value === 'delete') deleteEvent(selectedEvent.value.id)
 }
-
 </script>
 <template>
   <v-btn
@@ -269,8 +274,6 @@ function thumbnailAction (value) {
     icon="mdi-calendar-plus"
     @click="addEventButton"
   />
-  <edit-contrib v-if="isRest && layout === 'edit'"
-  ></edit-contrib>
   <v-select
     v-model="reactiveSearchParams.view"
     :style="{
@@ -296,7 +299,7 @@ function thumbnailAction (value) {
   <v-menu
     v-model="thumbnailE"
     :close-on-content-click="false"
-    :activator="thumbnailActivator"
+    :activator="thumbnailEventActivator"
     offset-y
   >
     <thumbnail-event
@@ -307,18 +310,28 @@ function thumbnailAction (value) {
   <v-menu
     v-model="thumbnailC"
     :close-on-content-click="false"
-    :activator="thumbnailActivator"
+    :activator="thumbnailContribActivator"
     offset-y
   >
     <thumbnail-contrib
       :selected-contrib="selectedEvent"
       @action-menu="thumbnailAction"
+      @validate="thumbnailC = false,addCalendarEvent"
+      @delete-event="thumbnailC = false,deleteEvent"
     />
   </v-menu>
   <suspense>
     <edit-event
-      v-if="action.activate"
+      v-if="action.activate && !action.contrib"
       :selected-event="selectedEvent"
+      :param="action.type"
+      @close-post="addCalendarEvent"
+    />
+  </suspense>
+  <suspense>
+    <edit-contrib
+      v-if="action.activate && action.contrib"
+      :selected-contrib="selectedEvent"
       :param="action.type"
       @close-post="addCalendarEvent"
     />
@@ -358,7 +371,9 @@ function thumbnailAction (value) {
   left: 50%;
   transform: translate(-50%,-50%);
   z-index: 2000;
-  width: 22em
+  width: 22em;
+  max-height: 100vh;
+  overflow: auto;
 }
 .fc-timegrid-slot{
   height: 1.5em !important;

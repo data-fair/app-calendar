@@ -2,13 +2,28 @@
 import Accept from './Accept.vue'
 import Refuse from './Refuse.vue'
 import Modify from './Modify.vue'
-defineProps({
+import { computed } from 'vue'
+const props = defineProps({
   selectedContrib: {
     type: Object,
     required: true
   }
 })
-const emit = defineEmits(['action-menu'])
+const emit = defineEmits(['validate', 'action-menu', 'delete-event'])
+const operationType = computed(() => {
+  const operation = props.selectedContrib.extendedProps.operation
+  return operation === 'create' ? 'Création' : (operation === 'delete' ? 'Suppression' : 'Modification')
+})
+function validateContrib (newEvent) {
+  props.selectedContrib.remove()
+  if (newEvent) emit('validate', newEvent)
+  else emit('action-menu', 'close')
+}
+function validDelete (id) {
+  console.log('h2')
+  props.selectedContrib.remove()
+  emit('delete-event', id)
+}
 </script>
 <template>
   <v-card max-width="1000">
@@ -30,6 +45,15 @@ const emit = defineEmits(['action-menu'])
       >
         <span class="font-key">Fin : </span>{{ selectedContrib.end.toLocaleString() }}
       </div>
+      <div class="my-1">
+        <span class="font-key">Type de demande : </span>{{ operationType }}
+      </div>
+      <div class="my-1">
+        <span class="font-key">Commentaire de contribution : </span>{{ selectedContrib.extendedProps.comment }}
+      </div>
+      <div class="my-1">
+        <span class="font-key">Nom du contributeur : </span>{{ selectedContrib.extendedProps.user_name }}
+      </div>
     </v-card-text>
     <v-card-actions
       class="px-2 py-1 justify-space-between"
@@ -43,19 +67,13 @@ const emit = defineEmits(['action-menu'])
       >
         Fermer
       </v-btn>
-      <accept />
+      <accept
+        :selected-contrib="selectedContrib"
+        @create-contrib="validateContrib"
+        @delete-contrib="validDelete"
+      />
       <modify />
       <refuse />
     </v-card-actions>
   </v-card>
 </template>
-<style>
-.font {
-  font-size: 0.95em;
-}
-.font-key {
-  font-size: 1.1em;
-  font-weight: 500;
-  color: rgb(92, 85, 85);
-}
-</style>

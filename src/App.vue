@@ -3,7 +3,7 @@ import calendar from '@/components/Calendar.vue'
 import useAppInfo from './composables/useAppInfo'
 import { displayError, errorMessage } from './context'
 import { ofetch } from 'ofetch'
-const { datasets, contribsDataset, layout, crowdSourcing, color } = useAppInfo()
+const { datasets, contribsDataset, crowdSourcing, color } = useAppInfo()
 
 try {
   if (crowdSourcing) {
@@ -34,9 +34,7 @@ try {
 }
 </script>
 <template>
-  <calendar v-if="crowdSourcing && layout==='edit'" />
-  <calendar v-else-if="crowdSourcing && layout==='admin'" />
-  <calendar v-else />
+  <calendar />
   <v-snackbar
     v-model="displayError"
     :timeout="'5000'"

@@ -34,6 +34,7 @@ export async function getData (dateBegin, dateEnd, theme) {
   }
   reponse.results.forEach(async (value) => {
     const event = transformEvent(value, colors, theme)
+    if (layout === 'edit') event.editable = false
     events.push(event)
   })
   if (crowdSourcing) {
@@ -41,11 +42,13 @@ export async function getData (dateBegin, dateEnd, theme) {
       //
     } else { // display everything
       const reponse = await ofetch(contribUrl + '/lines')
-      let i = 0
       reponse.results.forEach((contrib) => {
-        const event = transformEvent(JSON.parse(contrib.update), [], null, contrib)
-        event.id = i++
-        events.push(event)
+        if (contrib.validation_status !== 'validated') {
+          const event = transformEvent(JSON.parse(contrib.update), [], null, contrib)
+          event.id = contrib.target_id || contrib._id
+          if (contrib.operation === 'delete') event.target_id = contrib._id
+          events.push(event)
+        }
       })
     }
   }
@@ -79,6 +82,9 @@ function transformEvent (value, colors, theme, contrib = undefined) {
   if (contrib) {
     event.contrib = true
     event.editable = false
+    event.operation = contrib.operation
+    event.comment = contrib.comment
+    event.user_name = contrib.user_name
     if (contrib.operation === 'create') event.color = '#66bd6d'
     if (contrib.operation === 'delete') event.color = '#f44336'
     if (contrib.operation === 'update') event.color = '#f7e17e'

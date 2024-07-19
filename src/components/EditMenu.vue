@@ -4,10 +4,24 @@ import { reactive } from 'vue'
 import { getSchema, formatHours, formatDate } from '@/assets/util'
 import { VDateInput } from 'vuetify/labs/VDateInput'
 import useAppInfo from '@/composables/useAppInfo'
-import { computedAsync } from '@vueuse/core'
 import { ofetch } from 'ofetch'
-const { evtDate, startDate, endDate, label, dataUrl } = useAppInfo()
+import { computedAsync } from '@vueuse/core'
+const { evtDate, startDate, endDate, label, dataUrl, layout } = useAppInfo()
 const { schema } = await getSchema()
+if (layout === 'edit') {
+  schema.properties.comment = {
+    title: 'Commentaire de contribution',
+    type: 'string',
+    'x-originalName': 'description',
+    layout: 'textarea'
+  }
+  schema.properties.user_name = {
+    title: 'Nom du contributeur',
+    type: 'string',
+    'x-originalName': 'description',
+    maxLength: 200
+  }
+}
 const props = defineProps({
   selectedEvent: {
     type: Object,
@@ -48,6 +62,30 @@ function buildEvent () {
   }
   emit('action-event', event)
 }
+function buildContrib () {
+  const contrib = { event: {} }
+  for (const [key, value] of Object.entries(data.value)) {
+    if (key === 'comment') contrib.comment = value
+    else if (key === 'user_name') contrib.user_name = value
+    else contrib.event[key] = value
+  }
+  const tab1 = eventTimeRange.hoursStart.split(':')
+  const tab2 = eventTimeRange.hoursEnd?.split(':')
+  eventTimeRange.date_begin.setHours(tab1[0], tab1[1])
+  eventTimeRange.date_end?.setHours(tab2[0], tab2[1])
+  if (props.selectedEvent.allDay) {
+    contrib.event[startDate || evtDate] = startDate ? eventTimeRange.date_begin.toISOString() : formatDate(eventTimeRange.date_begin)
+    if (startDate) contrib.event[endDate] = eventTimeRange.date_end.toISOString()
+  } else {
+    if (startDate) {
+      contrib.event[startDate] = eventTimeRange.date_begin.toISOString()
+      contrib.event[endDate] = eventTimeRange.date_end.toISOString()
+    } else {
+      contrib.event[evtDate] = formatDate(eventTimeRange.date_begin)
+    }
+  }
+  emit('action-event', contrib)
+}
 const options = {
   density: 'compact',
   locale: 'fr'
@@ -63,13 +101,19 @@ const data = computedAsync(async () => {
   }
   return temp
 })
+const typeParam = {
+  'post-event': ['Ajouter', 'Ajouter un événement'],
+  'patch-event': ['Modifier', 'Modifier un événement'],
+  'post-contrib': ['Ajouter', 'Ajouter une contribution'],
+  'patch-contrib': ['Modifier', 'Modifier une contribution']
+}
 </script>
 <template>
   <v-card
     class="pa-3 menu"
   >
     <div class="text-h6 text-center pb-2">
-      {{ param }} un événement
+      {{ typeParam[param][1] }}
     </div>
     <div
       v-if="props.selectedEvent.menu"
@@ -143,10 +187,18 @@ const data = computedAsync(async () => {
     />
     <div class="d-flex justify-space-between mt-3">
       <v-btn
+        v-if="param==='patch-event' || param==='post-event'"
         class="ml-3"
         @click="buildEvent"
       >
-        {{ param }}
+        {{ typeParam[param][0] }}
+      </v-btn>
+      <v-btn
+        v-if="param==='patch-contrib' || param==='post-contrib'"
+        class="ml-3"
+        @click="buildContrib"
+      >
+        {{ typeParam[param][0] }}
       </v-btn>
       <v-btn
         class="mr-3"
