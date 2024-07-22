@@ -12,7 +12,7 @@ const prop = defineProps({
     required: true
   }
 })
-const emit = defineEmits(['create-contrib', 'delete-contrib'])
+const emit = defineEmits(['accept'])
 const acceptMenu = ref(false)
 async function acceptContrib () {
   const formData = new FormData()
@@ -23,7 +23,7 @@ async function acceptContrib () {
     body: formData
   }
   try {
-    const request = await ofetch(`${contribUrl}/lines/${prop.selectedContrib.extendedProps.target_id || prop.selectedContrib.id}`, param)
+    const request = await ofetch(`${contribUrl}/lines/${prop.selectedContrib.id}`, param)
     if (request.operation === 'create') {
       const formDataEvent = new FormData()
       for (const [key, value] of Object.entries(JSON.parse(request.update))) {
@@ -44,9 +44,9 @@ async function acceptContrib () {
       for (const field of thumbnailFields) {
         newEvent[field] = reponse[field]
       }
-      emit('create-contrib', newEvent)
+      emit('accept', 'create', newEvent)
     } else if (request.operation === 'delete') {
-      emit('delete-contrib', request.target_id)
+      emit('accept', 'delete', request.target_id)
     }
     acceptMenu.value = false
   } catch (e) {

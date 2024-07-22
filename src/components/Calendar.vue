@@ -17,7 +17,7 @@ import frLocale from '@fullcalendar/core/locales/fr'
 import FullCalendar from '@fullcalendar/vue3'
 import EditContrib from './contribs/EditContribution.vue'
 import ThumbnailContrib from './contribs/ThumbnailContribution'
-const { dataUrl, isRest, label, startDate, evtDate, endDate, description, layout } = useAppInfo()
+const { dataUrl, isRest, startDate, evtDate, endDate, layout, contribUrl } = useAppInfo()
 const theme = useTheme()
 const { height } = useDisplay()
 const dateBegin = ref(reactiveSearchParams.date === undefined ? new Date() : new Date(reactiveSearchParams.date))
@@ -29,9 +29,9 @@ const thumbnailContribActivator = ref(null)
 const thumbnailEventActivator = ref(null)
 const thumbnailC = ref(false)
 const thumbnailE = ref(false)
-const action = reactive({
+const edition = reactive({
   activate: false,
-  type: null,
+  operation: null,
   contrib: layout === 'edit'
 })
 const items = [{ // list of different display modes
@@ -147,15 +147,15 @@ const calendarOptions = reactive({ // standard options for the calendar, allows 
     reactiveSearchParams.view = 'timeGridWeek'
   }
 })
-if (isRest !== undefined) { // options for edit mode, user can do all CRUD operations on calendar
+if (isRest !== undefined) { // options for edit mode, user can do operations on calendar (only on event which 'editable' property is set to true)
   calendarOptions.plugins.push(interactionPlugin)
   calendarOptions.editable = true
   calendarOptions.eventResizableFromStart = true
   calendarOptions.selectable = true
   calendarOptions.select = function (e) { // call when selecting a zone
     selectedEvent.value = e
-    action.activate = true
-    action.type = 'post'
+    edition.activate = true
+    edition.operation = 'post'
   }
   calendarOptions.eventDrop = async function (e) {
     selectedEvent.value = e.event
@@ -168,7 +168,8 @@ if (isRest !== undefined) { // options for edit mode, user can do all CRUD opera
       }
     }
     try {
-      await patchEventCalendar()
+      if (layout !== 'admin') await patchContribCalendar()
+      else await patchEventCalendar()
     } catch (r) {
       e.revert()
       displayError.value = true
@@ -178,7 +179,8 @@ if (isRest !== undefined) { // options for edit mode, user can do all CRUD opera
   calendarOptions.eventResize = async function (e) {
     selectedEvent.value = e.event
     try {
-      await patchEventCalendar()
+      if (layout !== 'admin') await patchContribCalendar()
+      else await patchEventCalendar()
     } catch (r) {
       e.revert()
       displayError.value = true
@@ -186,7 +188,14 @@ if (isRest !== undefined) { // options for edit mode, user can do all CRUD opera
     }
   }
 }
-
+function editCalendar (newEvent) {
+  edition.activate = false
+  if (newEvent) {
+    const event = calendar.value.calendar.getEventById(newEvent.id)
+    if (event) event.remove()
+    calendar.value.calendar.addEvent(newEvent)
+  }
+}
 async function deleteEvent (id) {
   const url = `${dataUrl}/lines/${id}`
   const params = {
@@ -201,30 +210,57 @@ async function deleteEvent (id) {
     displayError.value = true
   }
 }
+// those 2 patch are executed when we drag and drop or resize event in the calendar
 async function patchEventCalendar () {
   const event = selectedEvent.value
-  const url = `${dataUrl}/lines`
   const formData = new FormData()
-  if (event.end && startDate) {
+  if (startDate && endDate) {
     formData.append(endDate, event.end.toISOString())
     formData.append(startDate, event.start.toISOString())
+    if (evtDate) formData.append(evtDate, formatDate(event.start))
   } else {
     formData.append(evtDate || startDate, evtDate ? formatDate(event.start) : event.start.toISOString())
   }
-  formData.append(label, event.title)
-  for (const field in event.extendedProps) {
-    if (field !== 'description') formData.append(field, event.extendedProps[field])
-  }
-  if (event.extendedProps.description) formData.append(description, event.extendedProps.description || '')
-  formData.append('_id', event.id)
-  formData.append('_action', 'update')
   const param = {
-    method: 'POST',
+    method: 'PATCH',
+    body: formData
+  }
+  await ofetch(dataUrl + '/lines/' + selectedEvent.value.id, param)
+}
+async function patchContribCalendar () {
+  const contrib = selectedEvent.value
+  const url = contribUrl + '/lines/' + selectedEvent.value.id
+  const request = await ofetch(url)
+  const newEvent = JSON.parse(request.update)
+  if (startDate) {
+    newEvent[startDate] = contrib.start
+    newEvent[endDate] = contrib.end
+  } else {
+    newEvent[evtDate] = contrib.start
+  }
+  const formData = new FormData()
+  formData.append('update', JSON.stringify(newEvent))
+  const param = {
+    method: 'PATCH',
     body: formData
   }
   await ofetch(url, param)
 }
-function addEventButton () {
+// handle which action was done on the thumbnail
+// content : Object (the new Event to add) || String (id)
+function thumbnailAction (operation, content) {
+  thumbnailE.value = false
+  thumbnailC.value = false
+  if (operation === 'patch') { edition.activate = true; edition.operation = operation }
+  if (operation === 'delete' && layout === 'admin') deleteEvent(content)
+  if (operation === 'validate-contrib') editCalendar(content)
+  if (operation === 'delete-request') { edition.activate = true; edition.operation = operation }
+  if (operation === 'restore-event') {
+    const event = calendar.value.calendar.getEventById(content)
+    if (event) event.setProp('display', 'auto')
+  }
+}
+function actionButton () {
   const d = new Date()
   if (startDate) {
     selectedEvent.value = {
@@ -241,25 +277,15 @@ function addEventButton () {
       menu: true
     }
   }
-  action.activate = true
-  action.type = 'post'
-}
-function addCalendarEvent (newEvent) {
-  action.activate = false
-  if (newEvent) calendar.value.calendar.addEvent(newEvent)
-}
-function thumbnailAction (value) {
-  thumbnailE.value = false
-  thumbnailC.value = false
-  if (value === 'patch') { action.activate = true; action.type = 'patch' }
-  if (value === 'delete') deleteEvent(selectedEvent.value.id)
+  edition.activate = true
+  edition.operation = 'post'
 }
 </script>
 <template>
   <v-btn
-    v-if="isRest && layout === 'admin'"
+    v-if="isRest"
     v-tooltip="{
-      text: 'Ajouter un événement',
+      text: `Ajouter ${layout === 'edit' ? 'une contribution' : 'un événement'}`,
       location: 'left',
       openDelay:'500'
     }"
@@ -272,7 +298,7 @@ function thumbnailAction (value) {
     }"
     color="white"
     icon="mdi-calendar-plus"
-    @click="addEventButton"
+    @click="actionButton"
   />
   <v-select
     v-model="reactiveSearchParams.view"
@@ -304,7 +330,7 @@ function thumbnailAction (value) {
   >
     <thumbnail-event
       :selected-event="selectedEvent"
-      @action-menu="thumbnailAction"
+      @thumb-action="thumbnailAction"
     />
   </v-menu>
   <v-menu
@@ -315,25 +341,23 @@ function thumbnailAction (value) {
   >
     <thumbnail-contrib
       :selected-contrib="selectedEvent"
-      @action-menu="thumbnailAction"
-      @validate="thumbnailC = false,addCalendarEvent"
-      @delete-event="thumbnailC = false,deleteEvent"
+      @thumb-action="thumbnailAction"
     />
   </v-menu>
   <suspense>
     <edit-event
-      v-if="action.activate && !action.contrib"
+      v-if="edition.activate && !edition.contrib"
       :selected-event="selectedEvent"
-      :param="action.type"
-      @close-post="addCalendarEvent"
+      :operation="edition.operation"
+      @edit-action="editCalendar"
     />
   </suspense>
   <suspense>
     <edit-contrib
-      v-if="action.activate && action.contrib"
+      v-if="edition.activate && edition.contrib"
       :selected-contrib="selectedEvent"
-      :param="action.type"
-      @close-post="addCalendarEvent"
+      :operation="edition.operation"
+      @edit-action="editCalendar"
     />
   </suspense>
 </template>

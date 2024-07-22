@@ -323,6 +323,10 @@
           "x-if": "parent.value.crowdSourcing",
           "oneOf": [
             {
+              "const": "simple-c",
+              "title": "Ajouts uniquements"
+            },
+            {
               "const": "simple-cud",
               "title": "Ajouts, modifications et suppressions"
             },

@@ -5,7 +5,6 @@ import useAppInfo from '@/composables/useAppInfo'
 import { useTheme } from 'vuetify'
 import { displayError, errorMessage } from '@/context'
 import EditMenu from '@/components/EditMenu.vue'
-import { computed } from 'vue'
 const theme = useTheme()
 const { dataUrl, color, thumbnailFields, startDate, endDate, evtDate, label, description, category } = useAppInfo()
 const props = defineProps({
@@ -13,23 +12,23 @@ const props = defineProps({
     type: Object,
     required: true
   },
-  param: {
+  operation: {
     type: String,
     required: true
   }
 })
-const emit = defineEmits(['close-post'])
-const action = computed(() => {
-  if (props.param === 'post') return 'post-event'
-  else return 'patch-event'
-})
+const emit = defineEmits(['edit-action'])
+const operationType = {
+  post: 'post-event',
+  patch: 'patch-event'
+}
 async function editEvent (event) {
   const formData = new FormData()
   for (const [key, value] of Object.entries(event)) {
     formData.append(key, value)
   }
   try {
-    if (props.param === 'post') {
+    if (props.operation === 'post') {
       const param = {
         method: 'POST',
         body: formData
@@ -52,7 +51,7 @@ async function editEvent (event) {
       for (const field of thumbnailFields) {
         newEvent[field] = reponse[field]
       }
-      emit('close-post', newEvent)
+      emit('edit-action', newEvent)
     } else {
       const param = {
         method: 'PATCH',
@@ -71,7 +70,7 @@ async function editEvent (event) {
       for (const field of thumbnailFields) {
         props.selectedEvent.setExtendedProp(field, reponse[field])
       }
-      emit('close-post')
+      emit('edit-action')
     }
   } catch (e) {
     errorMessage.value = e.status + ' - ' + e.data
@@ -82,8 +81,8 @@ async function editEvent (event) {
 <template>
   <edit-menu
     :selected-event="selectedEvent"
-    :param="action"
-    @action-event="editEvent"
-    @close="emit('close-post')"
+    :operation="operationType[props.operation]"
+    @submit="editEvent"
+    @close="emit('edit-action')"
   />
 </template>

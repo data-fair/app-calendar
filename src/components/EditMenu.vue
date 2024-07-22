@@ -8,32 +8,28 @@ import { ofetch } from 'ofetch'
 import { computedAsync } from '@vueuse/core'
 const { evtDate, startDate, endDate, label, dataUrl, layout } = useAppInfo()
 const { schema } = await getSchema()
-if (layout === 'edit') {
-  schema.properties.comment = {
-    title: 'Commentaire de contribution',
-    type: 'string',
-    'x-originalName': 'description',
-    layout: 'textarea'
-  }
-  schema.properties.user_name = {
-    title: 'Nom du contributeur',
-    type: 'string',
-    'x-originalName': 'description',
-    maxLength: 200
-  }
-}
 const props = defineProps({
   selectedEvent: {
     type: Object,
     required: true
   },
-  param: {
+  operation: {
     type: String,
     required: true
   }
 })
-
-const emit = defineEmits(['action-event', 'close'])
+const emit = defineEmits(['submit', 'close'])
+const data = computedAsync(async () => {
+  const temp = {}
+  if (props.operation === 'Modifier') {
+    const reponse = await ofetch(dataUrl + '/lines/' + props.selectedEvent.id)
+    temp[label] = props.selectedEvent.title
+    for (const f in schema.properties) {
+      temp[f] = reponse[f]
+    }
+  }
+  return temp
+})
 const eventTimeRange = reactive({
   hoursStart: formatHours(props.selectedEvent.start),
   hoursEnd: props.selectedEvent.end ? formatHours(props.selectedEvent.end) : formatHours(new Date()),
@@ -60,7 +56,7 @@ function buildEvent () {
       event[evtDate] = formatDate(eventTimeRange.date_begin)
     }
   }
-  emit('action-event', event)
+  emit('submit', event)
 }
 function buildContrib () {
   const contrib = { event: {} }
@@ -84,36 +80,78 @@ function buildContrib () {
       contrib.event[evtDate] = formatDate(eventTimeRange.date_begin)
     }
   }
-  emit('action-event', contrib)
+  emit('submit', contrib)
 }
+function buildDeleteContrib () {
+  const contrib = {}
+  for (const [key, value] of Object.entries(data.value)) {
+    contrib[key] = value
+  }
+  emit('submit', contrib)
+}
+// options of vjsf form
 const options = {
   density: 'compact',
   locale: 'fr'
 }
-const data = computedAsync(async () => {
-  const temp = {}
-  if (props.param === 'Modifier') {
-    const reponse = await ofetch(dataUrl + '/lines/' + props.selectedEvent.id)
-    temp[label] = props.selectedEvent.title
-    for (const f in schema.properties) {
-      temp[f] = reponse[f]
-    }
+// add contributions fields to vjsf schema, remove other field if its a delete request
+if (layout !== 'admin') {
+  if (props.operation === 'delete-request') schema.properties = {}
+  schema.properties.comment = {
+    title: 'Commentaire de contribution',
+    type: 'string',
+    'x-originalName': 'description',
+    layout: 'textarea'
   }
-  return temp
-})
-const typeParam = {
+  schema.properties.user_name = {
+    title: 'Nom du contributeur',
+    type: 'string',
+    'x-originalName': 'description',
+    maxLength: 200
+  }
+}
+const operationDisplay = {
   'post-event': ['Ajouter', 'Ajouter un événement'],
   'patch-event': ['Modifier', 'Modifier un événement'],
   'post-contrib': ['Ajouter', 'Ajouter une contribution'],
-  'patch-contrib': ['Modifier', 'Modifier une contribution']
+  'patch-contrib': ['Modifier', 'Modifier une contribution'],
+  'delete-request': ['Supprimer', 'Demande de suppression']
 }
 </script>
 <template>
   <v-card
+    v-if="operation==='delete-request'"
     class="pa-3 menu"
   >
     <div class="text-h6 text-center pb-2">
-      {{ typeParam[param][1] }}
+      {{ operationDisplay[operation][1] }}
+    </div>
+    <vjsf
+      v-model="data"
+      :schema="schema"
+      :options="options"
+    />
+    <div class="d-flex justify-space-between mt-3">
+      <v-btn
+        class="mr-3"
+        @click="buildDeleteContrib"
+      >
+        Envoyer
+      </v-btn>
+      <v-btn
+        class="mr-3"
+        @click="emit('close')"
+      >
+        Annuler
+      </v-btn>
+    </div>
+  </v-card>
+  <v-card
+    v-else
+    class="pa-3 menu"
+  >
+    <div class="text-h6 text-center pb-2">
+      {{ operationDisplay[operation][1] }}
     </div>
     <div
       v-if="props.selectedEvent.menu"
@@ -123,6 +161,7 @@ const typeParam = {
       }"
     >
       <v-date-input
+        v-model="eventTimeRange.date_begin"
         label="Date de début"
         width="100%"
         density="comfortable"
@@ -156,6 +195,7 @@ const typeParam = {
       }"
     >
       <v-date-input
+        v-model="eventTimeRange.date_end"
         label="Date de fin"
         width="100%"
         density="comfortable"
@@ -187,18 +227,18 @@ const typeParam = {
     />
     <div class="d-flex justify-space-between mt-3">
       <v-btn
-        v-if="param==='patch-event' || param==='post-event'"
+        v-if="operation==='patch-event' || operation==='post-event'"
         class="ml-3"
         @click="buildEvent"
       >
-        {{ typeParam[param][0] }}
+        {{ operationDisplay[operation][0] }}
       </v-btn>
       <v-btn
-        v-if="param==='patch-contrib' || param==='post-contrib'"
+        v-if="operation==='patch-contrib' || operation==='post-contrib'"
         class="ml-3"
         @click="buildContrib"
       >
-        {{ typeParam[param][0] }}
+        {{ operationDisplay[operation][0] }}
       </v-btn>
       <v-btn
         class="mr-3"

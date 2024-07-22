@@ -1,11 +1,32 @@
 <script setup>
 import { ref } from 'vue'
-
+import useAppInfo from '@/composables/useAppInfo'
+import { ofetch } from 'ofetch'
+import { errorMessage, displayError } from '@/context'
+const { contribUrl } = useAppInfo()
+const prop = defineProps({
+  selectedContrib: {
+    type: Object,
+    required: true
+  }
+})
+const emit = defineEmits(['refuse'])
 const refuseMenu = ref(false)
-function refuseContrib () {
+async function refuseContrib () {
   const formData = new FormData()
   formData.append('validation_status', 'refused')
   formData.append('validation_date', new Date().toISOString())
+  try {
+    const param = {
+      method: 'PATCH',
+      body: formData
+    }
+    await ofetch(contribUrl + '/lines/' + prop.selectedContrib.id, param)
+    emit('refuse', prop.selectedContrib.extendedProps.target_id || undefined)
+  } catch (e) {
+    errorMessage.value = e.status + ' - ' + e.data
+    displayError.value = true
+  }
   refuseMenu.value = false
 }
 </script>

@@ -7,7 +7,7 @@ import { ref } from 'vue'
 
 const conceptFilters = useConceptFilters(reactiveSearchParams)
 
-const { color, dataUrl, thumbnailFields, startDate, endDate, evtDate, label, description, category, crowdSourcing, layout, contribUrl } = useAppInfo()
+const { color, dataUrl, thumbnailFields, startDate, endDate, evtDate, label, description, category, crowdSourcing, layout, contribUrl, owner } = useAppInfo()
 export const displayError = ref(false)
 export const errorMessage = ref('')
 export async function getData (dateBegin, dateEnd, theme) {
@@ -34,19 +34,35 @@ export async function getData (dateBegin, dateEnd, theme) {
   }
   reponse.results.forEach(async (value) => {
     const event = transformEvent(value, colors, theme)
-    if (layout === 'edit') event.editable = false
+    if (layout !== 'admin') event.editable = false
     events.push(event)
   })
   if (crowdSourcing) {
-    if (layout === 'edit') {
-      //
-    } else { // display everything
+    if (layout === 'admin') {
       const reponse = await ofetch(contribUrl + '/lines')
       reponse.results.forEach((contrib) => {
-        if (contrib.validation_status !== 'validated') {
+        if (contrib.validation_status === 'waiting') {
           const event = transformEvent(JSON.parse(contrib.update), [], null, contrib)
-          event.id = contrib.target_id || contrib._id
-          if (contrib.operation === 'delete') event.target_id = contrib._id
+          event.id = contrib._id
+          if (contrib.operation !== 'create') {
+            event.target_id = contrib.target_id
+            const e = events.find((evt) => evt.id === contrib.target_id)
+            if (e) e.display = 'none'
+          }
+          events.push(event)
+        }
+      })
+    } else { // display only user's contributions
+      const reponse = await ofetch(contribUrl + '/lines?_owner=' + owner.id)
+      reponse.results.forEach((contrib) => {
+        if (contrib.validation_status === 'waiting' && contrib._owner === owner.id) {
+          const event = transformEvent(JSON.parse(contrib.update), [], null, contrib)
+          event.id = contrib._id
+          if (contrib.operation !== 'create') {
+            event.target_id = contrib.target_id
+            const e = events.find((evt) => evt.id === contrib.target_id)
+            if (e) e.display = 'none'
+          }
           events.push(event)
         }
       })
@@ -57,13 +73,7 @@ export async function getData (dateBegin, dateEnd, theme) {
 
 function transformEvent (value, colors, theme, contrib = undefined) {
   let event
-  if (value[evtDate]) { // event
-    event = {
-      id: value._id,
-      title: !label ? '' : value[label],
-      start: value[evtDate]
-    }
-  } else { // timed event
+  if (value[startDate]) { // timed-event
     event = {
       id: value._id,
       title: !label ? '' : value[label],
@@ -78,10 +88,16 @@ function transformEvent (value, colors, theme, contrib = undefined) {
       // the format change from this : (YYY-MM-DD HH-mm) to (YYY-MM-DD 00:00), this is a full calendar functionnality
       event.allDay = true
     }
+  } else { // event
+    event = {
+      id: value._id,
+      title: !label ? '' : value[label],
+      start: value[evtDate]
+    }
   }
   if (contrib) {
     event.contrib = true
-    event.editable = false
+    if (layout === 'admin') event.editable = false
     event.operation = contrib.operation
     event.comment = contrib.comment
     event.user_name = contrib.user_name

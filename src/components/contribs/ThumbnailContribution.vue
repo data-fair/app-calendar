@@ -2,27 +2,47 @@
 import Accept from './Accept.vue'
 import Refuse from './Refuse.vue'
 import Modify from './Modify.vue'
-import { computed } from 'vue'
+import useAppInfo from '@/composables/useAppInfo'
+import { ofetch } from 'ofetch'
+import { errorMessage, displayError } from '@/context'
+const { layout, contribUrl } = useAppInfo()
 const props = defineProps({
   selectedContrib: {
     type: Object,
     required: true
   }
 })
-const emit = defineEmits(['validate', 'action-menu', 'delete-event'])
-const operationType = computed(() => {
-  const operation = props.selectedContrib.extendedProps.operation
-  return operation === 'create' ? 'Création' : (operation === 'delete' ? 'Suppression' : 'Modification')
-})
-function validateContrib (newEvent) {
-  props.selectedContrib.remove()
-  if (newEvent) emit('validate', newEvent)
-  else emit('action-menu', 'close')
+const emit = defineEmits(['thumb-action'])
+const operationType = {
+  create: 'Création',
+  delete: 'Suppression',
+  update: 'Modification'
 }
-function validDelete (id) {
-  console.log('h2')
+// content is a new Event (Object) or the id (String) of the event to delete
+function validateContrib (operation, content) {
+  if (operation === 'create') {
+    props.selectedContrib.remove()
+    emit('thumb-action', 'validate-contrib', content)
+  } else if (operation === 'delete') emit('thumb-action', 'delete', content)
+  else emit('thumb-action', 'close')
+}
+async function deleteContrib () {
+  const param = {
+    method: 'DELETE'
+  }
+  try {
+    await ofetch(`${contribUrl}/lines/${props.selectedContrib.id || 0}`, param)
+    if (props.selectedContrib.extendedProps.target_id) emit('thumb-action', 'restore-event', props.selectedContrib.extendedProps.target_id)
+    else emit('thumb-action', 'close')
+    props.selectedContrib.remove()
+  } catch (e) {
+    errorMessage.value = e.status + ' - ' + e.data
+    displayError.value = true
+  }
+}
+function refuseContrib (id) {
   props.selectedContrib.remove()
-  emit('delete-event', id)
+  emit('thumb-action', 'restore-event', id)
 }
 </script>
 <template>
@@ -46,7 +66,7 @@ function validDelete (id) {
         <span class="font-key">Fin : </span>{{ selectedContrib.end.toLocaleString() }}
       </div>
       <div class="my-1">
-        <span class="font-key">Type de demande : </span>{{ operationType }}
+        <span class="font-key">Type de demande : </span>{{ operationType[props.selectedContrib.extendedProps.operation] }}
       </div>
       <div class="my-1">
         <span class="font-key">Commentaire de contribution : </span>{{ selectedContrib.extendedProps.comment }}
@@ -63,17 +83,28 @@ function validDelete (id) {
     >
       <v-btn
         density="default"
-        @click="emit('action-menu', 'close')"
+        @click="emit('thumb-action', 'close')"
       >
         Fermer
       </v-btn>
-      <accept
-        :selected-contrib="selectedContrib"
-        @create-contrib="validateContrib"
-        @delete-contrib="validDelete"
+      <template v-if="layout==='admin'">
+        <accept
+          :selected-contrib="selectedContrib"
+          @accept="validateContrib"
+        />
+        <modify />
+        <refuse
+          :selected-contrib="selectedContrib"
+          @refuse="refuseContrib"
+        />
+      </template>
+      <v-icon
+        v-else
+        icon="mdi-delete"
+        color="red"
+        class="mr-2"
+        @click="deleteContrib"
       />
-      <modify />
-      <refuse />
     </v-card-actions>
   </v-card>
 </template>

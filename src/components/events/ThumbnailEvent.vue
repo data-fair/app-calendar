@@ -1,13 +1,15 @@
 <script setup>
 import useAppInfo from '@/composables/useAppInfo'
-const { isRest } = useAppInfo()
+import { ref } from 'vue'
+const { isRest, layout } = useAppInfo()
 defineProps({
   selectedEvent: {
     type: Object,
     required: true
   }
 })
-const emit = defineEmits(['action-menu'])
+const deleteEvt = ref(false)
+const emit = defineEmits(['thumb-action'])
 </script>
 <template>
   <v-card
@@ -53,23 +55,80 @@ const emit = defineEmits(['action-menu'])
     >
       <v-btn
         density="default"
-        @click="emit('action-menu','close')"
+        @click="emit('thumb-action','close')"
       >
         Fermer
       </v-btn>
-      <v-icon
-        v-if="isRest"
-        icon="mdi-pencil"
-        class="mr-2"
-        @click="emit('action-menu','patch')"
-      />
-      <v-icon
-        v-if="isRest"
-        icon="mdi-delete"
-        color="red"
-        class="mr-2"
-        @click="emit('action-menu','delete')"
-      />
+      <template v-if="layout === 'admin'">
+        <v-icon
+          v-if="isRest"
+          icon="mdi-pencil"
+          class="mr-2"
+          @click="emit('thumb-action','patch')"
+        />
+        <v-icon
+          v-if="isRest"
+          icon="mdi-delete"
+          color="red"
+          class="mr-2"
+          @click="emit('thumb-action','delete', selectedEvent.id)"
+        />
+      </template>
+      <template v-else-if="layout === 'edit'">
+        <v-menu
+          v-model="deleteEvt"
+          :close-on-content-click="false"
+          :close-on-click="false"
+          min-width="300px"
+          max-width="500px"
+        >
+          <template #activator="{ props }">
+            <v-btn
+              v-tooltip="{
+                text: 'Supprimer l\'événement',
+                location: 'right',
+                openDelay:'500'
+              }"
+              icon="mdi-delete"
+              color="red"
+              v-bind="props"
+            />
+          </template>
+          <v-card
+            outlined
+            data-iframe-height
+          >
+            <v-card-title
+              primary-title
+            >
+              Soumettre la demande de suppression ?
+            </v-card-title>
+            <v-card-text>
+              <v-alert
+                :model-value="true"
+                type="error"
+              >
+                Voulez vous vraiment soumettre la demande ?
+              </v-alert>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer />
+              <v-btn
+                text
+                @click="deleteEvt = false"
+              >
+                Annuler
+              </v-btn>
+              <v-btn
+                color="error"
+                @click="emit('thumb-action','delete-request'), deleteEvt=false"
+              >
+                Soumettre
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-menu>
+      </template>
     </v-card-actions>
   </v-card>
 </template>
