@@ -1,7 +1,7 @@
 <script setup>
 import Accept from './Accept.vue'
 import Refuse from './Refuse.vue'
-import Modify from './Modify.vue'
+import DetailsDiff from './Details.vue'
 import useAppInfo from '@/composables/useAppInfo'
 import { ofetch } from 'ofetch'
 import { errorMessage, displayError } from '@/context'
@@ -49,7 +49,7 @@ function refuseContrib (id) {
   <v-card max-width="1000">
     <v-card-text class="pb-0 font">
       <div>
-        <span class="text-h6">Editer la contribution</span>
+        <span class="text-h6">Aperçu de la contribution</span>
       </div>
       <v-icon
         class="ma-1 mr-3 mb-2"
@@ -74,9 +74,13 @@ function refuseContrib (id) {
       <div class="my-1">
         <span class="font-key">Nom du contributeur : </span>{{ selectedContrib.extendedProps.user_name }}
       </div>
+      <details-diff
+        v-if="selectedContrib.extendedProps.operation !== 'delete'"
+        :selected-contrib="selectedContrib"
+      />
     </v-card-text>
     <v-card-actions
-      class="px-2 py-1 justify-space-between"
+      class="px-2 py-1"
       :style="{
         minHeight: '30px',
       }"
@@ -87,12 +91,12 @@ function refuseContrib (id) {
       >
         Fermer
       </v-btn>
+      <v-spacer />
       <template v-if="layout==='admin'">
         <accept
           :selected-contrib="selectedContrib"
           @accept="validateContrib"
         />
-        <modify />
         <refuse
           :selected-contrib="selectedContrib"
           @refuse="refuseContrib"

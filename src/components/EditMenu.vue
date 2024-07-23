@@ -21,7 +21,7 @@ const props = defineProps({
 const emit = defineEmits(['submit', 'close'])
 const data = computedAsync(async () => {
   const temp = {}
-  if (props.operation === 'Modifier') {
+  if (props.operation === 'patch-event' || props.operation === 'patch-request') {
     const reponse = await ofetch(dataUrl + '/lines/' + props.selectedEvent.id)
     temp[label] = props.selectedEvent.title
     for (const f in schema.properties) {
@@ -80,6 +80,7 @@ function buildContrib () {
       contrib.event[evtDate] = formatDate(eventTimeRange.date_begin)
     }
   }
+  // console.log(contrib)
   emit('submit', contrib)
 }
 function buildDeleteContrib () {
@@ -114,8 +115,8 @@ const operationDisplay = {
   'post-event': ['Ajouter', 'Ajouter un événement'],
   'patch-event': ['Modifier', 'Modifier un événement'],
   'post-contrib': ['Ajouter', 'Ajouter une contribution'],
-  'patch-contrib': ['Modifier', 'Modifier une contribution'],
-  'delete-request': ['Supprimer', 'Demande de suppression']
+  'delete-request': ['Envoyer', 'Demande de suppression'],
+  'patch-request': ['Envoyer', 'Demande de modification']
 }
 </script>
 <template>
@@ -234,7 +235,7 @@ const operationDisplay = {
         {{ operationDisplay[operation][0] }}
       </v-btn>
       <v-btn
-        v-if="operation==='patch-contrib' || operation==='post-contrib'"
+        v-else
         class="ml-3"
         @click="buildContrib"
       >

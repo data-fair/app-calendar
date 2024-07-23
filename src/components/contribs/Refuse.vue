@@ -22,7 +22,7 @@ async function refuseContrib () {
       body: formData
     }
     await ofetch(contribUrl + '/lines/' + prop.selectedContrib.id, param)
-    emit('refuse', prop.selectedContrib.extendedProps.target_id || undefined)
+    emit('refuse', prop.selectedContrib.extendedProps.target_id)
   } catch (e) {
     errorMessage.value = e.status + ' - ' + e.data
     displayError.value = true

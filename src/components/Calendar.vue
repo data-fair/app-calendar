@@ -8,7 +8,7 @@ import reactiveSearchParams from '@data-fair/lib/vue/reactive-search-params-glob
 import useAppInfo from '@/composables/useAppInfo'
 import { formatDate } from '@/assets/util'
 import EditEvent from './events/EditEvent.vue'
-import ThumbnailEvent from './events/ThumbnailEvent.vue'
+import ThumbnailInterface from './events/layouts/ThumbnailInterface.vue'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
@@ -32,7 +32,7 @@ const thumbnailE = ref(false)
 const edition = reactive({
   activate: false,
   operation: null,
-  contrib: layout === 'edit'
+  contrib: layout !== 'admin'
 })
 const items = [{ // list of different display modes
   title: 'Mois',
@@ -147,7 +147,7 @@ const calendarOptions = reactive({ // standard options for the calendar, allows 
     reactiveSearchParams.view = 'timeGridWeek'
   }
 })
-if (isRest !== undefined) { // options for edit mode, user can do operations on calendar (only on event which 'editable' property is set to true)
+if (isRest) { // options for edit mode, user can do operations on calendar (only on event which 'editable' property is set to true)
   calendarOptions.plugins.push(interactionPlugin)
   calendarOptions.editable = true
   calendarOptions.eventResizableFromStart = true
@@ -251,7 +251,7 @@ async function patchContribCalendar () {
 function thumbnailAction (operation, content) {
   thumbnailE.value = false
   thumbnailC.value = false
-  if (operation === 'patch') { edition.activate = true; edition.operation = operation }
+  if (operation === 'patch' || operation === 'patch-request') { edition.activate = true; edition.operation = operation }
   if (operation === 'delete' && layout === 'admin') deleteEvent(content)
   if (operation === 'validate-contrib') editCalendar(content)
   if (operation === 'delete-request') { edition.activate = true; edition.operation = operation }
@@ -328,7 +328,7 @@ function actionButton () {
     :activator="thumbnailEventActivator"
     offset-y
   >
-    <thumbnail-event
+    <thumbnail-interface
       :selected-event="selectedEvent"
       @thumb-action="thumbnailAction"
     />

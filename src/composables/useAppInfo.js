@@ -31,7 +31,7 @@ export default function useAppInfo () {
     'simple-cud': 'edit',
     advanced: 'admin'
   }
-  const layout = layoutType[config.contribMode] || 'admin'
+  const layout = (crowdSourcing && isRest) ? layoutType[config.contribMode] : 'admin'
   return {
     startDate,
     evtDate,

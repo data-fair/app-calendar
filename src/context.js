@@ -103,7 +103,7 @@ function transformEvent (value, colors, theme, contrib = undefined) {
     event.user_name = contrib.user_name
     if (contrib.operation === 'create') event.color = '#66bd6d'
     if (contrib.operation === 'delete') event.color = '#f44336'
-    if (contrib.operation === 'update') event.color = '#f7e17e'
+    if (contrib.operation === 'update') event.color = '#ffad33'
   } else {
     if (color.type === 'monochrome') {
       event.color = color.colors.type === 'custom' ? color.colors.hexValue : theme.current.value.colors[color.colors.strValue]

@@ -94,6 +94,7 @@
                           "const": "palette"
                         },
                         "name": {
+                          "title": "Palette",
                           "type": "string",
                           "oneOf": [
                             {
@@ -335,7 +336,7 @@
               "title": "Workflow de contribution avancé (compte requis)"
             }
           ],
-          "default":"advanced"
+          "default":"simple-c"
         },
         "deleteValidatedContribs": {
           "title": "Supprimer les contributions après validation",

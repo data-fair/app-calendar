@@ -45,6 +45,27 @@ async function acceptContrib () {
         newEvent[field] = reponse[field]
       }
       emit('accept', 'create', newEvent)
+    } else if (request.operation === 'update') {
+      const formDataEvent = new FormData()
+      for (const [key, value] of Object.entries(JSON.parse(request.update))) {
+        formDataEvent.append(key, value)
+      }
+      param.method = 'PATCH'
+      param.body = formDataEvent
+      const reponse = await ofetch(dataUrl + '/lines/' + request.target_id, param)
+      const newEvent = {
+        id: reponse._id,
+        title: reponse[label],
+        start: reponse[startDate] || reponse[evtDate],
+        end: reponse[endDate],
+        allDay: reponse[evtDate] ? true : prop.selectedContrib.allDay
+      }
+      newEvent.description = reponse[description] || ''
+      newEvent.color = color.colors.type === 'custom' ? color.colors.hexValue : theme.current.value.colors[color.colors.strValue]
+      for (const field of thumbnailFields) {
+        newEvent[field] = reponse[field]
+      }
+      emit('accept', 'create', newEvent) // previous event is overwritten
     } else if (request.operation === 'delete') {
       emit('accept', 'delete', request.target_id)
     }
