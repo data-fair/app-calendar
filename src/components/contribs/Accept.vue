@@ -4,7 +4,7 @@ import { errorMessage, displayError } from '@/context'
 import { ofetch } from 'ofetch'
 import useAppInfo from '@/composables/useAppInfo'
 import { useTheme } from 'vuetify'
-const { dataUrl, contribUrl, label, evtDate, startDate, endDate, description, color, thumbnailFields } = useAppInfo()
+const { dataUrl, contribUrl, label, evtDate, startDate, endDate, description, color, thumbnailFields, deleteValidatedContribs } = useAppInfo()
 const theme = useTheme()
 const prop = defineProps({
   selectedContrib: {
@@ -24,52 +24,31 @@ async function acceptContrib () {
   }
   try {
     const request = await ofetch(`${contribUrl}/lines/${prop.selectedContrib.id}`, param)
-    if (request.operation === 'create') {
-      const formDataEvent = new FormData()
-      for (const [key, value] of Object.entries(JSON.parse(request.update))) {
-        formDataEvent.append(key, value)
-      }
-      param.method = 'POST'
-      param.body = formDataEvent
-      const reponse = await ofetch(dataUrl + '/lines', param)
-      const newEvent = {
-        id: reponse._id,
-        title: reponse[label],
-        start: reponse[startDate] || reponse[evtDate],
-        end: reponse[endDate],
-        allDay: reponse[evtDate] ? true : prop.selectedContrib.allDay
-      }
-      newEvent.description = reponse[description] || ''
-      newEvent.color = color.colors.type === 'custom' ? color.colors.hexValue : theme.current.value.colors[color.colors.strValue]
-      for (const field of thumbnailFields) {
-        newEvent[field] = reponse[field]
-      }
-      emit('accept', 'create', newEvent)
-    } else if (request.operation === 'update') {
-      const formDataEvent = new FormData()
-      for (const [key, value] of Object.entries(JSON.parse(request.update))) {
-        formDataEvent.append(key, value)
-      }
-      param.method = 'PATCH'
-      param.body = formDataEvent
-      const reponse = await ofetch(dataUrl + '/lines/' + request.target_id, param)
-      const newEvent = {
-        id: reponse._id,
-        title: reponse[label],
-        start: reponse[startDate] || reponse[evtDate],
-        end: reponse[endDate],
-        allDay: reponse[evtDate] ? true : prop.selectedContrib.allDay
-      }
-      newEvent.description = reponse[description] || ''
-      newEvent.color = color.colors.type === 'custom' ? color.colors.hexValue : theme.current.value.colors[color.colors.strValue]
-      for (const field of thumbnailFields) {
-        newEvent[field] = reponse[field]
-      }
-      emit('accept', 'create', newEvent) // previous event is overwritten
-    } else if (request.operation === 'delete') {
-      emit('accept', 'delete', request.target_id)
+    const formDataEvent = new FormData()
+    for (const [key, value] of Object.entries(JSON.parse(request.update))) {
+      formDataEvent.append(key, value)
     }
+    param.method = 'POST'
+    param.body = formDataEvent
+    const reponse = await ofetch(dataUrl + '/lines', param)
+    const newEvent = {
+      id: reponse._id,
+      title: reponse[label],
+      start: reponse[startDate] || reponse[evtDate],
+      end: reponse[endDate],
+      allDay: reponse[evtDate] ? true : prop.selectedContrib.allDay
+    }
+    newEvent.description = reponse[description] || ''
+    newEvent.color = color.colors.type === 'custom' ? color.colors.hexValue : theme.current.value.colors[color.colors.strValue]
+    for (const field of thumbnailFields) {
+      newEvent[field] = reponse[field]
+    }
+    // todo notify contribution's owner
+    emit('accept', newEvent)
     acceptMenu.value = false
+    if (deleteValidatedContribs) {
+      await ofetch(`${contribUrl}/lines/${prop.selectedContrib.id || 0}`, { method: 'DELETE' })
+    }
   } catch (e) {
     errorMessage.value = e.status + ' - ' + e.data
     displayError.value = true

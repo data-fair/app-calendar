@@ -3,7 +3,7 @@ import { ofetch } from 'ofetch'
 import useAppInfo from '@/composables/useAppInfo'
 import { displayError, errorMessage } from '@/context'
 import EditMenu from '@/components/EditMenu.vue'
-const { contribUrl, label, startDate, evtDate, endDate, description, dataUrl, owner } = useAppInfo()
+const { contribUrl, label, startDate, evtDate, endDate, description, dataUrl, user } = useAppInfo()
 const props = defineProps({
   selectedContrib: {
     type: Object,
@@ -17,8 +17,7 @@ const props = defineProps({
 const emit = defineEmits(['edit-action'])
 const operationType = { // specify we handle a contribution
   post: 'post-contrib',
-  'delete-request': 'delete-request',
-  'patch-request': 'patch-request'
+  'patch-contrib': 'patch-contrib'
 }
 async function editContrib (contrib) {
   const formData = new FormData()
@@ -26,7 +25,7 @@ async function editContrib (contrib) {
   formData.append('user_name', contrib.user_name)
   formData.append('comment', contrib.comment)
   formData.append('validation_status', 'waiting')
-  formData.append('_owner', owner.id)
+  formData.append('_owner', user.id)
   try {
     if (props.operation === 'post') {
       formData.append('operation', 'create')
@@ -49,33 +48,6 @@ async function editContrib (contrib) {
         user_name: contrib.user_name,
         description: contrib.event[description] || ''
       }
-      emit('edit-action', newEvent)
-    } else if (props.operation === 'delete-request') {
-      const event = await ofetch(dataUrl + '/lines/' + props.selectedContrib.id)
-      formData.append('operation', 'delete')
-      formData.append('target_id', props.selectedContrib.id)
-      formData.append('update', JSON.stringify(event))
-      const param = {
-        method: 'POST',
-        body: formData
-      }
-      const reponse = await ofetch(contribUrl + '/lines', param)
-      const newEvent = {
-        id: reponse._id,
-        title: event[label],
-        start: event[startDate] || event[evtDate],
-        end: event[endDate],
-        allDay: props.selectedContrib.allDay,
-        color: '#f44336',
-        contrib: true,
-        editable: false,
-        comment: contrib.comment,
-        user_name: contrib.user_name,
-        operation: 'delete',
-        target_id: reponse.target_id,
-        description: event[description] || ''
-      }
-      props.selectedContrib.setProp('display', 'none')
       emit('edit-action', newEvent)
     } else if (props.operation === 'patch-request') {
       const event = await ofetch(dataUrl + '/lines/' + props.selectedContrib.id)

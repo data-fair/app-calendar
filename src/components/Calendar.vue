@@ -8,7 +8,7 @@ import reactiveSearchParams from '@data-fair/lib/vue/reactive-search-params-glob
 import useAppInfo from '@/composables/useAppInfo'
 import { formatDate } from '@/assets/util'
 import EditEvent from './events/EditEvent.vue'
-import ThumbnailInterface from './events/layouts/ThumbnailInterface.vue'
+import ThumbnailEvent from './events/ThumbnailEvent.vue'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
@@ -25,14 +25,15 @@ dateBegin.value.setDate(1) // necessary to handle display order : day -> month -
 const dateEnd = ref(new Date(dateBegin.value.getTime() + 31 * 24 * 60 * 60 * 1000))
 const calendar = ref(null)
 const selectedEvent = ref(null)
+const selectedContrib = ref(null)
 const thumbnailContribActivator = ref(null)
 const thumbnailEventActivator = ref(null)
 const thumbnailC = ref(false)
 const thumbnailE = ref(false)
 const edition = reactive({
-  activate: false,
-  operation: null,
-  contrib: layout !== 'admin'
+  contrib: false,
+  event: false,
+  operation: null
 })
 const items = [{ // list of different display modes
   title: 'Mois',
@@ -120,11 +121,12 @@ const calendarOptions = reactive({ // standard options for the calendar, allows 
   locale: frLocale,
   height,
   eventClick: function (e) {
-    selectedEvent.value = e.event
     if (e.event.extendedProps.contrib) {
+      selectedContrib.value = e.event
       thumbnailContribActivator.value = e.el
       thumbnailC.value = true
     } else {
+      selectedEvent.value = e.event
       thumbnailE.value = true
       thumbnailEventActivator.value = e.el
     }
@@ -147,28 +149,29 @@ const calendarOptions = reactive({ // standard options for the calendar, allows 
     reactiveSearchParams.view = 'timeGridWeek'
   }
 })
-if (isRest) { // options for edit mode, user can do operations on calendar (only on event which 'editable' property is set to true)
+if (isRest && layout !== 'simple') { // options for edit mode, user can do operations on calendar (only on event which 'editable' property is set to true)
   calendarOptions.plugins.push(interactionPlugin)
   calendarOptions.editable = true
   calendarOptions.eventResizableFromStart = true
   calendarOptions.selectable = true
   calendarOptions.select = function (e) { // call when selecting a zone
-    selectedEvent.value = e
-    edition.activate = true
+    if (layout === 'edit') { edition.contrib = true; selectedContrib.value = e } else { edition.event = true; selectedEvent.value = e }
     edition.operation = 'post'
   }
   calendarOptions.eventDrop = async function (e) {
     selectedEvent.value = e.event
+    selectedContrib.value = e.event
     if (e.oldEvent.allDay && !e.event.allDay) { // if we drag from the allDay zone to non allDay, default duration is one hour
       if (!startDate) e.event.setAllDay(true) // if time period doesn't exist, event remains all day
       else {
-        const d = selectedEvent.value.start
-        d.setHours(selectedEvent.value.start.getHours() + 1)
+        const d = e.event.start
+        d.setHours(e.event.start.getHours() + 1)
         selectedEvent.value.setEnd(d)
+        selectedContrib.value.setEnd(d)
       }
     }
     try {
-      if (layout !== 'admin') await patchContribCalendar()
+      if (layout === 'edit') await patchContribCalendar()
       else await patchEventCalendar()
     } catch (r) {
       e.revert()
@@ -177,9 +180,10 @@ if (isRest) { // options for edit mode, user can do operations on calendar (only
     }
   }
   calendarOptions.eventResize = async function (e) {
-    selectedEvent.value = e.event
+    if (layout === 'edit') selectedContrib.value = e.event
+    else selectedEvent.value = e.event
     try {
-      if (layout !== 'admin') await patchContribCalendar()
+      if (layout === 'edit') await patchContribCalendar()
       else await patchEventCalendar()
     } catch (r) {
       e.revert()
@@ -189,7 +193,8 @@ if (isRest) { // options for edit mode, user can do operations on calendar (only
   }
 }
 function editCalendar (newEvent) {
-  edition.activate = false
+  edition.contrib = false
+  edition.event = false
   if (newEvent) {
     const event = calendar.value.calendar.getEventById(newEvent.id)
     if (event) event.remove()
@@ -250,15 +255,17 @@ async function patchContribCalendar () {
 // content : Object (the new Event to add) || String (id)
 function thumbnailAction (operation, content) {
   thumbnailE.value = false
-  thumbnailC.value = false
-  if (operation === 'patch' || operation === 'patch-request') { edition.activate = true; edition.operation = operation }
-  if (operation === 'delete' && layout === 'admin') deleteEvent(content)
-  if (operation === 'validate-contrib') editCalendar(content)
-  if (operation === 'delete-request') { edition.activate = true; edition.operation = operation }
-  if (operation === 'restore-event') {
-    const event = calendar.value.calendar.getEventById(content)
-    if (event) event.setProp('display', 'auto')
+  thumbnailC.value = false // patch close delete
+  if (operation === 'patch') {
+    edition.event = true
+    edition.operation = operation
   }
+  if (operation === 'patch-contrib') {
+    edition.contrib = true
+    edition.operation = operation
+  }
+  if (operation === 'delete' && layout === 'admin') deleteEvent(content)
+  if (operation === 'create') editCalendar(content)
 }
 function actionButton () {
   const d = new Date()
@@ -277,13 +284,14 @@ function actionButton () {
       menu: true
     }
   }
-  edition.activate = true
+  if (layout === 'edit') edition.contrib = true
+  else edition.event = true
   edition.operation = 'post'
 }
 </script>
 <template>
   <v-btn
-    v-if="isRest"
+    v-if="isRest && layout !=='simple'"
     v-tooltip="{
       text: `Ajouter ${layout === 'edit' ? 'une contribution' : 'un événement'}`,
       location: 'left',
@@ -328,7 +336,7 @@ function actionButton () {
     :activator="thumbnailEventActivator"
     offset-y
   >
-    <thumbnail-interface
+    <thumbnail-event
       :selected-event="selectedEvent"
       @thumb-action="thumbnailAction"
     />
@@ -340,13 +348,13 @@ function actionButton () {
     offset-y
   >
     <thumbnail-contrib
-      :selected-contrib="selectedEvent"
+      :selected-contrib="selectedContrib"
       @thumb-action="thumbnailAction"
     />
   </v-menu>
   <suspense>
     <edit-event
-      v-if="edition.activate && !edition.contrib"
+      v-if="edition.event"
       :selected-event="selectedEvent"
       :operation="edition.operation"
       @edit-action="editCalendar"
@@ -354,8 +362,8 @@ function actionButton () {
   </suspense>
   <suspense>
     <edit-contrib
-      v-if="edition.activate && edition.contrib"
-      :selected-contrib="selectedEvent"
+      v-if="edition.contrib"
+      :selected-contrib="selectedContrib"
       :operation="edition.operation"
       @edit-action="editCalendar"
     />
@@ -404,5 +412,9 @@ function actionButton () {
 }
 .fc-daygrid-event-harness{
   overflow: hidden
+}
+.contribution{
+  opacity: 0.8;
+  border: 3px dotted rgb(80, 79, 79)!important
 }
 </style>

@@ -7,7 +7,7 @@ import { ref } from 'vue'
 
 const conceptFilters = useConceptFilters(reactiveSearchParams)
 
-const { color, dataUrl, thumbnailFields, startDate, endDate, evtDate, label, description, category, crowdSourcing, layout, contribUrl, owner } = useAppInfo()
+const { color, dataUrl, thumbnailFields, startDate, endDate, evtDate, label, description, category, crowdSourcing, layout, contribUrl, user, colorContrib } = useAppInfo()
 export const displayError = ref(false)
 export const errorMessage = ref('')
 export async function getData (dateBegin, dateEnd, theme) {
@@ -42,27 +42,18 @@ export async function getData (dateBegin, dateEnd, theme) {
       const reponse = await ofetch(contribUrl + '/lines')
       reponse.results.forEach((contrib) => {
         if (contrib.validation_status === 'waiting') {
-          const event = transformEvent(JSON.parse(contrib.update), [], null, contrib)
+          const event = transformEvent(JSON.parse(contrib.update), colors, theme, contrib)
           event.id = contrib._id
-          if (contrib.operation !== 'create') {
-            event.target_id = contrib.target_id
-            const e = events.find((evt) => evt.id === contrib.target_id)
-            if (e) e.display = 'none'
-          }
+          event.editable = false
           events.push(event)
         }
       })
     } else { // display only user's contributions
-      const reponse = await ofetch(contribUrl + '/lines?_owner=' + owner.id)
+      const reponse = await ofetch(contribUrl + '/lines?size=100&_owner=' + user.id)
       reponse.results.forEach((contrib) => {
-        if (contrib.validation_status === 'waiting' && contrib._owner === owner.id) {
-          const event = transformEvent(JSON.parse(contrib.update), [], null, contrib)
+        if (contrib.validation_status === 'waiting' && contrib._owner === user.id) {
+          const event = transformEvent(JSON.parse(contrib.update), colors, theme, contrib)
           event.id = contrib._id
-          if (contrib.operation !== 'create') {
-            event.target_id = contrib.target_id
-            const e = events.find((evt) => evt.id === contrib.target_id)
-            if (e) e.display = 'none'
-          }
           events.push(event)
         }
       })
@@ -97,13 +88,15 @@ function transformEvent (value, colors, theme, contrib = undefined) {
   }
   if (contrib) {
     event.contrib = true
-    if (layout === 'admin') event.editable = false
-    event.operation = contrib.operation
     event.comment = contrib.comment
     event.user_name = contrib.user_name
-    if (contrib.operation === 'create') event.color = '#66bd6d'
-    if (contrib.operation === 'delete') event.color = '#f44336'
-    if (contrib.operation === 'update') event.color = '#ffad33'
+    event.className = 'contribution'
+    if (colorContrib.noContribColor) {
+      event.color = colorContrib.hexValue
+    } else {
+      event[category] = value[category]
+      event.color = colors[value[category]]
+    }
   } else {
     if (color.type === 'monochrome') {
       event.color = color.colors.type === 'custom' ? color.colors.hexValue : theme.current.value.colors[color.colors.strValue]

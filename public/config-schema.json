@@ -34,6 +34,9 @@
                 },
                 "schema": {
                   "type": "array"
+                },
+                "owner": {
+                  "type": "object"
                 }
               }
             }
@@ -317,27 +320,6 @@
             }
           }
         },
-        "contribMode": {
-          "title": "Type de contributions acceptées",
-          "description": "Si le compte n'est pas requis, l'application doit être partagée via un lien de partage. Si le compte est requis, les contributeurs doivent avoir un accès en lecture sur le jeu de données principal.",
-          "type": "string",
-          "x-if": "parent.value.crowdSourcing",
-          "oneOf": [
-            {
-              "const": "simple-c",
-              "title": "Ajouts uniquements"
-            },
-            {
-              "const": "simple-cud",
-              "title": "Ajouts, modifications et suppressions"
-            },
-            {
-              "const": "advanced",
-              "title": "Workflow de contribution avancé (compte requis)"
-            }
-          ],
-          "default":"simple-c"
-        },
         "deleteValidatedContribs": {
           "title": "Supprimer les contributions après validation",
           "type": "boolean",
@@ -352,6 +334,26 @@
           "x-itemKey": "key",
           "items": {
             "type": "string"
+          }
+        },
+        "colorContrib": {
+          "x-if": "parent.value.crowdSourcing",
+          "title": "Couleur des contributions",
+          "properties": {
+            "noContribColor": {
+              "x-if":"color.categoryField",
+              "title": "Choisir la couleur des contributions",
+              "type": "boolean",
+              "default": true
+            },
+            "hexValue": {
+              "x-if": "parent.value.noContribColor",
+              "type": "string",
+              "title": "Couleur",
+              "format": "hexcolor",
+              "default": "#7AA95C",
+              "x-display": "color-picker"
+            }
           }
         }
       }

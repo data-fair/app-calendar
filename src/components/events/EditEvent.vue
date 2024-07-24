@@ -20,7 +20,8 @@ const props = defineProps({
 const emit = defineEmits(['edit-action'])
 const operationType = {
   post: 'post-event',
-  patch: 'patch-event'
+  patch: 'patch-event',
+  'patch-contrib': 'patch-contrib'
 }
 async function editEvent (event) {
   const formData = new FormData()

@@ -1,7 +1,7 @@
 <script setup>
 import Accept from './Accept.vue'
 import Refuse from './Refuse.vue'
-import DetailsDiff from './Details.vue'
+import DetailsContrib from './Details.vue'
 import useAppInfo from '@/composables/useAppInfo'
 import { ofetch } from 'ofetch'
 import { errorMessage, displayError } from '@/context'
@@ -13,19 +13,6 @@ const props = defineProps({
   }
 })
 const emit = defineEmits(['thumb-action'])
-const operationType = {
-  create: 'Création',
-  delete: 'Suppression',
-  update: 'Modification'
-}
-// content is a new Event (Object) or the id (String) of the event to delete
-function validateContrib (operation, content) {
-  if (operation === 'create') {
-    props.selectedContrib.remove()
-    emit('thumb-action', 'validate-contrib', content)
-  } else if (operation === 'delete') emit('thumb-action', 'delete', content)
-  else emit('thumb-action', 'close')
-}
 async function deleteContrib () {
   const param = {
     method: 'DELETE'
@@ -39,10 +26,6 @@ async function deleteContrib () {
     errorMessage.value = e.status + ' - ' + e.data
     displayError.value = true
   }
-}
-function refuseContrib (id) {
-  props.selectedContrib.remove()
-  emit('thumb-action', 'restore-event', id)
 }
 </script>
 <template>
@@ -66,16 +49,15 @@ function refuseContrib (id) {
         <span class="font-key">Fin : </span>{{ selectedContrib.end.toLocaleString() }}
       </div>
       <div class="my-1">
-        <span class="font-key">Type de demande : </span>{{ operationType[props.selectedContrib.extendedProps.operation] }}
+        <span class="font-key">Type de demande : Création</span>
       </div>
       <div class="my-1">
-        <span class="font-key">Commentaire de contribution : </span>{{ selectedContrib.extendedProps.comment }}
+        <span class="font-key">Commentaire de contribution : </span>{{ selectedContrib.extendedProps?.comment }}
       </div>
       <div class="my-1">
-        <span class="font-key">Nom du contributeur : </span>{{ selectedContrib.extendedProps.user_name }}
+        <span class="font-key">Nom du contributeur : </span>{{ selectedContrib.extendedProps?.user_name }}
       </div>
-      <details-diff
-        v-if="selectedContrib.extendedProps.operation !== 'delete'"
+      <details-contrib
         :selected-contrib="selectedContrib"
       />
     </v-card-text>
@@ -92,14 +74,19 @@ function refuseContrib (id) {
         Fermer
       </v-btn>
       <v-spacer />
+      <v-icon
+        icon="mdi-calendar-edit"
+        color="orange"
+        class="mr-4"
+        @click="emit('thumb-action','patch-contrib')"
+      />
       <template v-if="layout==='admin'">
         <accept
           :selected-contrib="selectedContrib"
-          @accept="validateContrib"
+          @accept="(newEvent)=>emit('thumb-action','create',newEvent)"
         />
         <refuse
           :selected-contrib="selectedContrib"
-          @refuse="refuseContrib"
         />
       </template>
       <v-icon

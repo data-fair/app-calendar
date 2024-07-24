@@ -10,7 +10,6 @@ const prop = defineProps({
     required: true
   }
 })
-const emit = defineEmits(['refuse'])
 const refuseMenu = ref(false)
 async function refuseContrib () {
   const formData = new FormData()
@@ -22,13 +21,16 @@ async function refuseContrib () {
       body: formData
     }
     await ofetch(contribUrl + '/lines/' + prop.selectedContrib.id, param)
-    emit('refuse', prop.selectedContrib.extendedProps.target_id)
+    console.log(comment.value)
+    // todo send to user notification of comment
+    prop.selectedContrib.remove()
   } catch (e) {
     errorMessage.value = e.status + ' - ' + e.data
     displayError.value = true
   }
   refuseMenu.value = false
 }
+const comment = ref('')
 </script>
 <template>
   <v-menu
@@ -66,6 +68,12 @@ async function refuseContrib () {
         >
           Voulez vous vraiment refuser la demande ?
         </v-alert>
+        <v-textarea
+          v-model="comment"
+          label="Commentaire de refus"
+          rows="one"
+          class="mt-2"
+        />
       </v-card-text>
       <v-card-actions>
         <v-spacer />

@@ -6,7 +6,7 @@ import { VDateInput } from 'vuetify/labs/VDateInput'
 import useAppInfo from '@/composables/useAppInfo'
 import { ofetch } from 'ofetch'
 import { computedAsync } from '@vueuse/core'
-const { evtDate, startDate, endDate, label, dataUrl, layout } = useAppInfo()
+const { evtDate, startDate, endDate, label, dataUrl, layout, contribUrl } = useAppInfo()
 const { schema } = await getSchema()
 const props = defineProps({
   selectedEvent: {
@@ -21,12 +21,20 @@ const props = defineProps({
 const emit = defineEmits(['submit', 'close'])
 const data = computedAsync(async () => {
   const temp = {}
-  if (props.operation === 'patch-event' || props.operation === 'patch-request') {
+  if (props.operation === 'patch-event') {
     const reponse = await ofetch(dataUrl + '/lines/' + props.selectedEvent.id)
     temp[label] = props.selectedEvent.title
     for (const f in schema.properties) {
       temp[f] = reponse[f]
     }
+  } else if (props.operation === 'patch-contrib') {
+    const reponse = await ofetch(contribUrl + '/lines/' + props.selectedEvent.id)
+    const event = JSON.parse(reponse.update)
+    for (const f in schema.properties) {
+      temp[f] = event[f]
+    }
+    temp.comment = reponse.comment
+    temp.user_name = reponse.user_name
   }
   return temp
 })
@@ -80,15 +88,8 @@ function buildContrib () {
       contrib.event[evtDate] = formatDate(eventTimeRange.date_begin)
     }
   }
-  // console.log(contrib)
-  emit('submit', contrib)
-}
-function buildDeleteContrib () {
-  const contrib = {}
-  for (const [key, value] of Object.entries(data.value)) {
-    contrib[key] = value
-  }
-  emit('submit', contrib)
+  console.log(contrib)
+  // emit('submit', contrib)
 }
 // options of vjsf form
 const options = {
@@ -96,8 +97,7 @@ const options = {
   locale: 'fr'
 }
 // add contributions fields to vjsf schema, remove other field if its a delete request
-if (layout !== 'admin') {
-  if (props.operation === 'delete-request') schema.properties = {}
+if (layout === 'edit' || props.operation === 'patch-contrib') {
   schema.properties.comment = {
     title: 'Commentaire de contribution',
     type: 'string',
@@ -115,40 +115,11 @@ const operationDisplay = {
   'post-event': ['Ajouter', 'Ajouter un événement'],
   'patch-event': ['Modifier', 'Modifier un événement'],
   'post-contrib': ['Ajouter', 'Ajouter une contribution'],
-  'delete-request': ['Envoyer', 'Demande de suppression'],
-  'patch-request': ['Envoyer', 'Demande de modification']
+  'patch-contrib': ['Modifier', 'Modifier la contribution'] // ?
 }
 </script>
 <template>
   <v-card
-    v-if="operation==='delete-request'"
-    class="pa-3 menu"
-  >
-    <div class="text-h6 text-center pb-2">
-      {{ operationDisplay[operation][1] }}
-    </div>
-    <vjsf
-      v-model="data"
-      :schema="schema"
-      :options="options"
-    />
-    <div class="d-flex justify-space-between mt-3">
-      <v-btn
-        class="mr-3"
-        @click="buildDeleteContrib"
-      >
-        Envoyer
-      </v-btn>
-      <v-btn
-        class="mr-3"
-        @click="emit('close')"
-      >
-        Annuler
-      </v-btn>
-    </div>
-  </v-card>
-  <v-card
-    v-else
     class="pa-3 menu"
   >
     <div class="text-h6 text-center pb-2">
@@ -228,7 +199,7 @@ const operationDisplay = {
     />
     <div class="d-flex justify-space-between mt-3">
       <v-btn
-        v-if="operation==='patch-event' || operation==='post-event'"
+        v-if="operation.match('event')"
         class="ml-3"
         @click="buildEvent"
       >

@@ -21,17 +21,19 @@ export default function useAppInfo () {
   const contribsDataset = config.contribution
   const contribUrl = contribsDataset?.href
   const crowdSourcing = config.crowdSourcing
-  const owner = application.owner
+  const user = application.owner
+  const owner = datasets[0].owner
+  const colorContrib = config.colorContrib
   if (crowdSourcing) {
     const missingFields = ['operation', 'submit_date', 'user_name', 'target_id', 'comment', 'validation_status', 'validation_date', 'update', 'original'].filter(fid => !contribsDataset?.schema.map(f => f.key).includes(fid))
     if (missingFields.length) throw new Error('Champs manquants dans le jeu de données des contributions : ' + missingFields.join(', '))
   }
-  const layoutType = {
-    'simple-c': 'simple',
-    'simple-cud': 'edit',
-    advanced: 'admin'
-  }
-  const layout = (crowdSourcing && isRest) ? layoutType[config.contribMode] : 'admin'
+  let layout = 'simple'
+  if (user.type === 'organization') {
+    if (user.id === owner.id) layout = 'admin'
+  } else if (crowdSourcing && user.organization.id === owner.id) layout = 'edit'
+  const deleteValidatedContribs = config.deleteValidatedContribs
+  layout = 'admin'
   return {
     startDate,
     evtDate,
@@ -50,6 +52,9 @@ export default function useAppInfo () {
     layout,
     crowdSourcing,
     contribUrl,
-    owner
+    user,
+    deleteValidatedContribs,
+    owner,
+    colorContrib
   }
 }
