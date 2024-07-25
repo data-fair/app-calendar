@@ -28,12 +28,11 @@ export default function useAppInfo () {
     const missingFields = ['operation', 'submit_date', 'user_name', 'target_id', 'comment', 'validation_status', 'validation_date', 'update', 'original'].filter(fid => !contribsDataset?.schema.map(f => f.key).includes(fid))
     if (missingFields.length) throw new Error('Champs manquants dans le jeu de données des contributions : ' + missingFields.join(', '))
   }
-  let layout = 'simple'
+  let layout = 'simple' // read only
   if (user.type === 'organization') {
-    if (user.id === owner.id) layout = 'admin'
-  } else if (crowdSourcing && user.organization.id === owner.id) layout = 'edit'
+    if (user.id === owner.id) layout = 'admin' // edit event and accept contribs
+  } else if (crowdSourcing && user.organization.id === owner.id) layout = 'edit' // read only on events and create contrib
   const deleteValidatedContribs = config.deleteValidatedContribs
-  layout = 'admin'
   return {
     startDate,
     evtDate,

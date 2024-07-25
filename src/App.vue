@@ -3,14 +3,15 @@ import calendar from '@/components/Calendar.vue'
 import useAppInfo from './composables/useAppInfo'
 import { displayError, errorMessage } from './context'
 import { ofetch } from 'ofetch'
-import { ref } from 'vue'
-const { datasets, contribsDataset, crowdSourcing } = useAppInfo()
-const authorized = ref(true)
+const { datasets, contribsDataset, crowdSourcing, layout } = useAppInfo()
 try {
   if (crowdSourcing) {
     if (!datasets.some((d) => d.id === contribsDataset.id)) {
       datasets[1] = contribsDataset
       window.parent.postMessage({ type: 'set-config', content: { field: 'datasets', value: datasets } }, '*')
+    }
+    if (layout === 'simple') {
+      ofetch(window.APPLICATION.href + '/error', { body: { message: 'Vous n\'avez pas la permission de contribuer à ce jeu de données' }, method: 'POST' })
     }
   } else if (datasets[1]) {
     datasets.pop()
@@ -21,7 +22,7 @@ try {
 }
 </script>
 <template>
-  <calendar v-if="authorized" />
+  <calendar />
   <v-snackbar
     v-model="displayError"
     :timeout="'5000'"

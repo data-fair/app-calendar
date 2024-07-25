@@ -6,7 +6,7 @@ import { VDateInput } from 'vuetify/labs/VDateInput'
 import useAppInfo from '@/composables/useAppInfo'
 import { ofetch } from 'ofetch'
 import { computedAsync } from '@vueuse/core'
-const { evtDate, startDate, endDate, label, dataUrl, layout, contribUrl } = useAppInfo()
+const { evtDate, startDate, endDate, dataUrl, contribUrl } = useAppInfo()
 const { schema } = await getSchema()
 const props = defineProps({
   selectedEvent: {
@@ -19,17 +19,12 @@ const props = defineProps({
   }
 })
 const emit = defineEmits(['submit', 'close'])
+// pre-fill the field of vjsf if we do a patch
 const data = computedAsync(async () => {
   const temp = {}
-  if (props.operation === 'patch-event') {
-    const reponse = await ofetch(dataUrl + '/lines/' + props.selectedEvent.id)
-    temp[label] = props.selectedEvent.title
-    for (const f in schema.properties) {
-      temp[f] = reponse[f]
-    }
-  } else if (props.operation === 'patch-contrib') {
-    const reponse = await ofetch(contribUrl + '/lines/' + props.selectedEvent.id)
-    const event = JSON.parse(reponse.update)
+  if (props.operation.match('patch')) {
+    const reponse = await ofetch(`${props.operation === 'patch-event' ? dataUrl : contribUrl}/lines/${props.selectedEvent.id}`)
+    const event = reponse.update ? JSON.parse(reponse.update) : reponse
     for (const f in schema.properties) {
       temp[f] = event[f]
     }
@@ -44,29 +39,33 @@ const eventTimeRange = reactive({
   date_begin: props.selectedEvent.start,
   date_end: props.selectedEvent.end
 })
-function buildEvent () {
-  const event = {}
-  for (const [key, value] of Object.entries(data.value)) {
-    event[key] = value
-  }
-  const tab1 = eventTimeRange.hoursStart.split(':')
-  const tab2 = eventTimeRange.hoursEnd?.split(':')
-  eventTimeRange.date_begin.setHours(tab1[0], tab1[1])
-  eventTimeRange.date_end?.setHours(tab2[0], tab2[1])
-  if (props.selectedEvent.allDay) {
-    event[startDate || evtDate] = startDate ? eventTimeRange.date_begin.toISOString() : formatDate(eventTimeRange.date_begin)
-    if (startDate) event[endDate] = eventTimeRange.date_end.toISOString()
-  } else {
-    if (startDate) {
-      event[startDate] = eventTimeRange.date_begin.toISOString()
-      event[endDate] = eventTimeRange.date_end.toISOString()
-    } else {
-      event[evtDate] = formatDate(eventTimeRange.date_begin)
-    }
-  }
-  emit('submit', event)
+// options of vjsf form
+const options = {
+  density: 'compact',
+  locale: 'fr'
 }
-function buildContrib () {
+// add contributions fields to vjsf schema
+if (props.operation.match('contrib')) {
+  schema.properties.comment = {
+    title: 'Commentaire de contribution',
+    type: 'string',
+    'x-originalName': 'description',
+    layout: 'textarea'
+  }
+  schema.properties.user_name = {
+    title: 'Nom du contributeur',
+    type: 'string',
+    'x-originalName': 'description',
+    maxLength: 200
+  }
+}
+const operationDisplay = {
+  'post-event': ['Ajouter', 'Ajouter un événement'],
+  'patch-event': ['Modifier', 'Modifier un événement'],
+  'post-contrib': ['Ajouter', 'Ajouter une contribution'],
+  'patch-contrib': ['Modifier', 'Modifier la contribution']
+}
+function buildResult () { // build contrib or event depending on operation
   const contrib = { event: {} }
   for (const [key, value] of Object.entries(data.value)) {
     if (key === 'comment') contrib.comment = value
@@ -88,39 +87,22 @@ function buildContrib () {
       contrib.event[evtDate] = formatDate(eventTimeRange.date_begin)
     }
   }
-  console.log(contrib)
-  // emit('submit', contrib)
-}
-// options of vjsf form
-const options = {
-  density: 'compact',
-  locale: 'fr'
-}
-// add contributions fields to vjsf schema, remove other field if its a delete request
-if (layout === 'edit' || props.operation === 'patch-contrib') {
-  schema.properties.comment = {
-    title: 'Commentaire de contribution',
-    type: 'string',
-    'x-originalName': 'description',
-    layout: 'textarea'
-  }
-  schema.properties.user_name = {
-    title: 'Nom du contributeur',
-    type: 'string',
-    'x-originalName': 'description',
-    maxLength: 200
-  }
-}
-const operationDisplay = {
-  'post-event': ['Ajouter', 'Ajouter un événement'],
-  'patch-event': ['Modifier', 'Modifier un événement'],
-  'post-contrib': ['Ajouter', 'Ajouter une contribution'],
-  'patch-contrib': ['Modifier', 'Modifier la contribution'] // ?
+  if (props.operation.match('event')) emit('submit', contrib.event)
+  else emit('submit', contrib)
 }
 </script>
 <template>
   <v-card
-    class="pa-3 menu"
+    class="pa-3"
+    :style="{
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%,-50%)',
+      zIndex: '2000',
+      width: '22em',
+      maxHeight: '85vh',
+      overflow: 'auto'}"
   >
     <div class="text-h6 text-center pb-2">
       {{ operationDisplay[operation][1] }}
@@ -199,16 +181,8 @@ const operationDisplay = {
     />
     <div class="d-flex justify-space-between mt-3">
       <v-btn
-        v-if="operation.match('event')"
         class="ml-3"
-        @click="buildEvent"
-      >
-        {{ operationDisplay[operation][0] }}
-      </v-btn>
-      <v-btn
-        v-else
-        class="ml-3"
-        @click="buildContrib"
+        @click="buildResult"
       >
         {{ operationDisplay[operation][0] }}
       </v-btn>

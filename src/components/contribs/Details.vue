@@ -10,22 +10,18 @@ const prop = defineProps({
     required: true
   }
 })
-const diffMenu = ref(false)
-const diff = reactive({
-  oldEvent: {},
-  newEvent: {}
-})
-async function showDiff () {
+const detailsMenu = ref(false)
+const contrib = reactive({})
+async function showDetails () {
   try {
     const request = await ofetch(contribUrl + '/lines/' + prop.selectedContrib.id)
-    const newEvent = JSON.parse(request.update)
-    for (const [key, value] of Object.entries(newEvent)) {
-      if ([startDate, endDate, evtDate].includes(key)) diff.newEvent[key] = new Date(value).toLocaleString()
-      else diff.newEvent[key] = value
+    for (const [key, value] of Object.entries(JSON.parse(request.update))) {
+      if ([startDate, endDate, evtDate].includes(key)) contrib[key] = new Date(value).toLocaleString()
+      else contrib[key] = value
     }
-    diff.newEvent.operation = 'create'
-    diff.newEvent.commentaire = prop.selectedContrib.extendedProps.comment
-    diff.newEvent.nom_utilisateur = prop.selectedContrib.extendedProps.user_name
+    contrib.operation = 'create'
+    contrib.commentaire = prop.selectedContrib.extendedProps.comment
+    contrib.nom_utilisateur = prop.selectedContrib.extendedProps.user_name
   } catch (e) {
     errorMessage.value = e.status + ' - ' + e.data
     displayError.value = true
@@ -34,7 +30,7 @@ async function showDiff () {
 </script>
 <template>
   <v-menu
-    v-model="diffMenu"
+    v-model="detailsMenu"
     :close-on-content-click="false"
     :close-on-click="false"
     min-width="300px"
@@ -50,7 +46,7 @@ async function showDiff () {
         class="mt-2"
         rounded
         v-bind="props"
-        @click="showDiff"
+        @click="showDetails"
       >
         <v-icon>
           mdi-calendar-search
@@ -69,7 +65,7 @@ async function showDiff () {
       <v-card-text>
         <v-list two-line>
           <v-list-item
-            v-for="(value, key) in diff.newEvent"
+            v-for="(value, key) in contrib"
             :key="key"
             class="text-body-2"
           >
@@ -84,7 +80,7 @@ async function showDiff () {
         <v-spacer />
         <v-btn
           text
-          @click="diffMenu = false"
+          @click="detailsMenu = false"
         >
           Fermer
         </v-btn>

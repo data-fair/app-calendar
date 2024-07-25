@@ -4,7 +4,8 @@ import { errorMessage, displayError } from '@/context'
 import { ofetch } from 'ofetch'
 import useAppInfo from '@/composables/useAppInfo'
 import { useTheme } from 'vuetify'
-const { dataUrl, contribUrl, label, evtDate, startDate, endDate, description, color, thumbnailFields, deleteValidatedContribs } = useAppInfo()
+import { getColor } from '@/assets/util'
+const { dataUrl, contribUrl, label, evtDate, startDate, endDate, description, color, thumbnailFields, deleteValidatedContribs, category } = useAppInfo()
 const theme = useTheme()
 const prop = defineProps({
   selectedContrib: {
@@ -33,17 +34,22 @@ async function acceptContrib () {
     const reponse = await ofetch(dataUrl + '/lines', param)
     const newEvent = {
       id: reponse._id,
-      title: reponse[label],
+      title: reponse[label] || '',
       start: reponse[startDate] || reponse[evtDate],
       end: reponse[endDate],
       allDay: reponse[evtDate] ? true : prop.selectedContrib.allDay
     }
     newEvent.description = reponse[description] || ''
-    newEvent.color = color.colors.type === 'custom' ? color.colors.hexValue : theme.current.value.colors[color.colors.strValue]
+    if (color.type === 'multicolor') {
+      const colors = await getColor(reponse[category])
+      newEvent.color = colors[reponse[category]]
+      newEvent[category] = reponse[category]
+    } else newEvent.color = color.colors.type === 'custom' ? color.colors.hexValue : theme.current.value.colors[color.colors.strValue]
     for (const field of thumbnailFields) {
       newEvent[field] = reponse[field]
     }
     // todo notify contribution's owner
+    prop.selectedContrib.remove()
     emit('accept', newEvent)
     acceptMenu.value = false
     if (deleteValidatedContribs) {

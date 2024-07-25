@@ -20,8 +20,7 @@ const props = defineProps({
 const emit = defineEmits(['edit-action'])
 const operationType = {
   post: 'post-event',
-  patch: 'patch-event',
-  'patch-contrib': 'patch-contrib'
+  patch: 'patch-event'
 }
 async function editEvent (event) {
   const formData = new FormData()
@@ -37,7 +36,7 @@ async function editEvent (event) {
       const reponse = await ofetch(dataUrl + '/lines', param)
       const newEvent = {
         id: reponse._id,
-        title: reponse[label],
+        title: reponse[label] || '',
         start: reponse[startDate] || reponse[evtDate],
         end: reponse[endDate],
         allDay: reponse[evtDate] ? true : props.selectedEvent.allDay

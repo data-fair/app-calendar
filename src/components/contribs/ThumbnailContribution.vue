@@ -5,8 +5,10 @@ import DetailsContrib from './Details.vue'
 import useAppInfo from '@/composables/useAppInfo'
 import { ofetch } from 'ofetch'
 import { errorMessage, displayError } from '@/context'
+import { ref } from 'vue'
 const { layout, contribUrl } = useAppInfo()
-const props = defineProps({
+const deleteC = ref(false)
+const prop = defineProps({
   selectedContrib: {
     type: Object,
     required: true
@@ -14,14 +16,12 @@ const props = defineProps({
 })
 const emit = defineEmits(['thumb-action'])
 async function deleteContrib () {
-  const param = {
-    method: 'DELETE'
-  }
   try {
-    await ofetch(`${contribUrl}/lines/${props.selectedContrib.id || 0}`, param)
-    if (props.selectedContrib.extendedProps.target_id) emit('thumb-action', 'restore-event', props.selectedContrib.extendedProps.target_id)
+    await ofetch(`${contribUrl}/lines/${prop.selectedContrib.id || 0}`, { method: 'DELETE' })
+    if (prop.selectedContrib.extendedProps.target_id) emit('thumb-action', 'restore-event', prop.selectedContrib.extendedProps.target_id)
     else emit('thumb-action', 'close')
-    props.selectedContrib.remove()
+    prop.selectedContrib.remove()
+    deleteC.value = false
   } catch (e) {
     errorMessage.value = e.status + ' - ' + e.data
     displayError.value = true
@@ -74,10 +74,14 @@ async function deleteContrib () {
         Fermer
       </v-btn>
       <v-spacer />
-      <v-icon
+      <v-btn
+        v-tooltip="{
+          text: 'Modifier la contribution',
+          location: 'right',
+          openDelay:'500'
+        }"
         icon="mdi-calendar-edit"
         color="orange"
-        class="mr-4"
         @click="emit('thumb-action','patch-contrib')"
       />
       <template v-if="layout==='admin'">
@@ -89,13 +93,60 @@ async function deleteContrib () {
           :selected-contrib="selectedContrib"
         />
       </template>
-      <v-icon
+      <v-menu
         v-else
-        icon="mdi-delete"
-        color="red"
-        class="mr-2"
-        @click="deleteContrib"
-      />
+        v-model="deleteC"
+        :close-on-content-click="false"
+        :close-on-click="false"
+        min-width="300px"
+        max-width="500px"
+      >
+        <template #activator="{ props }">
+          <v-btn
+            v-tooltip="{
+              text: 'Supprimer la contribution',
+              location: 'right',
+              openDelay:'500'
+            }"
+            icon="mdi-delete"
+            color="red"
+            v-bind="props"
+          />
+        </template>
+        <v-card
+          outlined
+          data-iframe-height
+        >
+          <v-card-title
+            primary-title
+          >
+            Supprimer la contribution ?
+          </v-card-title>
+          <v-card-text>
+            <v-alert
+              :model-value="true"
+              type="error"
+            >
+              Voulez vous vraiment supprimer la contribution ?
+            </v-alert>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn
+              text
+              @click="deleteC = false"
+            >
+              Annuler
+            </v-btn>
+            <v-btn
+              color="error"
+              @click="deleteContrib"
+            >
+              Supprimer
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-menu>
     </v-card-actions>
   </v-card>
 </template>

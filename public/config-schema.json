@@ -263,7 +263,7 @@
     },
     {
       "title": "Vignette d'événement",
-      "description": "Gérer le contenu de l'affichage lors du clic sur un événement (en plus du libellé).",
+      "description": "Gérer le contenu de l'affichage lors du clic sur un événement",
       "properties": {
         "descriptionField": {
           "type": "object",

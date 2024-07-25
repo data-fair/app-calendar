@@ -3,7 +3,7 @@ import { getData, displayError, errorMessage } from '@/context'
 import { computedAsync } from '@vueuse/core'
 import { useTheme, useDisplay } from 'vuetify'
 import { ofetch } from 'ofetch'
-import { reactive, ref, watch } from 'vue'
+import { reactive, ref, watch, onMounted } from 'vue'
 import reactiveSearchParams from '@data-fair/lib/vue/reactive-search-params-global.js'
 import useAppInfo from '@/composables/useAppInfo'
 import { formatDate } from '@/assets/util'
@@ -18,10 +18,10 @@ import FullCalendar from '@fullcalendar/vue3'
 import EditContrib from './contribs/EditContribution.vue'
 import ThumbnailContrib from './contribs/ThumbnailContribution'
 const { dataUrl, isRest, startDate, evtDate, endDate, layout, contribUrl } = useAppInfo()
-const theme = useTheme()
 const { height } = useDisplay()
+const theme = useTheme()
 const dateBegin = ref(reactiveSearchParams.date === undefined ? new Date() : new Date(reactiveSearchParams.date))
-dateBegin.value.setDate(1) // necessary to handle display order : day -> month -> refresh page
+dateBegin.value.setDate(1)
 const dateEnd = ref(new Date(dateBegin.value.getTime() + 31 * 24 * 60 * 60 * 1000))
 const calendar = ref(null)
 const selectedEvent = ref(null)
@@ -30,7 +30,7 @@ const thumbnailContribActivator = ref(null)
 const thumbnailEventActivator = ref(null)
 const thumbnailC = ref(false)
 const thumbnailE = ref(false)
-const edition = reactive({
+const edition = reactive({ // control display of both edit menus
   contrib: false,
   event: false,
   operation: null
@@ -192,27 +192,13 @@ if (isRest && layout !== 'simple') { // options for edit mode, user can do opera
     }
   }
 }
-function editCalendar (newEvent) {
+function addCalendarEvent (newEvent) {
+  // add newEvent to calendar with calendar's addEvent method
+  // newEvent can also be a contrib
   edition.contrib = false
   edition.event = false
   if (newEvent) {
-    const event = calendar.value.calendar.getEventById(newEvent.id)
-    if (event) event.remove()
     calendar.value.calendar.addEvent(newEvent)
-  }
-}
-async function deleteEvent (id) {
-  const url = `${dataUrl}/lines/${id}`
-  const params = {
-    method: 'DELETE'
-  }
-  try {
-    await ofetch(url, params)
-    const event = calendar.value.calendar.getEventById(id)
-    event.remove()
-  } catch (e) {
-    errorMessage.value = e.status + ' - ' + e._data
-    displayError.value = true
   }
 }
 // those 2 patch are executed when we drag and drop or resize event in the calendar
@@ -251,11 +237,12 @@ async function patchContribCalendar () {
   }
   await ofetch(url, param)
 }
-// handle which action was done on the thumbnail
-// content : Object (the new Event to add) || String (id)
+// handle which action was done on contrib or event thumbnails
+// content : Object (the new Event to add)
+// operation : String
 function thumbnailAction (operation, content) {
   thumbnailE.value = false
-  thumbnailC.value = false // patch close delete
+  thumbnailC.value = false
   if (operation === 'patch') {
     edition.event = true
     edition.operation = operation
@@ -264,30 +251,46 @@ function thumbnailAction (operation, content) {
     edition.contrib = true
     edition.operation = operation
   }
-  if (operation === 'delete' && layout === 'admin') deleteEvent(content)
-  if (operation === 'create') editCalendar(content)
+  if (operation === 'create') addCalendarEvent(content)
 }
 function actionButton () {
   const d = new Date()
+  let defaultTimeStamp = {}
   if (startDate) {
-    selectedEvent.value = {
+    defaultTimeStamp = {
       start: d,
       end: new Date(d.getTime() + 1000 * 60 * 60), // default duration is one hour
       allDay: false,
-      menu: true
+      menu: true // indicate we show date picker on edit menu
     }
   } else {
-    selectedEvent.value = {
+    defaultTimeStamp = {
       start: d,
       end: null,
       allDay: true,
-      menu: true
+      menu: true // indicate we show date picker on edit menu
     }
   }
-  if (layout === 'edit') edition.contrib = true
-  else edition.event = true
+  if (layout === 'edit') {
+    edition.contrib = true
+    selectedContrib.value = defaultTimeStamp
+  } else {
+    edition.event = true
+    selectedEvent.value = defaultTimeStamp
+  }
   edition.operation = 'post'
 }
+onMounted(() => {
+  // modification initiale de la largeur de la colonne des heures
+  const calendarEl = calendar.value.$el
+  const colGroup = calendarEl.querySelector('.fc-view-harness')
+  if (colGroup) {
+    const cols = colGroup.querySelectorAll('col')
+    cols.forEach(col => {
+      col.style.width = '70px'
+    })
+  }
+})
 </script>
 <template>
   <v-btn
@@ -357,7 +360,7 @@ function actionButton () {
       v-if="edition.event"
       :selected-event="selectedEvent"
       :operation="edition.operation"
-      @edit-action="editCalendar"
+      @edit-action="addCalendarEvent"
     />
   </suspense>
   <suspense>
@@ -365,7 +368,7 @@ function actionButton () {
       v-if="edition.contrib"
       :selected-contrib="selectedContrib"
       :operation="edition.operation"
-      @edit-action="editCalendar"
+      @edit-action="addCalendarEvent"
     />
   </suspense>
 </template>
@@ -373,48 +376,36 @@ function actionButton () {
 .fc-icon::before{
   padding-bottom : 7px !important
 }
-.fc-button-primary{
+.fc-button-primary{ /* style for buttons*/
   background-color: #1e88e5 !important;
   margin-right: 4px !important;
   border-radius: 7px !important;
   border: 0px !important
 }
-.fc-toolbar-title{
+.fc-toolbar-title{ /* center the title dates*/
   padding-right: 7em
 }
-.fc-popover{
-  z-index: 1000 !important
-}
-.v-overlay__content{
-  min-width: 20px !important
-}
 .fc-daygrid-event{
-  min-height: 10px;
-}
-.fc-scrollgrid-shrink{
-  height: 40px !important;
-}
-.fc-scrollgrid-shrink-frame{
+  min-height: 10px; /* min height for a event with no label and no overflow on next case*/
   overflow: hidden
 }
-.menu{
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%,-50%);
-  z-index: 2000;
-  width: 22em;
-  max-height: 100vh;
-  overflow: auto;
-}
-.fc-timegrid-slot{
-  height: 1.5em !important;
-}
-.fc-daygrid-event-harness{
+.fc-event-main{
   overflow: hidden
+}
+.fc .fc-timegrid-axis-cushion{
+  max-width: 70px /* 'Toute la journée' is written in 2 lines instead of 3*/
 }
 .contribution{
-  opacity: 0.8;
-  border: 3px dotted rgb(80, 79, 79)!important
+  opacity: 0.75;
+  border: 2px dashed rgb(255, 255, 255)!important;
+  background-color: rgb(122,169,92); /*set background-color for month view to identify contrib because event-color doesn't appear on month view*/
+}
+.font{ /*thumbnail text display*/
+  font-size: 0.95em;
+}
+.font-key{
+  font-size: 1.1em;
+  font-weight: 500;
+  color :rgb(92, 85, 85)
 }
 </style>

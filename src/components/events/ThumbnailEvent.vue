@@ -1,15 +1,32 @@
 <script setup>
 import { ref } from 'vue'
 import useAppInfo from '@/composables/useAppInfo'
-const { layout } = useAppInfo()
+import { errorMessage, displayError } from '@/context'
+import { ofetch } from 'ofetch'
+const { layout, dataUrl } = useAppInfo()
 const deleteEvt = ref(false)
-defineProps({
+const prop = defineProps({
   selectedEvent: {
     type: Object,
     required: true
   }
 })
 const emit = defineEmits(['thumb-action'])
+async function deleteEvent () {
+  const url = `${dataUrl}/lines/${prop.selectedEvent.id || 0}`
+  const params = {
+    method: 'DELETE'
+  }
+  try {
+    await ofetch(url, params)
+    prop.selectedEvent.remove()
+    deleteEvt.value = false
+    emit('thumb-action', 'close')
+  } catch (e) {
+    errorMessage.value = e.status + ' - ' + e._data
+    displayError.value = true
+  }
+}
 </script>
 <template>
   <v-card
@@ -117,7 +134,7 @@ const emit = defineEmits(['thumb-action'])
               </v-btn>
               <v-btn
                 color="error"
-                @click="emit('thumb-action','delete'), deleteEvt=false"
+                @click="deleteEvent()"
               >
                 Supprimer
               </v-btn>
@@ -128,13 +145,3 @@ const emit = defineEmits(['thumb-action'])
     </v-card-actions>
   </v-card>
 </template>
-<style>
-.font{
-  font-size: 0.95em;
-}
-.font-key{
-  font-size: 1.1em;
-  font-weight: 500;
-  color :rgb(92, 85, 85)
-}
-</style>
