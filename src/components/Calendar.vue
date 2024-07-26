@@ -159,8 +159,8 @@ if (isRest && layout !== 'simple') { // options for edit mode, user can do opera
     edition.operation = 'post'
   }
   calendarOptions.eventDrop = async function (e) {
-    selectedEvent.value = e.event
-    selectedContrib.value = e.event
+    if (layout === 'edit')selectedContrib.value = e.event
+    else selectedEvent.value = e.event
     if (e.oldEvent.allDay && !e.event.allDay) { // if we drag from the allDay zone to non allDay, default duration is one hour
       if (!startDate) e.event.setAllDay(true) // if time period doesn't exist, event remains all day
       else {
@@ -281,7 +281,7 @@ function actionButton () {
   edition.operation = 'post'
 }
 onMounted(() => {
-  // modification initiale de la largeur de la colonne des heures
+  // modify width of hours coloumn for day and week view
   const calendarEl = calendar.value.$el
   const colGroup = calendarEl.querySelector('.fc-view-harness')
   if (colGroup) {
