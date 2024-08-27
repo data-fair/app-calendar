@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import useAppInfo from '@/composables/useAppInfo'
 import { ofetch } from 'ofetch'
 import { errorMessage, displayError } from '@/context'
-const { contribUrl } = useAppInfo()
+const { contribsDataset } = useAppInfo()
 const prop = defineProps({
   selectedContrib: {
     type: Object,
@@ -20,7 +20,7 @@ async function refuseContrib () {
       method: 'PATCH',
       body: formData
     }
-    await ofetch(contribUrl + '/lines/' + prop.selectedContrib.id, param)
+    await ofetch(contribsDataset?.href + '/lines/' + prop.selectedContrib.id, param)
     console.log(comment.value)
     // todo send to user notification of comment
     prop.selectedContrib.remove()

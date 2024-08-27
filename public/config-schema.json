@@ -14,7 +14,7 @@
               "title": "Jeu de données",
               "description": "Ce jeu doit contenir au moins un champ avec le concept de date",
               "type": "object",
-              "x-fromUrl": "api/v1/datasets?status=finalized&q={q}&select=id,title,isRest,schema&{context.datasetFilter}&short-concept=date,startDate,endDate",
+              "x-fromUrl": "api/v1/datasets?status=finalized&q={q}&select=id,title,isRest,schema,timePeriod&{context.datasetFilter}&short-concept=date,startDate,endDate&size=100",
               "x-itemsProp": "results",
               "x-itemTitle": "title",
               "x-itemKey": "href",
@@ -35,7 +35,7 @@
                 "schema": {
                   "type": "array"
                 },
-                "owner": {
+                "timePeriod": {
                   "type": "object"
                 }
               }
@@ -58,7 +58,7 @@
         },
         "color": {
           "type": "object",
-          "title": "Type de couleur",
+          "title": "Réglage des couleurs",
           "required": [
             "type"
           ],
@@ -67,16 +67,16 @@
               "title": "Calendrier multicolore",
               "additionalProperties": false,
               "required": [
-                "categoryField"
+                "field"
               ],
               "properties": {
                 "type": {
                   "const": "multicolor"
                 },
-                "categoryField": {
-                  "type": "object",
+                "field": {
+                  "type": "string",
                   "title": "Champ de catégorie",
-                  "description": "Choisissez le champ permettant de distinguer plusieurs catégories d'événements. Chaque catégorie se verra attribuer une couleur distincte si l'option multicolore est séléctionnée.",
+                  "description": "Choisissez le champ permettant de distinguer les catégories d'événements suivant des couleurs distinctes.",
                   "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
                   "x-itemTitle": "category",
                   "x-itemKey": "key"
@@ -156,7 +156,7 @@
                         "styles": {
                           "title": "Couleurs et ordre",
                           "type": "array",
-                          "x-fromUrl": "{datasets.0.href}/values_agg?field={datasets.1.categoryField.key}&size=0&agg_size=15",
+                          "x-fromUrl": "{datasets.0.href}/values_agg?field={parent.parent.value.colors.field}&size=0&agg_size=15",
                           "x-display": "list",
                           "x-itemTitle": "value",
                           "x-itemKey": "value",
@@ -293,7 +293,7 @@
           "type": "boolean",
           "title": "Activer le crowd sourcing"
         },
-        "contribution": {
+        "contribsDataset": {
           "title": "Jeu de données des contributions externes",
           "x-if": "parent.value.crowdSourcing",
           "type": "object",
@@ -341,7 +341,7 @@
           "title": "Couleur des contributions",
           "properties": {
             "noContribColor": {
-              "x-if":"color.categoryField",
+              "x-if":"color.field",
               "title": "Choisir la couleur des contributions",
               "type": "boolean",
               "default": true

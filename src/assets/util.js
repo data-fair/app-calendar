@@ -1,11 +1,12 @@
 import useAppInfo from '@/composables/useAppInfo'
 import chroma from 'chroma-js'
-const { dataUrl, color, category, editionFields } = useAppInfo()
+const { mainDataset, color, config } = useAppInfo()
 const categorySet = new Set()
+
 export async function getColor (newCategory) {
   const colorSchemes = {} // create an object who associates a category and a color
   if (color.colors.type === 'palette') {
-    const url = `${dataUrl}/values/${category}?size=100`
+    const url = `${mainDataset.href}/values/${color.field}?size=100`
     const request = await fetch(url)
     if (request.ok) {
       const reponse = await request.json()
@@ -28,8 +29,9 @@ export async function getColor (newCategory) {
   }
   return colorSchemes
 }
+
 export async function getSchema () {
-  const url = `${dataUrl}/safe-schema?calculated=false&mimeType=application%2Fschema%2Bjson`
+  const url = `${mainDataset.href}/safe-schema?calculated=false&mimeType=application%2Fschema%2Bjson`
   const request = await fetch(url)
   const reponse = await request.json()
   const schema = { // vjsf form schema
@@ -37,7 +39,7 @@ export async function getSchema () {
     required: [],
     properties: {}
   }
-  editionFields.forEach(field => {
+  config.editionFields.forEach(field => {
     if (reponse.properties[field].title === '') reponse.properties[field].title = reponse.properties[field].key
     schema.properties[field] = reponse.properties[field]
   })

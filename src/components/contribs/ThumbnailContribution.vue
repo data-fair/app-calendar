@@ -6,7 +6,7 @@ import useAppInfo from '@/composables/useAppInfo'
 import { ofetch } from 'ofetch'
 import { errorMessage, displayError } from '@/context'
 import { ref } from 'vue'
-const { layout, contribUrl } = useAppInfo()
+const { layout, contribsDataset } = useAppInfo()
 const deleteC = ref(false)
 const prop = defineProps({
   selectedContrib: {
@@ -17,7 +17,7 @@ const prop = defineProps({
 const emit = defineEmits(['thumb-action'])
 async function deleteContrib () {
   try {
-    await ofetch(`${contribUrl}/lines/${prop.selectedContrib.id || 0}`, { method: 'DELETE' })
+    await ofetch(`${contribsDataset?.href}/lines/${prop.selectedContrib.id || 0}`, { method: 'DELETE' })
     if (prop.selectedContrib.extendedProps.target_id) emit('thumb-action', 'restore-event', prop.selectedContrib.extendedProps.target_id)
     else emit('thumb-action', 'close')
     prop.selectedContrib.remove()

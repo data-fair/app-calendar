@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import useAppInfo from '@/composables/useAppInfo'
 import { errorMessage, displayError } from '@/context'
 import { ofetch } from 'ofetch'
-const { layout, dataUrl } = useAppInfo()
+const { layout, mainDataset } = useAppInfo()
 const deleteEvt = ref(false)
 const prop = defineProps({
   selectedEvent: {
@@ -13,7 +13,7 @@ const prop = defineProps({
 })
 const emit = defineEmits(['thumb-action'])
 async function deleteEvent () {
-  const url = `${dataUrl}/lines/${prop.selectedEvent.id || 0}`
+  const url = `${mainDataset.href}/lines/${prop.selectedEvent.id || 0}`
   const params = {
     method: 'DELETE'
   }

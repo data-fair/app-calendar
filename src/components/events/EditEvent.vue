@@ -6,7 +6,7 @@ import { useTheme } from 'vuetify'
 import { displayError, errorMessage } from '@/context'
 import EditMenu from '@/components/EditMenu.vue'
 const theme = useTheme()
-const { dataUrl, color, thumbnailFields, startDate, endDate, evtDate, label, description, category } = useAppInfo()
+const { mainDataset, color, config, startDateField, endDateField, dateField, labelField, descriptionField } = useAppInfo()
 const props = defineProps({
   selectedEvent: {
     type: Object,
@@ -33,22 +33,22 @@ async function editEvent (event) {
         method: 'POST',
         body: formData
       }
-      const reponse = await ofetch(dataUrl + '/lines', param)
+      const reponse = await ofetch(mainDataset.href + '/lines', param)
       const newEvent = {
         id: reponse._id,
-        title: reponse[label] || '',
-        start: reponse[startDate] || reponse[evtDate],
-        end: reponse[endDate],
-        allDay: reponse[evtDate] ? true : props.selectedEvent.allDay
+        title: reponse[labelField] || '',
+        start: reponse[startDateField] || reponse[dateField],
+        end: reponse[endDateField],
+        allDay: reponse[dateField] ? true : props.selectedEvent.allDay
       }
-      newEvent.description = reponse[description] || ''
+      newEvent.description = reponse[descriptionField] || ''
       if (color.type === 'monochrome') {
         newEvent.color = color.colors.type === 'custom' ? color.colors.hexValue : theme.current.value.colors[color.colors.strValue]
       } else {
-        const colors = await getColor(reponse[category])
-        newEvent.color = colors[reponse[category]]
+        const colors = await getColor(reponse[color.field])
+        newEvent.color = colors[reponse[color.field]]
       }
-      for (const field of thumbnailFields) {
+      for (const field of config.thumbnailFields) {
         newEvent[field] = reponse[field]
       }
       emit('edit-action', newEvent)
@@ -57,17 +57,17 @@ async function editEvent (event) {
         method: 'PATCH',
         body: formData
       }
-      const reponse = await ofetch(dataUrl + '/lines/' + props.selectedEvent.id, param)
-      props.selectedEvent.setStart(reponse[startDate || evtDate])
-      if (reponse[endDate]) props.selectedEvent.setEnd(reponse[endDate])
-      if (reponse[label]) props.selectedEvent.setProp('title', reponse[label])
-      if (reponse[description]) props.selectedEvent.setExtendedProp('description', reponse[description])
-      if (reponse[category]) {
-        const colors = await getColor(reponse[category])
-        props.selectedEvent.setProp('color', colors[reponse[category]])
-        props.selectedEvent.setExtendedProp(category, reponse[category])
+      const reponse = await ofetch(mainDataset.href + '/lines/' + props.selectedEvent.id, param)
+      props.selectedEvent.setStart(reponse[startDateField || dateField])
+      if (reponse[endDateField]) props.selectedEvent.setEnd(reponse[endDateField])
+      if (reponse[labelField]) props.selectedEvent.setProp('title', reponse[labelField])
+      if (reponse[descriptionField]) props.selectedEvent.setExtendedProp('description', reponse[descriptionField])
+      if (reponse[color.field]) {
+        const colors = await getColor(reponse[color.field])
+        props.selectedEvent.setProp('color', colors[reponse[color.field]])
+        props.selectedEvent.setExtendedProp(color.field, reponse[color.field])
       }
-      for (const field of thumbnailFields) {
+      for (const field of config.thumbnailFields) {
         props.selectedEvent.setExtendedProp(field, reponse[field])
       }
       emit('edit-action')

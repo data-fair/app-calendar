@@ -6,7 +6,7 @@ import { VDateInput } from 'vuetify/labs/VDateInput'
 import useAppInfo from '@/composables/useAppInfo'
 import { ofetch } from 'ofetch'
 import { computedAsync } from '@vueuse/core'
-const { evtDate, startDate, endDate, dataUrl, contribUrl } = useAppInfo()
+const { dateField, startDateField, endDateField, mainDataset, contribsDataset } = useAppInfo()
 const { schema } = await getSchema()
 const props = defineProps({
   selectedEvent: {
@@ -23,7 +23,7 @@ const emit = defineEmits(['submit', 'close'])
 const data = computedAsync(async () => {
   const temp = {}
   if (props.operation.match('patch')) {
-    const reponse = await ofetch(`${props.operation === 'patch-event' ? dataUrl : contribUrl}/lines/${props.selectedEvent.id}`)
+    const reponse = await ofetch(`${props.operation === 'patch-event' ? mainDataset.href : contribsDataset?.href}/lines/${props.selectedEvent.id}`)
     const event = reponse.update ? JSON.parse(reponse.update) : reponse
     for (const f in schema.properties) {
       temp[f] = event[f]
@@ -77,14 +77,14 @@ function buildResult () { // build contrib or event depending on operation
   eventTimeRange.date_begin.setHours(tab1[0], tab1[1])
   eventTimeRange.date_end?.setHours(tab2[0], tab2[1])
   if (props.selectedEvent.allDay) {
-    contrib.event[startDate || evtDate] = startDate ? eventTimeRange.date_begin.toISOString() : formatDate(eventTimeRange.date_begin)
-    if (startDate) contrib.event[endDate] = eventTimeRange.date_end.toISOString()
+    contrib.event[startDateField || dateField] = startDateField ? eventTimeRange.date_begin.toISOString() : formatDate(eventTimeRange.date_begin)
+    if (startDateField) contrib.event[endDateField] = eventTimeRange.date_end.toISOString()
   } else {
-    if (startDate) {
-      contrib.event[startDate] = eventTimeRange.date_begin.toISOString()
-      contrib.event[endDate] = eventTimeRange.date_end.toISOString()
+    if (startDateField) {
+      contrib.event[startDateField] = eventTimeRange.date_begin.toISOString()
+      contrib.event[endDateField] = eventTimeRange.date_end.toISOString()
     } else {
-      contrib.event[evtDate] = formatDate(eventTimeRange.date_begin)
+      contrib.event[dateField] = formatDate(eventTimeRange.date_begin)
     }
   }
   if (props.operation.match('event')) emit('submit', contrib.event)

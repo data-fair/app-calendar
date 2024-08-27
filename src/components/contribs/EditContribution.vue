@@ -4,7 +4,7 @@ import useAppInfo from '@/composables/useAppInfo'
 import { displayError, errorMessage } from '@/context'
 import EditMenu from '@/components/EditMenu.vue'
 import { getColor } from '@/assets/util'
-const { contribUrl, label, startDate, evtDate, endDate, description, user, colorContrib, category } = useAppInfo()
+const { application, config, contribsDataset, labelField, startDateField, endDateField, dateField, descriptionField, color } = useAppInfo()
 const props = defineProps({
   selectedContrib: {
     type: Object,
@@ -25,7 +25,7 @@ async function editContrib (contrib) {
   formData.append('user_name', contrib.user_name)
   formData.append('comment', contrib.comment)
   formData.append('validation_status', 'waiting')
-  formData.append('_owner', user.id)
+  formData.append('_owner', application.owner.id)
   formData.append('operation', 'create')
   formData.append('update', JSON.stringify(contrib.event))
   try {
@@ -35,26 +35,26 @@ async function editContrib (contrib) {
         method: 'POST',
         body: formData
       }
-      const reponse = await ofetch(contribUrl + '/lines', param)
+      const reponse = await ofetch(contribsDataset?.href + '/lines', param)
       const newEvent = {
         id: reponse._id,
-        title: contrib.event[label] || '',
-        start: contrib.event[startDate] || contrib.event[evtDate],
-        end: contrib.event[endDate],
+        title: contrib.event[labelField] || '',
+        start: contrib.event[startDateField] || contrib.event[dateField],
+        end: contrib.event[endDateField],
         allDay: props.selectedContrib.allDay,
         contrib: true,
         operation: 'create',
         comment: contrib.comment,
         user_name: contrib.user_name,
-        description: contrib.event[description] || '',
+        description: contrib.event[descriptionField] || '',
         className: 'contribution'
       }
-      if (colorContrib.noContribColor) {
-        newEvent.color = colorContrib.hexValue
+      if (config.colorContrib.noContribColor) {
+        newEvent.color = config.colorContrib.hexValue
       } else {
-        const colors = await getColor(contrib.event[category])
-        newEvent[category] = contrib.event[category]
-        newEvent.color = colors[contrib.event[category]]
+        const colors = await getColor(contrib.event[color.field])
+        newEvent[color.field] = contrib.event[color.field]
+        newEvent.color = colors[contrib.event[color.field]]
       }
       emit('edit-action', newEvent)
     } else if (props.operation === 'patch-contrib') {
@@ -67,11 +67,11 @@ async function editContrib (contrib) {
           'Content-type': 'application/json'
         }
       }
-      await ofetch(contribUrl + '/_bulk_lines', param)
+      await ofetch(contribsDataset?.href + '/_bulk_lines', param)
       // todo notify contrib's owner of the modif if user is 'admin'
-      props.selectedContrib.setStart(contrib.event[startDate] || contrib.event[evtDate])
-      props.selectedContrib.setEnd(contrib.event[endDate])
-      props.selectedContrib.setProp('title', contrib.event[label] || '')
+      props.selectedContrib.setStart(contrib.event[startDateField] || contrib.event[dateField])
+      props.selectedContrib.setEnd(contrib.event[endDateField])
+      props.selectedContrib.setProp('title', contrib.event[labelField] || '')
       props.selectedContrib.setExtendedProp('comment', contrib.comment)
       props.selectedContrib.setExtendedProp('user_name', contrib.user_name)
       emit('edit-action')

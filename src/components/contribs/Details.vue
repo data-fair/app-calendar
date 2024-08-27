@@ -3,7 +3,7 @@ import { reactive, ref } from 'vue'
 import { errorMessage, displayError } from '@/context'
 import useAppInfo from '@/composables/useAppInfo'
 import { ofetch } from 'ofetch'
-const { contribUrl, startDate, endDate, evtDate } = useAppInfo()
+const { contribsDataset, startDateField, endDateField, dateField } = useAppInfo()
 const prop = defineProps({
   selectedContrib: {
     type: Object,
@@ -14,9 +14,9 @@ const detailsMenu = ref(false)
 const contrib = reactive({})
 async function showDetails () {
   try {
-    const request = await ofetch(contribUrl + '/lines/' + prop.selectedContrib.id)
+    const request = await ofetch(contribsDataset?.href + '/lines/' + prop.selectedContrib.id)
     for (const [key, value] of Object.entries(JSON.parse(request.update))) {
-      if ([startDate, endDate, evtDate].includes(key)) contrib[key] = new Date(value).toLocaleString()
+      if ([startDateField, endDateField, dateField].includes(key)) contrib[key] = new Date(value).toLocaleString()
       else contrib[key] = value
     }
     contrib.operation = 'create'

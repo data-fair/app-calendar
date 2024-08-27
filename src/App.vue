@@ -1,35 +1,40 @@
 <script setup>
-import calendar from '@/components/Calendar.vue'
+import { defineAsyncComponent } from 'vue'
 import useAppInfo from './composables/useAppInfo'
-import { displayError, errorMessage } from './context'
 import { ofetch } from 'ofetch'
-const { datasets, contribsDataset, crowdSourcing, layout } = useAppInfo()
+
+let configureError
 try {
-  if (crowdSourcing) {
-    if (!datasets.some((d) => d.id === contribsDataset.id)) {
-      datasets[1] = contribsDataset
-      window.parent.postMessage({ type: 'set-config', content: { field: 'datasets', value: datasets } }, '*')
-    }
-    if (layout === 'simple') {
-      ofetch(window.APPLICATION.href + '/error', { body: { message: 'Vous n\'avez pas la permission de contribuer à ce jeu de données' }, method: 'POST' })
-    }
-  } else if (datasets[1]) {
-    datasets.pop()
-    window.parent.postMessage({ type: 'set-config', content: { field: 'datasets', value: datasets } }, '*')
+  const { config, mainDataset } = useAppInfo()
+  if (config.crowdSourcing) {
+    const datasets = [mainDataset, config.contribsDataset]
+    if ((config.datasets || []).map(d => d.id).join('-') !== datasets.map(d => d.id).join('-')) window.parent.postMessage({ type: 'set-config', content: { field: 'datasets', value: datasets } }, '*')
   }
 } catch (e) {
+  configureError = e.message
   ofetch(window.APPLICATION.href + '/error', { body: { message: e.message || e }, method: 'POST' })
 }
+
+const Calendar = defineAsyncComponent(() =>
+  import('./components/Calendar.vue')
+)
+const SnackBar = defineAsyncComponent(() =>
+  import('./components/SnackBar.vue')
+)
 </script>
 <template>
-  <calendar />
-  <v-snackbar
-    v-model="displayError"
-    :timeout="'5000'"
-    color="red"
-  >
-    <div>
-      {{ errorMessage }}
-    </div>
-  </v-snackbar>
+  <template v-if="!configureError">
+    <calendar />
+    <snack-bar />
+  </template>
+  <template v-else>
+    <v-img
+      src="/undraw_building_websites_i78t.png"
+      style="height:80%"
+    >
+      <h1 class="text-center">
+        Configuration incomplète
+      </h1>
+    </v-img>
+  </template>
 </template>

@@ -3,7 +3,7 @@ import { getData, displayError, errorMessage } from '@/context'
 import { computedAsync } from '@vueuse/core'
 import { useTheme, useDisplay } from 'vuetify'
 import { ofetch } from 'ofetch'
-import { reactive, ref, watch, onMounted } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import reactiveSearchParams from '@data-fair/lib/vue/reactive-search-params-global.js'
 import useAppInfo from '@/composables/useAppInfo'
 import { formatDate } from '@/assets/util'
@@ -17,12 +17,16 @@ import frLocale from '@fullcalendar/core/locales/fr'
 import FullCalendar from '@fullcalendar/vue3'
 import EditContrib from './contribs/EditContribution.vue'
 import ThumbnailContrib from './contribs/ThumbnailContribution'
-const { dataUrl, isRest, startDate, evtDate, endDate, layout, contribUrl } = useAppInfo()
+
+const { mainDataset, startDateField, endDateField, dateField, layout, contribsDataset } = useAppInfo()
 const { height } = useDisplay()
 const theme = useTheme()
-const dateBegin = ref(reactiveSearchParams.date === undefined ? new Date() : new Date(reactiveSearchParams.date))
-dateBegin.value.setDate(1)
-const dateEnd = ref(new Date(dateBegin.value.getTime() + 31 * 24 * 60 * 60 * 1000))
+
+reactiveSearchParams.view = reactiveSearchParams.view || 'dayGridMonth'
+if (!reactiveSearchParams.start) {
+  reactiveSearchParams.start = (mainDataset.timePeriod ? mainDataset.timePeriod.startDate : new Date().toISOString()).slice(0, 10)
+}
+
 const calendar = ref(null)
 const selectedEvent = ref(null)
 const selectedContrib = ref(null)
@@ -51,29 +55,19 @@ const items = [{ // list of different display modes
   title: 'Liste',
   value: 'listMonth'
 }]
+
 const events = computedAsync(async () => {
-  const events = await getData(dateBegin.value, dateEnd.value, theme)
-  return events
+  return await getData(theme)
 }, null, {
   onError: function (e) {
     displayError.value = true
     errorMessage.value = e.message
   }
 })
-watch(reactiveSearchParams, () => { // watch which period and which view is displayed to get data in precise range
-  calendar.value.calendar.changeView(reactiveSearchParams.view)
-  dateBegin.value = new Date(reactiveSearchParams.date)
-  const view = reactiveSearchParams.view
-  if (view === 'dayGridMonth' || view === 'listMonth') {
-    // add 31 days
-    dateBegin.value.setDate(1) // go to first day of the month
-    dateEnd.value = new Date(dateBegin.value.getTime() + 31 * 24 * 60 * 60 * 1000)
-  } else if (view === 'timeGridWeek') {
-    // add 7 days
-    dateBegin.value.setDate(dateBegin.value.getDate() - dateBegin.value.getUTCDay()) // go to monday
-    dateEnd.value = new Date(dateBegin.value.getTime() + 7 * 24 * 60 * 60 * 1000)
-  } else if (view === 'timeGridDay') dateEnd.value = new Date(dateBegin.value.getTime() + 24 * 60 * 60 * 1000) // add 24 hours
-})
+
+// watch(reactiveSearchParams.view, () => {
+//   calendar.value.calendar.changeView(reactiveSearchParams.view)
+// })
 
 const calendarOptions = reactive({ // standard options for the calendar, allows to use the calendar in read only mode
   plugins: [
@@ -81,39 +75,41 @@ const calendarOptions = reactive({ // standard options for the calendar, allows 
     timeGridPlugin,
     listPlugin
   ],
-  customButtons: {
-    prevButton: {
-      click: function (e) {
-        calendar.value.calendar.prev()
-        reactiveSearchParams.view = calendar.value.calendar.currentData.currentViewType
-        reactiveSearchParams.date = calendar.value.calendar.getDate()
-      },
-      icon: 'chevron-left'
-    },
-    nextButton: {
-      click: function (e) {
-        calendar.value.calendar.next()
-        reactiveSearchParams.view = calendar.value.calendar.currentData.currentViewType
-        reactiveSearchParams.date = calendar.value.calendar.getDate()
-      },
-      icon: 'chevron-right'
-    },
-    today: {
-      click: function (e) {
-        calendar.value.calendar.today()
-        reactiveSearchParams.view = calendar.value.calendar.currentData.currentViewType
-        reactiveSearchParams.date = new Date()
-      },
-      text: 'Aujourd\'hui'
-    }
+  datesSet (dateInfo) {
+    reactiveSearchParams.start = dateInfo.startStr.slice(0, 10)
   },
+  // customButtons: {
+  //   prevButton: {
+  //     click: function (e) {
+  //       console.log(e)
+  //       calendar.value.calendar.prev()
+  //       reactiveSearchParams.start = calendar.value.calendar.getDate().toISOString().slice(0, 10)
+  //     },
+  //     icon: 'chevron-left'
+  //   },
+  //   nextButton: {
+  //     click: function (e) {
+  //       console.log(e)
+  //       calendar.value.calendar.next()
+  //       reactiveSearchParams.start = calendar.value.calendar.getDate().toISOString().slice(0, 10)
+  //     },
+  //     icon: 'chevron-right'
+  //   },
+  //   today: {
+  //     click: function (e) {
+  //       calendar.value.calendar.today()
+  //       reactiveSearchParams.start = new Date().toISOString().slice(0, 10)
+  //     },
+  //     text: 'Aujourd\'hui'
+  //   }
+  // },
   headerToolbar: {
-    start: 'prevButton,nextButton today',
+    start: 'prev,next today',
     center: 'title',
     end: ''
   },
-  initialView: reactiveSearchParams.view || 'dayGridMonth',
-  initialDate: !reactiveSearchParams.date ? new Date() : new Date(reactiveSearchParams.date),
+  initialView: reactiveSearchParams.view,
+  initialDate: new Date(reactiveSearchParams.start),
   dayMaxEvents: true, // limit number of displayed events in one cell
   fixedWeekCount: false,
   showNonCurrentDates: false,
@@ -149,20 +145,21 @@ const calendarOptions = reactive({ // standard options for the calendar, allows 
     reactiveSearchParams.view = 'timeGridWeek'
   }
 })
-if (isRest && layout !== 'simple') { // options for edit mode, user can do operations on calendar (only on event which 'editable' property is set to true)
+
+if (mainDataset.isRest && layout !== 'simple') { // options for edit mode, user can do operations on calendar (only on event which 'editable' property is set to true)
   calendarOptions.plugins.push(interactionPlugin)
   calendarOptions.editable = true
   calendarOptions.eventResizableFromStart = true
   calendarOptions.selectable = true
   calendarOptions.select = function (e) { // call when selecting a zone
-    if (layout === 'edit') { edition.contrib = true; selectedContrib.value = e } else { edition.event = true; selectedEvent.value = e }
+    if (layout === 'contrib') { edition.contrib = true; selectedContrib.value = e } else { edition.event = true; selectedEvent.value = e }
     edition.operation = 'post'
   }
   calendarOptions.eventDrop = async function (e) {
-    if (layout === 'edit')selectedContrib.value = e.event
+    if (layout === 'contrib')selectedContrib.value = e.event
     else selectedEvent.value = e.event
     if (e.oldEvent.allDay && !e.event.allDay) { // if we drag from the allDay zone to non allDay, default duration is one hour
-      if (!startDate) e.event.setAllDay(true) // if time period doesn't exist, event remains all day
+      if (!startDateField) e.event.setAllDay(true) // if time period doesn't exist, event remains all day
       else {
         const d = e.event.start
         d.setHours(e.event.start.getHours() + 1)
@@ -171,7 +168,7 @@ if (isRest && layout !== 'simple') { // options for edit mode, user can do opera
       }
     }
     try {
-      if (layout === 'edit') await patchContribCalendar()
+      if (layout === 'contrib') await patchContribCalendar()
       else await patchEventCalendar()
     } catch (r) {
       e.revert()
@@ -180,10 +177,10 @@ if (isRest && layout !== 'simple') { // options for edit mode, user can do opera
     }
   }
   calendarOptions.eventResize = async function (e) {
-    if (layout === 'edit') selectedContrib.value = e.event
+    if (layout === 'contrib') selectedContrib.value = e.event
     else selectedEvent.value = e.event
     try {
-      if (layout === 'edit') await patchContribCalendar()
+      if (layout === 'contrib') await patchContribCalendar()
       else await patchEventCalendar()
     } catch (r) {
       e.revert()
@@ -192,6 +189,7 @@ if (isRest && layout !== 'simple') { // options for edit mode, user can do opera
     }
   }
 }
+
 function addCalendarEvent (newEvent) {
   // add newEvent to calendar with calendar's addEvent method
   // newEvent can also be a contrib
@@ -205,29 +203,29 @@ function addCalendarEvent (newEvent) {
 async function patchEventCalendar () {
   const event = selectedEvent.value
   const formData = new FormData()
-  if (startDate && endDate) {
-    formData.append(endDate, event.end.toISOString())
-    formData.append(startDate, event.start.toISOString())
-    if (evtDate) formData.append(evtDate, formatDate(event.start))
+  if (startDateField && endDateField) {
+    formData.append(endDateField, event.end.toISOString())
+    formData.append(startDateField, event.start.toISOString())
+    if (dateField) formData.append(dateField, formatDate(event.start))
   } else {
-    formData.append(evtDate || startDate, evtDate ? formatDate(event.start) : event.start.toISOString())
+    formData.append(dateField, formatDate(event.start))
   }
   const param = {
     method: 'PATCH',
     body: formData
   }
-  await ofetch(dataUrl + '/lines/' + selectedEvent.value.id, param)
+  await ofetch(mainDataset.href + '/lines/' + selectedEvent.value.id, param)
 }
 async function patchContribCalendar () {
   const contrib = selectedEvent.value
-  const url = contribUrl + '/lines/' + selectedEvent.value.id
+  const url = contribsDataset?.href + '/lines/' + selectedEvent.value.id
   const request = await ofetch(url)
   const newEvent = JSON.parse(request.update)
-  if (startDate) {
-    newEvent[startDate] = contrib.start
-    newEvent[endDate] = contrib.end
+  if (startDateField && endDateField) {
+    newEvent[startDateField] = contrib.start
+    newEvent[endDateField] = contrib.end
   } else {
-    newEvent[evtDate] = contrib.start
+    newEvent[dateField] = contrib.start
   }
   const formData = new FormData()
   formData.append('update', JSON.stringify(newEvent))
@@ -256,7 +254,7 @@ function thumbnailAction (operation, content) {
 function actionButton () {
   const d = new Date()
   let defaultTimeStamp = {}
-  if (startDate) {
+  if (startDateField && endDateField) {
     defaultTimeStamp = {
       start: d,
       end: new Date(d.getTime() + 1000 * 60 * 60), // default duration is one hour
@@ -271,7 +269,7 @@ function actionButton () {
       menu: true // indicate we show date picker on edit menu
     }
   }
-  if (layout === 'edit') {
+  if (layout === 'contrib') {
     edition.contrib = true
     selectedContrib.value = defaultTimeStamp
   } else {
@@ -294,9 +292,9 @@ onMounted(() => {
 </script>
 <template>
   <v-btn
-    v-if="isRest && layout !=='simple'"
+    v-if="mainDataset.isRest && layout !=='simple'"
     v-tooltip="{
-      text: `Ajouter ${layout === 'edit' ? 'une contribution' : 'un événement'}`,
+      text: `Ajouter ${layout === 'contrib' ? 'une contribution' : 'un événement'}`,
       location: 'left',
       openDelay:'500'
     }"
@@ -372,6 +370,7 @@ onMounted(() => {
     />
   </suspense>
 </template>
+
 <style>
 .fc-icon::before{
   padding-bottom : 7px !important

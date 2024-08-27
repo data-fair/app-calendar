@@ -5,7 +5,7 @@ import { ofetch } from 'ofetch'
 import useAppInfo from '@/composables/useAppInfo'
 import { useTheme } from 'vuetify'
 import { getColor } from '@/assets/util'
-const { dataUrl, contribUrl, label, evtDate, startDate, endDate, description, color, thumbnailFields, deleteValidatedContribs, category } = useAppInfo()
+const { config, mainDataset, contribsDataset, labelField, dateField, startDateField, endDateField, descriptionField, color } = useAppInfo()
 const theme = useTheme()
 const prop = defineProps({
   selectedContrib: {
@@ -24,36 +24,36 @@ async function acceptContrib () {
     body: formData
   }
   try {
-    const request = await ofetch(`${contribUrl}/lines/${prop.selectedContrib.id}`, param)
+    const request = await ofetch(`${contribsDataset?.href}/lines/${prop.selectedContrib.id}`, param)
     const formDataEvent = new FormData()
     for (const [key, value] of Object.entries(JSON.parse(request.update))) {
       formDataEvent.append(key, value)
     }
     param.method = 'POST'
     param.body = formDataEvent
-    const reponse = await ofetch(dataUrl + '/lines', param)
+    const reponse = await ofetch(mainDataset.href + '/lines', param)
     const newEvent = {
       id: reponse._id,
-      title: reponse[label] || '',
-      start: reponse[startDate] || reponse[evtDate],
-      end: reponse[endDate],
-      allDay: reponse[evtDate] ? true : prop.selectedContrib.allDay
+      title: reponse[labelField] || '',
+      start: reponse[startDateField] || reponse[dateField],
+      end: reponse[endDateField],
+      allDay: reponse[dateField] ? true : prop.selectedContrib.allDay
     }
-    newEvent.description = reponse[description] || ''
+    newEvent.description = reponse[descriptionField] || ''
     if (color.type === 'multicolor') {
-      const colors = await getColor(reponse[category])
-      newEvent.color = colors[reponse[category]]
-      newEvent[category] = reponse[category]
+      const colors = await getColor(reponse[color.field])
+      newEvent.color = colors[reponse[color.field]]
+      newEvent[color.field] = reponse[color.field]
     } else newEvent.color = color.colors.type === 'custom' ? color.colors.hexValue : theme.current.value.colors[color.colors.strValue]
-    for (const field of thumbnailFields) {
+    for (const field of config.thumbnailFields) {
       newEvent[field] = reponse[field]
     }
     // todo notify contribution's owner
     prop.selectedContrib.remove()
     emit('accept', newEvent)
     acceptMenu.value = false
-    if (deleteValidatedContribs) {
-      await ofetch(`${contribUrl}/lines/${prop.selectedContrib.id || 0}`, { method: 'DELETE' })
+    if (config.deleteValidatedContribs) {
+      await ofetch(`${contribsDataset?.href}/lines/${prop.selectedContrib.id || 0}`, { method: 'DELETE' })
     }
   } catch (e) {
     errorMessage.value = e.status + ' - ' + e.data
