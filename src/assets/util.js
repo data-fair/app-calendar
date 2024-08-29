@@ -1,34 +1,5 @@
 import useAppInfo from '@/composables/useAppInfo'
-import chroma from 'chroma-js'
-const { mainDataset, color, config } = useAppInfo()
-const categorySet = new Set()
-
-export async function getColor (newCategory) {
-  const colorSchemes = {} // create an object who associates a category and a color
-  if (color.colors.type === 'palette') {
-    const url = `${mainDataset.href}/values/${color.field}?size=100`
-    const request = await fetch(url)
-    if (request.ok) {
-      const reponse = await request.json()
-      if (newCategory) categorySet.add(newCategory)
-      const nbColor = Math.max(reponse.length, 12)
-      const palette = chroma.scale(color.colors.name).mode('lch').colors(nbColor)
-      reponse.forEach((cat) => {
-        categorySet.add(cat)
-      })
-      let i = 0
-      categorySet.forEach((cat) => {
-        colorSchemes[cat] = `${palette[i + color.colors.offset]}`
-        i++
-      })
-    }
-  } else {
-    color.colors.styles.forEach((cat) => {
-      colorSchemes[cat.value] = `${cat.color}`
-    })
-  }
-  return colorSchemes
-}
+const { mainDataset, config } = useAppInfo()
 
 export async function getSchema () {
   const url = `${mainDataset.href}/safe-schema?calculated=false&mimeType=application%2Fschema%2Bjson`

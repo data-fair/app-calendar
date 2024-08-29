@@ -1,47 +1,59 @@
 import useAppInfo from './composables/useAppInfo'
-// import { getColor } from '@/assets/util.js'
 import { useConceptFilters } from '@data-fair/lib/vue/concept-filters.js'
 import reactiveSearchParams from '@data-fair/lib/vue/reactive-search-params-global.js'
 import { ofetch } from 'ofetch'
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
+import { computedAsync } from '@vueuse/core'
+import chroma from 'chroma-js'
 
 export const displayError = ref(false)
 export const errorMessage = ref('')
+export const timestamp = ref(new Date().getTime())
 
 const conceptFilters = useConceptFilters(reactiveSearchParams)
-const { config, color, mainDataset, startDateField, endDateField, dateField, labelField, descriptionField, layout } = useAppInfo()
+const { config, color, mainDataset, startDateField, endDateField, dateField, labelField, layout } = useAppInfo()
 
-const period = computed(() => {
-  const view = reactiveSearchParams.view
-  if (view === 'dayGridMonth' || view === 'listMonth') {
-    const start = new Date(reactiveSearchParams.start)
-    start.setDate(1)
-    const end = new Date(start.getTime() + 31 * 24 * 60 * 60 * 1000)
-    return start.toISOString().slice(0, 10) + ',' + end.toISOString().slice(0, 10)
-  } else if (view === 'timeGridWeek') {
-    const start = new Date(reactiveSearchParams.start)
-    start.setDate(start.getDate() - start.getUTCDay()) // go to monday
-    const end = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000)
-    return start.toISOString().slice(0, 10) + ',' + end.toISOString().slice(0, 10)
+const colorPalette = computedAsync(async () => {
+  if (color.colors.type !== 'multicolor') return
+  const palette = {} // create an object who associates a category and a color
+  if (color.colors.type === 'palette') {
+    const categories = await ofetch(`${mainDataset.href}/values/${color.field}?size=100`)
+    const nbColors = Math.max(categories.length, 12)
+    const cPalette = chroma.scale(color.colors.name).mode('lch').colors(nbColors)
+    categories.forEach((cat, i) => {
+      palette[cat] = cPalette[(i + color.colors.offset) % nbColors]
+    })
+  } else {
+    color.colors.categories.forEach((cat) => {
+      palette[cat.value] = `${cat.color}`
+    })
   }
-  return reactiveSearchParams.start
+  return palette
+}, null, {
+  onError: function (e) {
+    displayError.value = true
+    errorMessage.value = e.message
+  }
 })
 
 function getColor (value, theme) {
   if (color.type === 'monochrome') {
     return color.colors.type === 'custom' ? color.colors.hexValue : theme.current.value.colors[color.colors.strValue]
   } else {
-    return '' // colorPalette[value]
+    return colorPalette.value[value]
   }
 }
 
 export async function getData (theme) {
+  if (!reactiveSearchParams.start && !reactiveSearchParams.end) return []
   const params = {
     ...conceptFilters,
-    _c_date_match: period.value,
-    size: 10000,
+    _c_date_match: reactiveSearchParams.start + ',' + reactiveSearchParams.end,
+    size: 1000,
     select: '_id,' + labelField
   }
+  if (layout === 'admin') params.t = timestamp.value
+  else params.finalizedAt = mainDataset.finalizedAt
   if (color.type === 'multicolor') params.select += ',' + config.color.field
   if (startDateField && endDateField) params.select += ',' + startDateField + ',' + endDateField
   else params.select += ',' + dateField
@@ -81,40 +93,4 @@ export async function getData (theme) {
   //   await Promise.all(promises)
   // }
   // return events
-}
-
-function createEvent (value, colorPalette, theme, contrib = undefined) {
-  const event = {}
-  event.id = value._id || contrib._id
-  event.title = value[labelField] || ''
-  if (value[startDateField]) { // timed-event
-    event.start = value[startDateField]
-    event.end = value[endDateField]
-    const db = new Date(value[startDateField])
-    const de = new Date(value[endDateField])
-    if (Math.abs(de.getDate() - db.getDate()) > 2 || db.getMonth() !== de.getMonth()) {
-      // if the timed event is more than 2 days long, we set the allDay property to true
-      // but we may loose the information on start and end hours,
-      // the format change from this : (YYY-MM-DD HH-mm) to (YYY-MM-DD 00:00), this is a full calendar functionnality
-      event.allDay = true
-    }
-  } else event.start = value[dateField]
-  if (contrib) {
-    event.contrib = true
-    event.comment = contrib.comment
-    event.user_name = contrib.user_name
-    event.className = 'contribution'
-  } else {
-    if (color.type === 'monochrome') {
-      event.color = color.colors.type === 'custom' ? color.colors.hexValue : theme.current.value.colors[color.colors.strValue]
-    } else {
-      event[color.field] = value[color.field]
-      event.color = colorPalette[value[color.field]]
-    }
-    event.description = value[descriptionField] || ''
-    for (const field of config.thumbnailFields) {
-      event[field] = value[field]
-    }
-  }
-  return event
 }

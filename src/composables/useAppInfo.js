@@ -14,20 +14,26 @@ export default function useAppInfo () {
   const endDateField = mainDataset.schema.find(f => f['x-refersTo'] === 'https://schema.org/endDate')?.key
   const dateField = mainDataset.schema.find(f => f['x-refersTo'] === 'http://schema.org/Date')?.key
   if ((!startDateField || !endDateField) && !dateField) throw new Error('Veuillez ajouter un concept de type Date à vos données')
-  const color = config.color
+  const attachmentField = !mainDataset.attachmentsAsImage && mainDataset.schema.find(f => f['x-refersTo'] === 'http://schema.org/DigitalDocument')
+  const imageField = mainDataset.schema.find(f => f['x-refersTo'] === 'http://schema.org/image')
+  const linkField = mainDataset.schema.find(f => f['x-refersTo'] === 'https://schema.org/WebPage')
+  const fields = mainDataset.schema.reduce((a, b) => { a[b.key] = b; return a }, {})
 
+  const color = config.color
   if (color.type === 'multicolor' && !config.color.field) throw new Error('Veuillez remplir le champ : colonne de catégorie')
 
   const userPermissions = mainDataset.userPermissions || []
-  const isAdmin = userPermissions.includes('createLine') && userPermissions.includes('patchLine') && userPermissions.includes('deleteLine') && (!reactiveSearchParams.role || reactiveSearchParams.role !== 'contrib')
+  const isAdmin = userPermissions.includes('createLine') && userPermissions.includes('patchLine') && userPermissions.includes('deleteLine') && (!reactiveSearchParams.role || reactiveSearchParams.role === 'admin')
 
   const contribsDataset = config.datasets?.[1]
+  const isContrib = contribsDataset && contribsDataset.userPermissions.includes('createLine') && contribsDataset.userPermissions.includes('patchLine') && contribsDataset.userPermissions.includes('deleteLine') && (!reactiveSearchParams.role || reactiveSearchParams.role === 'contrib')
+
   if (config.crowdSourcing) {
     if (!contribsDataset) throw new Error('Veuillez sélectionner une source de données pour les contributions')
     const missingFields = ['operation', 'submit_date', 'user_name', 'target_id', 'comment', 'validation_status', 'validation_date', 'update', 'original'].filter(fid => !contribsDataset.schema.map(f => f.key).includes(fid))
     if (missingFields.length) throw new Error('Champs manquants dans le jeu de données des contributions : ' + missingFields.join(', '))
   }
-  const layout = !config.crowdSourcing ? (mainDataset.isrest ? 'admin' : 'simple') : (isAdmin ? 'admin' : 'contrib')
+  const layout = !config.crowdSourcing ? (mainDataset.isRest && isAdmin ? 'admin' : 'simple') : (isAdmin ? 'admin' : (isContrib ? 'contrib' : 'simple'))
 
   return {
     application,
@@ -39,6 +45,10 @@ export default function useAppInfo () {
     endDateField,
     labelField,
     descriptionField,
+    attachmentField,
+    linkField,
+    imageField,
+    fields,
     isAdmin,
     color,
     layout

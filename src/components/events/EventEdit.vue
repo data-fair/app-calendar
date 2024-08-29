@@ -1,12 +1,9 @@
 <script setup>
-import { getColor } from '@/assets/util'
 import { ofetch } from 'ofetch'
 import useAppInfo from '@/composables/useAppInfo'
-import { useTheme } from 'vuetify'
 import { displayError, errorMessage } from '@/context'
 import EditMenu from '@/components/EditMenu.vue'
-const theme = useTheme()
-const { mainDataset, color, config, startDateField, endDateField, dateField, labelField, descriptionField } = useAppInfo()
+const { mainDataset, config, startDateField, endDateField, dateField, labelField, descriptionField } = useAppInfo()
 const props = defineProps({
   selectedEvent: {
     type: Object,
@@ -42,12 +39,7 @@ async function editEvent (event) {
         allDay: reponse[dateField] ? true : props.selectedEvent.allDay
       }
       newEvent.description = reponse[descriptionField] || ''
-      if (color.type === 'monochrome') {
-        newEvent.color = color.colors.type === 'custom' ? color.colors.hexValue : theme.current.value.colors[color.colors.strValue]
-      } else {
-        const colors = await getColor(reponse[color.field])
-        newEvent.color = colors[reponse[color.field]]
-      }
+
       for (const field of config.thumbnailFields) {
         newEvent[field] = reponse[field]
       }
@@ -62,11 +54,7 @@ async function editEvent (event) {
       if (reponse[endDateField]) props.selectedEvent.setEnd(reponse[endDateField])
       if (reponse[labelField]) props.selectedEvent.setProp('title', reponse[labelField])
       if (reponse[descriptionField]) props.selectedEvent.setExtendedProp('description', reponse[descriptionField])
-      if (reponse[color.field]) {
-        const colors = await getColor(reponse[color.field])
-        props.selectedEvent.setProp('color', colors[reponse[color.field]])
-        props.selectedEvent.setExtendedProp(color.field, reponse[color.field])
-      }
+
       for (const field of config.thumbnailFields) {
         props.selectedEvent.setExtendedProp(field, reponse[field])
       }

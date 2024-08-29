@@ -14,31 +14,23 @@
               "title": "Jeu de données",
               "description": "Ce jeu doit contenir au moins un champ avec le concept de date",
               "type": "object",
-              "x-fromUrl": "api/v1/datasets?status=finalized&q={q}&select=id,title,isRest,schema,timePeriod&{context.datasetFilter}&short-concept=date,startDate,endDate&size=100",
+              "x-fromUrl": "api/v1/datasets?status=finalized&q={q}&select=title,isRest,schema,timePeriod,attachmentsAsImage,userPermissions&{context.datasetFilter}&short-concept=date,startDate,endDate&size=100",
               "x-itemsProp": "results",
               "x-itemTitle": "title",
               "x-itemKey": "href",
               "additionalProperties": false,
               "properties": {
-                "href": {
-                  "type": "string"
-                },
-                "title": {
-                  "type": "string"
-                },
-                "id": {
-                  "type": "string"
-                },
-                "isRest": {
-                  "type": "boolean"
-                },
-                "schema": {
-                  "type": "array"
-                },
-                "timePeriod": {
-                  "type": "object"
-                }
+                "href": { "type": "string" },
+                "title": { "type": "string" },
+                "isRest": { "type": "boolean" },
+                "schema": { "type": "array" },
+                "timePeriod": { "type": "object" },
+                "attachmentsAsImage": { "type": "boolean" },
+                "userPermissions": { "type": "array" }
               }
+            },
+            {
+              "$ref": "#/definitions/contribsDataset"
             }
           ]
         }
@@ -146,17 +138,17 @@
                       "title": "Palette personnalisée",
                       "required": [
                         "type",
-                        "styles"
+                        "categories"
                       ],
                       "additionalProperties": false,
                       "properties": {
                         "type": {
                           "const": "manual"
                         },
-                        "styles": {
-                          "title": "Couleurs et ordre",
+                        "categories": {
+                          "title": "Couleurs",
                           "type": "array",
-                          "x-fromUrl": "{datasets.0.href}/values_agg?field={parent.parent.value.colors.field}&size=0&agg_size=15",
+                          "x-fromUrl": "{datasets.0.href}/values_agg?field={parent.parent.parent.value.field}&size=0&agg_size=15",
                           "x-display": "list",
                           "x-itemTitle": "value",
                           "x-itemKey": "value",
@@ -262,19 +254,19 @@
       }
     },
     {
-      "title": "Vignette d'événement",
+      "title": "Détails d'un événement",
       "description": "Gérer le contenu de l'affichage lors du clic sur un événement",
       "properties": {
         "descriptionField": {
           "type": "object",
           "title": "Champ de description",
-          "description": "Choisissez le champ permettant de fournir une description de l'événement, interprète le html et le markdown",
+          "description": "Choisissez le champ permettant de fournir une description de l'événement, interprète le html et le markdown.",
           "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
           "x-itemTitle": "description",
           "x-itemKey": "key"
         },
-        "thumbnailFields": {
-          "title": "Champs à afficher dans la vignette",
+        "additionalFields": {
+          "title": "Champs supplémentaires à afficher.",
           "type": "array",
           "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
           "x-itemTitle": "label",
@@ -294,31 +286,7 @@
           "title": "Activer le crowd sourcing"
         },
         "contribsDataset": {
-          "title": "Jeu de données des contributions externes",
-          "x-if": "parent.value.crowdSourcing",
-          "type": "object",
-          "x-fromUrl": "api/v1/datasets?status=finalized&q={q}&select=id,title,isRest,schema&{context.datasetFilter}",
-          "x-itemsProp": "results",
-          "x-itemTitle": "title",
-          "x-itemKey": "href",
-          "additionalProperties": false,
-          "properties": {
-            "href": {
-              "type": "string"
-            },
-            "title": {
-              "type": "string"
-            },
-            "id": {
-              "type": "string"
-            },
-            "isRest": {
-              "type": "boolean"
-            },
-            "schema": {
-              "type": "array"
-            }
-          }
+          "$ref": "#/definitions/contribsDataset"
         },
         "deleteValidatedContribs": {
           "title": "Supprimer les contributions après validation",
@@ -358,5 +326,24 @@
         }
       }
     }
-  ]
+  ],
+  "definitions": {
+    "contribsDataset": {
+      "title": "Jeu de données des contributions externes",
+      "x-if": "parent.value.crowdSourcing",
+      "type": "object",
+      "x-fromUrl": "api/v1/datasets?rest=true&q={q}&select=title,schema,timePeriod,userPermissions&{context.datasetFilter}",
+      "x-itemsProp": "results",
+      "x-itemTitle": "title",
+      "x-itemKey": "href",
+      "additionalProperties": false,
+      "properties": {
+        "href": { "type": "string" },
+        "title": { "type": "string" },
+        "schema": { "type": "array" },
+        "timePeriod": { "type": "object" },
+        "userPermissions": { "type": "array" }
+      }
+    }
+  }
 }
