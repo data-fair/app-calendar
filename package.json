@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "APP_URL=http://localhost:3000/app/ df-dev-server",
+    "dev-private": "DATAFAIR_OWNER_ID=5a5dc47163ebd4a6f438589b DATAFAIR_API_KEY=bzo1YTVkYzQ3MTYzZWJkNGE2ZjQzODU4OWI6NktWSHpScGZiSm1HS3JqOFI4TFQ0 APP_URL=http://localhost:3000/app/ df-dev-server",
     "dev-src": "vite",
     "build": "vite build",
     "build-test": "PUBLIC_URL=https://staging-koumoul.com/apps/documents/master/ vite build",
@@ -28,6 +29,7 @@
     "@fullcalendar/timegrid": "^6.1.10",
     "@fullcalendar/vue3": "^6.1.10",
     "@koumoul/vjsf": "^3.0.0-beta.8",
+    "@koumoul/vjsf-markdown": "^0.2.1",
     "@vueuse/core": "^10.7.2",
     "chroma-js": "^2.4.2",
     "dayjs": "^1.11.13",

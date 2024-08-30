@@ -33,7 +33,7 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
-    include: commonjsDeps
+    include: [...commonjsDeps, 'easymde']
   },
   build: {
     commonjsOptions: {

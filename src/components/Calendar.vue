@@ -8,13 +8,14 @@ import frLocale from '@fullcalendar/core/locales/fr'
 import { reactive, ref } from 'vue'
 import { computedAsync } from '@vueuse/core'
 import { useTheme } from 'vuetify'
-import { getData, displayError, errorMessage } from '@/context'
+import { getData, displayError, errorMessage, timestamp } from '@/context'
 import reactiveSearchParams from '@data-fair/lib/vue/reactive-search-params-global.js'
 import useAppInfo from '@/composables/useAppInfo'
 import EventDetails from './events/EventDetails.vue'
+import { ofetch } from 'ofetch'
 
 const theme = useTheme()
-const { mainDataset } = useAppInfo()
+const { mainDataset, layout, startDateField, endDateField, dateField } = useAppInfo()
 
 const selectedEvent = ref(null)
 const eventMenuOpen = ref(null)
@@ -31,6 +32,27 @@ const events = computedAsync(async () => {
   }
 })
 
+async function patchEvent (event) {
+  const body = {}
+  if (startDateField && endDateField) {
+    body[startDateField] = event.start.toISOString()
+    body[endDateField] = event.end.toISOString()
+  } else if (dateField) body[dateField] = event.start.toISOString()
+  const url = `${mainDataset.href}/lines/${event.id}`
+  const params = {
+    method: 'PATCH',
+    body
+  }
+  try {
+    await ofetch(url, params)
+    eventMenuOpen.value = false
+    timestamp.value = new Date().getTime()
+  } catch (e) {
+    errorMessage.value = e.status + ' - ' + e._data
+    displayError.value = true
+  }
+}
+
 const midDate = reactiveSearchParams.start && reactiveSearchParams.end && new Date((new Date(reactiveSearchParams.start).getTime() + new Date(reactiveSearchParams.end).getTime()) / 2)
 
 const calendarOptions = reactive({
@@ -44,21 +66,37 @@ const calendarOptions = reactive({
     end: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
   },
   events,
+  selectable: layout !== 'simple',
   datesSet (dateInfo) {
     reactiveSearchParams.start = dateInfo.startStr
     reactiveSearchParams.end = dateInfo.endStr
     reactiveSearchParams.view = dateInfo.view.type
   },
-  eventClick: function (e) {
+  eventClick (e) {
     e.jsEvent.preventDefault()
     selectedEvent.value = e.event
     setTimeout(() => {
       eventMenuOpen.value = true
     }, 0)
     eventMenuActivator.value = e.el
+  },
+  eventDrop (e) {
+    patchEvent(e.event)
+  },
+  eventResize (e) {
+    patchEvent(e.event)
+  },
+  select (e) {
+    const event = {}
+    if (startDateField && endDateField) {
+      event[startDateField] = e.start.toISOString()
+      event[endDateField] = e.end.toISOString()
+    } else if (dateField) event[dateField] = e.start.toISOString()
+    selectedEvent.value = event
+    eventMenuOpen.value = true
+    console.log(e)
   }
 })
-
 </script>
 
 <template>
@@ -67,11 +105,11 @@ const calendarOptions = reactive({
     v-model="eventMenuOpen"
     :close-on-content-click="false"
     :activator="eventMenuActivator"
-    offset-y
+    :location="reactiveSearchParams.view === 'dayGridMonth' ? 'bottom' : 'start center'"
   >
     <event-details
       :event="selectedEvent"
-      @deleted="eventMenuOpen = false"
+      @updated="eventMenuOpen = false"
     />
   </v-menu>
 </template>
