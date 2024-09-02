@@ -5,10 +5,12 @@ import { ofetch } from 'ofetch'
 import { ref } from 'vue'
 import { computedAsync } from '@vueuse/core'
 import chroma from 'chroma-js'
+import { getSession } from '@data-fair/lib/vue/session.js'
 
 export const displayError = ref(false)
 export const errorMessage = ref('')
 export const timestamp = ref(new Date().getTime())
+export const session = await getSession()
 
 const conceptFilters = useConceptFilters(reactiveSearchParams)
 const { config, color, mainDataset, startDateField, endDateField, dateField, labelField, layout } = useAppInfo()
@@ -58,7 +60,7 @@ export async function getData (theme) {
   if (startDateField && endDateField) params.select += ',' + startDateField + ',' + endDateField
   else params.select += ',' + dateField
   const response = await ofetch(`${mainDataset.href}/lines`, { params })
-  return response.results.map(event => ({
+  const mainEvents = response.results.map(event => ({
     editable: layout === 'admin',
     id: event._id,
     title: event[labelField],
@@ -67,9 +69,11 @@ export async function getData (theme) {
     end: startDateField && endDateField ? event[endDateField] : undefined,
     allDay: !(startDateField && endDateField) || (new Date(event[endDateField]).getTime() - new Date(event[startDateField]).getTime() > 2 * 24 * 60 * 60 * 1000)
   }))
+  if (config.crowdSourcing && layout !== 'simple') {
+    const reponse = await ofetch(`${contribsDataset.href + layout === 'contrib' ? `/own/${session?.state?.user?.id}` : ''}/lines?size=1000`)
+  } else return mainEvents
 
   // if (config.crowdSourcing && layout !== 'simple') {
-  //   const reponse = await ofetch(`${contribsDataset?.href}/lines?size=1000${layout === 'contrib' ? '&owner=' + application.owner.id : ''}`)
   //   const promises = reponse.results.map(async (contrib) => {
   //     if (contrib.validation_status === 'waiting') {
   //       const value = JSON.parse(contrib.update)

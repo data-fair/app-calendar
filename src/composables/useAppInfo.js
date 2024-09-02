@@ -25,12 +25,12 @@ export default function useAppInfo () {
   const userPermissions = mainDataset.userPermissions || []
   const isAdmin = userPermissions.includes('createLine') && userPermissions.includes('patchLine') && userPermissions.includes('deleteLine') && (!reactiveSearchParams.role || reactiveSearchParams.role === 'admin')
 
-  const contribsDataset = config.datasets?.[1]
+  const contribsDataset = config.datasets?.[1] || config.contribsDataset
   const isContrib = contribsDataset && contribsDataset.userPermissions.includes('createLine') && contribsDataset.userPermissions.includes('patchLine') && contribsDataset.userPermissions.includes('deleteLine') && (!reactiveSearchParams.role || reactiveSearchParams.role === 'contrib')
 
   if (config.crowdSourcing) {
     if (!contribsDataset) throw new Error('Veuillez sélectionner une source de données pour les contributions')
-    const missingFields = ['operation', 'submit_date', 'user_name', 'target_id', 'comment', 'validation_status', 'validation_date', 'update', 'original'].filter(fid => !contribsDataset.schema.map(f => f.key).includes(fid))
+    const missingFields = ['_owner', '_ownerName', 'start', 'end', 'operation', 'target_id', 'payload', 'status'].filter(fid => !contribsDataset.schema.map(f => f.key).includes(fid))
     if (missingFields.length) throw new Error('Champs manquants dans le jeu de données des contributions : ' + missingFields.join(', '))
   }
   const layout = !config.crowdSourcing ? (mainDataset.isRest && isAdmin ? 'admin' : 'simple') : (isAdmin ? 'admin' : (isContrib ? 'contrib' : 'simple'))

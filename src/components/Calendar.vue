@@ -8,7 +8,7 @@ import frLocale from '@fullcalendar/core/locales/fr'
 import { reactive, ref } from 'vue'
 import { computedAsync } from '@vueuse/core'
 import { useTheme } from 'vuetify'
-import { getData, displayError, errorMessage, timestamp } from '@/context'
+import { getData, displayError, errorMessage, timestamp, session } from '@/context'
 import reactiveSearchParams from '@data-fair/lib/vue/reactive-search-params-global.js'
 import useAppInfo from '@/composables/useAppInfo'
 import EventDetails from './events/EventDetails.vue'
@@ -88,13 +88,25 @@ const calendarOptions = reactive({
   },
   select (e) {
     const event = {}
-    if (startDateField && endDateField) {
-      event[startDateField] = e.start.toISOString()
-      event[endDateField] = e.end.toISOString()
-    } else if (dateField) event[dateField] = e.start.toISOString()
+    if (layout !== 'contrib') {
+      if (startDateField && endDateField) {
+        event[startDateField] = e.start.toISOString()
+        event[endDateField] = e.end.toISOString()
+      } else if (dateField) event[dateField] = e.start.toISOString()
+    } else {
+      event.isContrib = true
+      event.operation = 'create'
+      event.status = 'submitted'
+      event.start = e.start.toISOString()
+      event.end = e.end.toISOString()
+      const user = session?.state?.user
+      if (user) {
+        event._owner = user.id
+        event._ownerName = user.name
+      }
+    }
     selectedEvent.value = event
     eventMenuOpen.value = true
-    console.log(e)
   }
 })
 </script>

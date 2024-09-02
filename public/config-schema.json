@@ -281,6 +281,34 @@
       "title": "Edition",
       "x-if": "datasets.0.isRest",
       "properties": {
+        "formDensity": {
+          "title": "Densité du formulaire",
+          "type": "string",
+          "oneOf": [
+            { "const": "default", "title": "Normale" },
+            { "const": "compact", "title": "Compacte" },
+            { "const": "comfortable", "title": "Aérée" }
+          ],
+          "default": "default"
+        },
+        "formVariant": {
+          "title": "Style du formulaire",
+          "type": "string",
+          "oneOf": [
+            { "const": "outlined", "title": "Bordure" },
+            { "const": "underlined", "title": "Souligné" },
+            { "const": "filled", "title": "Rempli" },
+            { "const": "solo", "title": "Solo" },
+            { "const": "solo-inverted", "title": "Solo inversé" },
+            { "const": "solo-filled", "title": "Solo rempli" }
+          ],
+          "default": "underlined"
+        },
+        "showHelpMessages": {
+          "type": "boolean",
+          "title": "Afficher les descriptions des champs en bulles d'aide",
+          "default": false
+        },
         "crowdSourcing": {
           "type": "boolean",
           "title": "Activer le crowd sourcing"
@@ -294,35 +322,13 @@
           "default": false,
           "x-if": "parent.value.crowdSourcing"
         },
-        "editionFields": {
-          "title": "Champs ouverts à l'édition",
-          "type": "array",
-          "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
-          "x-itemTitle": "label",
-          "x-itemKey": "key",
-          "items": {
-            "type": "string"
-          }
-        },
         "colorContrib": {
           "x-if": "parent.value.crowdSourcing",
-          "title": "Couleur des contributions",
-          "properties": {
-            "noContribColor": {
-              "x-if":"color.field",
-              "title": "Choisir la couleur des contributions",
-              "type": "boolean",
-              "default": true
-            },
-            "hexValue": {
-              "x-if": "parent.value.noContribColor",
-              "type": "string",
-              "title": "Couleur",
-              "format": "hexcolor",
-              "default": "#7AA95C",
-              "x-display": "color-picker"
-            }
-          }
+          "type": "string",
+          "title": "Couleur",
+          "format": "hexcolor",
+          "default": "#7AA95C",
+          "x-display": "color-picker"
         }
       }
     }
@@ -330,9 +336,9 @@
   "definitions": {
     "contribsDataset": {
       "title": "Jeu de données des contributions externes",
-      "x-if": "parent.value.crowdSourcing",
+      "x-if": "crowdSourcing",
       "type": "object",
-      "x-fromUrl": "api/v1/datasets?rest=true&q={q}&select=title,schema,timePeriod,userPermissions&{context.datasetFilter}",
+      "x-fromUrl": "api/v1/datasets?rest=true&q={q}&select=title,schema,timePeriod,userPermissions&{context.datasetFilter}&short-concept=startDate,endDate&size=100",
       "x-itemsProp": "results",
       "x-itemTitle": "title",
       "x-itemKey": "href",

@@ -8,7 +8,7 @@ import { ref, computed } from 'vue'
 import { VDateInput } from 'vuetify/labs/VDateInput'
 import useAppInfo from '@/composables/useAppInfo'
 
-const { mainDataset, startDateField, endDateField, dateField } = useAppInfo()
+const { config, mainDataset, startDateField, endDateField, dateField } = useAppInfo()
 
 const props = defineProps({
   item: { type: Object, required: true }
@@ -18,18 +18,19 @@ const emit = defineEmits(['cancel', 'validate'])
 const data = ref({ ...props.item })
 const form = ref(null)
 
-const options = { plugins: [VjsfMarkdown], density: null, titleDepth: 3, locale: 'fr', removeAdditional: true }
+const options = { plugins: [VjsfMarkdown], density: config.formDensity, titleDepth: 3, locale: 'fr', removeAdditional: true }
 const v2Schema = (await ofetch(mainDataset.href + '/safe-schema?mimeType=application%2Fschema%2Bjson'))
 const schema = v2compat(v2Schema)
 if (startDateField && endDateField) {
   delete schema.properties[startDateField]
   delete schema.properties[endDateField]
 } else if (dateField) delete schema.properties[dateField]
+if (!config.showHelpMessages)Object.values(schema.properties).forEach(p => delete p.description)
 
 const startDate = ref(new Date(props.item[startDateField && endDateField ? startDateField : dateField]))
 const endDate = ref(new Date(props.item[startDateField && endDateField ? endDateField : dateField]))
 const startTime = ref(new Date(props.item[startDateField && endDateField ? startDateField : dateField]).toTimeString().slice(0, 5))
-const endTime = ref(new Date(props.item[startDateField && endDateField ? startDateField : dateField]).toTimeString().slice(0, 5))
+const endTime = ref(new Date(props.item[startDateField && endDateField ? endDateField : dateField]).toTimeString().slice(0, 5))
 
 const mergedData = computed(() => {
   const merged = { ...data.value }

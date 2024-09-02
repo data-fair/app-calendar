@@ -8,7 +8,7 @@ import reactiveSearchParams from '@data-fair/lib/vue/reactive-search-params-glob
 const options = defaultOptions(reactiveSearchParams)
 options.defaults = {
   global: {
-    variant: 'underlined'
+    variant: window.APPLICATION?.configuration?.formVariant || 'underlined'
   }
 }
 
