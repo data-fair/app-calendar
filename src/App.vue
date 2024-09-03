@@ -8,7 +8,6 @@ try {
   const { config, mainDataset } = useAppInfo()
   if (config.crowdSourcing) {
     const datasets = [mainDataset, config.contribsDataset]
-    console.log(((config.datasets || []).map(d => d.id).join('-'), datasets.map(d => d.id).join('-')))
     if ((config.datasets || []).map(d => d.id).join('-') !== datasets.map(d => d.id).join('-')) window.parent.postMessage({ type: 'set-config', content: { field: 'datasets', value: datasets } }, '*')
   }
 } catch (e) {

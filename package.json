@@ -6,7 +6,7 @@
     "dev": "APP_URL=http://localhost:3000/app/ df-dev-server",
     "dev-src": "vite",
     "build": "vite build",
-    "build-test": "PUBLIC_URL=https://staging-koumoul.com/apps/documents/master/ vite build",
+    "build-test": "PUBLIC_URL=https://staging-koumoul.com/apps/calendar/master/ vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore"
   },

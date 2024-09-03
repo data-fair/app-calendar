@@ -1,8 +1,6 @@
 {
   "type": "object",
-  "required": [
-    "datasets"
-  ],
+  "required": ["datasets"],
   "allOf": [
     {
       "title": "Source de données",
@@ -51,16 +49,12 @@
         "color": {
           "type": "object",
           "title": "Réglage des couleurs",
-          "required": [
-            "type"
-          ],
+          "required": ["type"],
           "oneOf": [
             {
               "title": "Calendrier multicolore",
               "additionalProperties": false,
-              "required": [
-                "field"
-              ],
+              "required": ["field"],
               "properties": {
                 "type": {
                   "const": "multicolor"
@@ -79,10 +73,7 @@
                   "oneOf": [
                     {
                       "title": "Palette précalculée",
-                      "required": [
-                        "type",
-                        "name"
-                      ],
+                      "required": ["type", "name"],
                       "additionalProperties": false,
                       "properties": {
                         "type": {
@@ -136,10 +127,7 @@
                     },
                     {
                       "title": "Palette personnalisée",
-                      "required": [
-                        "type",
-                        "categories"
-                      ],
+                      "required": ["type", "categories"],
                       "additionalProperties": false,
                       "properties": {
                         "type": {
@@ -155,9 +143,7 @@
                           "x-itemsProp": "aggs",
                           "items": {
                             "type": "object",
-                            "required": [
-                              "value"
-                            ],
+                            "required": ["value"],
                             "additionalProperties": false,
                             "properties": {
                               "value": {
@@ -195,9 +181,7 @@
                 "colors": {
                   "type": "object",
                   "title": "Couleur",
-                  "required": [
-                    "type"
-                  ],
+                  "required": ["type"],
                   "oneOf": [
                     {
                       "title": "Thème",

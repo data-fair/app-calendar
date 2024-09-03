@@ -8,11 +8,12 @@ import frLocale from '@fullcalendar/core/locales/fr'
 import { reactive, ref } from 'vue'
 import { computedAsync } from '@vueuse/core'
 import { useTheme } from 'vuetify'
-import { getData, displayError, errorMessage, timestamp, session } from '@/context'
+import { getData, displayError, errorMessage, timestamp } from '@/context'
 import reactiveSearchParams from '@data-fair/lib/vue/reactive-search-params-global.js'
 import useAppInfo from '@/composables/useAppInfo'
 import EventDetails from './events/EventDetails.vue'
 import { ofetch } from 'ofetch'
+import { useSession } from '@data-fair/lib/vue/session.js'
 
 const theme = useTheme()
 const { mainDataset, layout, startDateField, endDateField, dateField } = useAppInfo()
@@ -74,7 +75,9 @@ const calendarOptions = reactive({
   },
   eventClick (e) {
     e.jsEvent.preventDefault()
-    selectedEvent.value = e.event
+    const event = e.event.toJSON()
+    selectedEvent.value = { ...event, ...event.extendedProps }
+    delete selectedEvent.value.extendedProps
     setTimeout(() => {
       eventMenuOpen.value = true
     }, 0)
@@ -87,6 +90,8 @@ const calendarOptions = reactive({
     patchEvent(e.event)
   },
   select (e) {
+    const session = useSession()
+
     const event = {}
     if (layout !== 'contrib') {
       if (startDateField && endDateField) {

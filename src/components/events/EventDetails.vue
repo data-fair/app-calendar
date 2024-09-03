@@ -31,7 +31,7 @@ const eventData = computedAsync(async () => {
   if (!prop.event) return null
   if (!prop.event.id) mode.value = 'edit'
   if (prop.event.isContrib) {
-    const event = JSON.parse(prop.event.payload || '{}')
+    const event = prop.event.payload || {}
     if (startDateField && endDateField) {
       event[startDateField] = prop.event.start
       event[endDateField] = prop.event.end
@@ -84,10 +84,11 @@ async function editEvent (event) {
           v-if="layout !== 'simple'"
           class="py-0"
         >
-          {{ startDateField && endDateField ? `${new Date(eventData[startDateField]).toLocaleString()} - ${new Date(eventData[endDateField]).toLocaleString()}` : new Date(eventData[dateField]).toLocaleDateString() }}
+          {{ startDateField && endDateField ? `${new Date(eventData[startDateField]).toLocaleString()} - ${new
+            Date(eventData[endDateField]).toLocaleString()}` : new Date(eventData[dateField]).toLocaleDateString() }}
           <v-spacer />
           <v-btn
-            v-if="!event.isContrib || (event.operation !== 'delete' && event.status === 'submitted')"
+            v-if="(layout === 'admin' && !event.isContrib) || (layout === 'contrib' && event.operation !== 'delete' && event.status === 'submitted')"
             v-tooltip="{
               text: 'Modifier l\'événement',
               location: 'right',
@@ -103,9 +104,7 @@ async function editEvent (event) {
             @deleted="emit('updated')"
           />
         </v-card-actions>
-        <event-view
-          :item="eventData"
-        />
+        <event-view :item="eventData" />
       </template>
       <suspense v-if="mode === 'edit'">
         <event-edit

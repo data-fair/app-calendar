@@ -2,7 +2,7 @@ import vue from '@vitejs/plugin-vue'
 import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
 import { defineConfig } from 'vite'
 import { fileURLToPath, URL } from 'node:url'
-import { commonjsDeps, commonjsDepsPaths } from '@koumoul/vjsf/utils/build.js'
+import { commonjsDeps } from '@koumoul/vjsf/utils/build.js'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -34,10 +34,5 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: [...commonjsDeps, 'easymde']
-  },
-  build: {
-    commonjsOptions: {
-      include: commonjsDepsPaths
-    }
   }
 })

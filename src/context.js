@@ -5,15 +5,14 @@ import { ofetch } from 'ofetch'
 import { ref } from 'vue'
 import { computedAsync } from '@vueuse/core'
 import chroma from 'chroma-js'
-import { getSession } from '@data-fair/lib/vue/session.js'
+import { useSession } from '@data-fair/lib/vue/session.js'
 
 export const displayError = ref(false)
 export const errorMessage = ref('')
 export const timestamp = ref(new Date().getTime())
-export const session = await getSession()
 
 const conceptFilters = useConceptFilters(reactiveSearchParams)
-const { config, color, mainDataset, startDateField, endDateField, dateField, labelField, layout } = useAppInfo()
+const { config, color, mainDataset, contribsDataset, startDateField, endDateField, dateField, labelField, layout } = useAppInfo()
 
 const colorPalette = computedAsync(async () => {
   if (color.colors.type !== 'multicolor') return
@@ -61,7 +60,6 @@ export async function getData (theme) {
   else params.select += ',' + dateField
   const response = await ofetch(`${mainDataset.href}/lines`, { params })
   const mainEvents = response.results.map(event => ({
-    editable: layout === 'admin',
     id: event._id,
     title: event[labelField],
     color: getColor(color.type === 'multicolor' && event[color.field], theme),
@@ -70,31 +68,27 @@ export async function getData (theme) {
     allDay: !(startDateField && endDateField) || (new Date(event[endDateField]).getTime() - new Date(event[startDateField]).getTime() > 2 * 24 * 60 * 60 * 1000)
   }))
   if (config.crowdSourcing && layout !== 'simple') {
-    const reponse = await ofetch(`${contribsDataset.href + layout === 'contrib' ? `/own/${session?.state?.user?.id}` : ''}/lines?size=1000`)
+    const session = useSession()
+    const params = {
+      _c_date_match: reactiveSearchParams.start + ',' + reactiveSearchParams.end,
+      size: 1000
+    }
+    const response = await ofetch(`${contribsDataset.href + (layout === 'contrib' ? `/own/${session?.state?.user?.id}` : '')}/lines`, { params })
+    const contribEvents = response.results.map(event => {
+      const payload = JSON.parse(event.payload || '{}')
+      return {
+        isContrib: true,
+        operation: event.operation,
+        status: event.status,
+        id: event._id,
+        payload,
+        title: payload[labelField],
+        color: config.colorContrib,
+        start: event.start,
+        end: event.end,
+        allDay: !(startDateField && endDateField) || (new Date(event.end).getTime() - new Date(event.start).getTime() > 2 * 24 * 60 * 60 * 1000)
+      }
+    })
+    return [...mainEvents, ...contribEvents]
   } else return mainEvents
-
-  // if (config.crowdSourcing && layout !== 'simple') {
-  //   const promises = reponse.results.map(async (contrib) => {
-  //     if (contrib.validation_status === 'waiting') {
-  //       const value = JSON.parse(contrib.update)
-  //       const event = createEvent(value, colorPalette, theme, contrib)
-  //       event.editable = layout === 'contrib' // admin cant drag or resize a contrib, he can only patch through edit button
-  //       if (config.colorContrib.noContribColor) {
-  //         event.color = config.colorContrib.hexValue
-  //       } else {
-  //         event[color.field] = value[color.field]
-  //         if (!colorPalette[value[color.field]]) {
-  //           // if this is a new category we need to recalculate the color Palette
-  //           colorPalette = await getColor(value[color.field])
-  //           event.color = colorPalette[value[color.field]]
-  //         } else {
-  //           event.color = colorPalette[value[color.field]]
-  //         }
-  //       }
-  //       events.push(event)
-  //     }
-  //   })
-  //   await Promise.all(promises)
-  // }
-  // return events
 }
