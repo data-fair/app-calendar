@@ -3,12 +3,10 @@ import { ref } from 'vue'
 import useAppInfo from '@/composables/useAppInfo'
 import { errorMessage, displayError, timestamp } from '@/context'
 import { ofetch } from 'ofetch'
-import { useSession } from '@data-fair/lib/vue/session.js'
 
-const { mainDataset, contribsDataset, layout, labelField } = useAppInfo()
+const { contribsDataset, config } = useAppInfo()
 
-const deleteMenuOpen = ref(false)
-const session = useSession()
+const refuseMenuOpen = ref(false)
 
 const prop = defineProps({
   event: {
@@ -17,33 +15,18 @@ const prop = defineProps({
   }
 })
 
-const emit = defineEmits(['deleted'])
+const emit = defineEmits(['refused'])
 
-async function deleteEvent () {
+async function refuseContribution () {
+  const url = `${contribsDataset.href}/lines/${prop.event.id}`
   const params = {
-    method: 'POST'
+    method: config.deleteModeratedContribs ? 'DELETE' : 'PATCH'
   }
-  let url = `${layout === 'contrib' ? (contribsDataset.href + `/own/user:${session?.state?.user?.id}`) : mainDataset.href}/lines`
-  if ((layout === 'contrib' && prop.event.isContrib) || (layout === 'admin' && !prop.event.isContrib)) {
-    url += '/' + prop.event.id
-    params.method = 'DELETE'
-  } else {
-    params.body = {
-      operation: 'delete',
-      status: 'submitted',
-      start: prop.event.start,
-      end: prop.event.end,
-      _owner: session?.state?.user?.id,
-      _ownerName: session?.state?.user?.name,
-      target_id: prop.event.id,
-      payload: JSON.stringify({ [labelField]: prop.event.title })
-    }
-  }
-
+  if (!config.deleteModeratedContribs) params.body = { status: 'refused' }
   try {
     await ofetch(url, params)
-    deleteMenuOpen.value = false
-    emit('deleted')
+    refuseMenuOpen.value = false
+    emit('refused')
     timestamp.value = new Date().getTime()
   } catch (e) {
     errorMessage.value = e.status + ' - ' + e._data
@@ -54,7 +37,7 @@ async function deleteEvent () {
 
 <template>
   <v-menu
-    v-model="deleteMenuOpen"
+    v-model="refuseMenuOpen"
     :close-on-content-click="false"
     :close-on-click="false"
     min-width="300px"
@@ -63,11 +46,11 @@ async function deleteEvent () {
     <template #activator="{ props }">
       <v-btn
         v-tooltip="{
-          text: 'Supprimer l\'événement',
+          text: 'Refuser la contribution',
           location: 'right',
           openDelay: '500'
         }"
-        icon="mdi-delete"
+        icon="mdi-close"
         color="error"
         v-bind="props"
       />
@@ -77,29 +60,29 @@ async function deleteEvent () {
       data-iframe-height
     >
       <v-card-title primary-title>
-        Supprimer l'événement ?
+        Refuser la contribution ?
       </v-card-title>
       <v-card-text>
         <v-alert
           :model-value="true"
           type="error"
         >
-          Voulez vous vraiment supprimer l'événement ?
+          Voulez vous vraiment refuser la contribution ?
         </v-alert>
       </v-card-text>
       <v-card-actions>
         <v-spacer />
         <v-btn
           text
-          @click="deleteMenuOpen = false"
+          @click="refuseMenuOpen = false"
         >
           Annuler
         </v-btn>
         <v-btn
           color="error"
-          @click="deleteEvent()"
+          @click="refuseContribution()"
         >
-          Supprimer
+          Refuser
         </v-btn>
       </v-card-actions>
     </v-card>

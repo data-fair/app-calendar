@@ -300,8 +300,8 @@
         "contribsDataset": {
           "$ref": "#/definitions/contribsDataset"
         },
-        "deleteValidatedContribs": {
-          "title": "Supprimer les contributions après validation",
+        "deleteModeratedContribs": {
+          "title": "Supprimer les contributions après validation ou refus",
           "type": "boolean",
           "default": false,
           "x-if": "parent.value.crowdSourcing"

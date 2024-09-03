@@ -15,8 +15,9 @@ import EventDetails from './events/EventDetails.vue'
 import { ofetch } from 'ofetch'
 import { useSession } from '@data-fair/lib/vue/session.js'
 
+const session = useSession()
 const theme = useTheme()
-const { mainDataset, layout, startDateField, endDateField, dateField } = useAppInfo()
+const { mainDataset, contribsDataset, layout, startDateField, endDateField, dateField } = useAppInfo()
 
 const selectedEvent = ref(null)
 const eventMenuOpen = ref(null)
@@ -25,7 +26,7 @@ const eventMenuActivator = ref(null)
 reactiveSearchParams.view = reactiveSearchParams.view || 'dayGridMonth'
 
 const events = computedAsync(async () => {
-  return await getData(theme)
+  return await getData(theme, session)
 }, null, {
   onError: function (e) {
     displayError.value = true
@@ -36,10 +37,13 @@ const events = computedAsync(async () => {
 async function patchEvent (event) {
   const body = {}
   if (startDateField && endDateField) {
-    body[startDateField] = event.start.toISOString()
-    body[endDateField] = event.end.toISOString()
-  } else if (dateField) body[dateField] = event.start.toISOString()
-  const url = `${mainDataset.href}/lines/${event.id}`
+    body[event.extendedProps?.isContrib ? 'start' : startDateField] = event.start.toISOString()
+    body[event.extendedProps?.isContrib ? 'end' : endDateField] = event.end.toISOString()
+  } else if (dateField) {
+    body[event.extendedProps?.isContrib ? 'start' : dateField] = event.start.toISOString()
+    if (event.extendedProps?.isContrib) body.end = event.end.toISOString()
+  }
+  const url = `${event.extendedProps?.isContrib ? (contribsDataset.href + `/own/${event.extendedProps?._owner}`) : mainDataset.href}/lines/${event.id}`
   const params = {
     method: 'PATCH',
     body
@@ -90,8 +94,6 @@ const calendarOptions = reactive({
     patchEvent(e.event)
   },
   select (e) {
-    const session = useSession()
-
     const event = {}
     if (layout !== 'contrib') {
       if (startDateField && endDateField) {
@@ -106,7 +108,7 @@ const calendarOptions = reactive({
       event.end = e.end.toISOString()
       const user = session?.state?.user
       if (user) {
-        event._owner = user.id
+        event._owner = 'user:' + user.id
         event._ownerName = user.name
       }
     }
