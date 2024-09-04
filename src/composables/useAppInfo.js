@@ -23,18 +23,21 @@ export default function useAppInfo () {
   if (color.type === 'multicolor' && !config.color.field) throw new Error('Veuillez remplir le champ : colonne de catégorie')
 
   const userPermissions = mainDataset.userPermissions || []
-  const isAdmin = userPermissions.includes('createLine') && userPermissions.includes('patchLine') && userPermissions.includes('deleteLine') && (!reactiveSearchParams.role || reactiveSearchParams.role === 'admin')
+  const isAdmin = userPermissions.includes('readLines') && userPermissions.includes('createLine') && userPermissions.includes('updateLine') && userPermissions.includes('patchLine') && userPermissions.includes('deleteLine') && (!reactiveSearchParams.role || reactiveSearchParams.role === 'admin')
 
   const contribsDataset = config.datasets?.[1] || config.contribsDataset
-  const isContrib = contribsDataset && contribsDataset.userPermissions.includes('createLine') && contribsDataset.userPermissions.includes('patchLine') && contribsDataset.userPermissions.includes('deleteLine') && (!reactiveSearchParams.role || reactiveSearchParams.role === 'contrib')
+  const isContrib = contribsDataset && contribsDataset.userPermissions.includes('readOwnLines') && contribsDataset.userPermissions.includes('createOwnLine') && contribsDataset.userPermissions.includes('updateOwnLine') && contribsDataset.userPermissions.includes('patchOwnLine') && contribsDataset.userPermissions.includes('deleteOwnLine') && (!reactiveSearchParams.role || reactiveSearchParams.role === 'contrib')
 
   if (config.crowdSourcing) {
     if (!contribsDataset) throw new Error('Veuillez sélectionner une source de données pour les contributions')
     const missingFields = ['_owner', '_ownerName', 'start', 'end', 'operation', 'target_id', 'payload', 'status'].filter(fid => !contribsDataset.schema.map(f => f.key).includes(fid))
     if (missingFields.length) throw new Error('Champs manquants dans le jeu de données des contributions : ' + missingFields.join(', '))
   }
-  const layout = !config.crowdSourcing ? (mainDataset.isRest && isAdmin ? 'admin' : 'simple') : (isAdmin ? 'admin' : (isContrib ? 'contrib' : 'simple'))
-
+  let layout = 'simple'
+  if (mainDataset.isRest) {
+    if (isAdmin) layout = 'admin'
+    else if (config.crowdSourcing && isContrib) layout = 'contrib'
+  }
   return {
     application,
     config,
