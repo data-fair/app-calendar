@@ -31,10 +31,8 @@ async function deleteEvent () {
     params.body = {
       operation: 'delete',
       status: 'submitted',
-      start: prop.event.start,
-      end: prop.event.end,
-      _owner: session?.state?.user?.id,
-      _ownerName: session?.state?.user?.name,
+      start: new Date(prop.event.start).toISOString(),
+      end: new Date(prop.event.end).toISOString(),
       target_id: prop.event.id,
       payload: JSON.stringify({ [labelField]: prop.event.title })
     }

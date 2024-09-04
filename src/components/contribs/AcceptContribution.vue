@@ -21,7 +21,14 @@ async function acceptContribution () {
   const params = {
     method: config.deleteModeratedContribs ? 'DELETE' : 'PATCH'
   }
-  if (!config.deleteModeratedContribs) params.body = { status: 'accepted' }
+  if (!config.deleteModeratedContribs) {
+    params.body = { status: 'accepted' }
+    if (prop.event.operation === 'update') {
+      const original = (await ofetch(`${(mainDataset).href}/lines?_id_eq=${prop.event.target_id}`)).results.pop()
+      Object.keys(original).filter(k => k.startsWith('_')).forEach(k => delete original[k])
+      params.body.original = JSON.stringify(original)
+    }
+  }
   try {
     await ofetch(`${mainDataset.href}/lines${prop.event.target_id ? '/' + prop.event.target_id : ''}`, {
       method: prop.event.target_id ? 'PUT' : 'POST',

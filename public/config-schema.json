@@ -246,7 +246,7 @@
           "title": "Champ de description",
           "description": "Choisissez le champ permettant de fournir une description de l'événement, interprète le html et le markdown.",
           "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
-          "x-itemTitle": "description",
+          "x-itemTitle": "title",
           "x-itemKey": "key"
         },
         "additionalFields": {

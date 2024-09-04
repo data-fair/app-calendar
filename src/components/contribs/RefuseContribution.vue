@@ -4,7 +4,7 @@ import useAppInfo from '@/composables/useAppInfo'
 import { errorMessage, displayError, timestamp } from '@/context'
 import { ofetch } from 'ofetch'
 
-const { contribsDataset, config } = useAppInfo()
+const { mainDataset, contribsDataset, config } = useAppInfo()
 
 const refuseMenuOpen = ref(false)
 
@@ -22,7 +22,14 @@ async function refuseContribution () {
   const params = {
     method: config.deleteModeratedContribs ? 'DELETE' : 'PATCH'
   }
-  if (!config.deleteModeratedContribs) params.body = { status: 'refused' }
+  if (!config.deleteModeratedContribs) {
+    params.body = { status: 'refused' }
+    if (prop.event.operation === 'update') {
+      const original = (await ofetch(`${(mainDataset).href}/lines?_id_eq=${prop.event.target_id}`)).results.pop()
+      Object.keys(original).filter(k => k.startsWith('_')).forEach(k => delete original[k])
+      params.body.original = JSON.stringify(original)
+    }
+  }
   try {
     await ofetch(url, params)
     refuseMenuOpen.value = false

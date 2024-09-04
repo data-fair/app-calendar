@@ -9,6 +9,7 @@ import DeleteEvent from './DeleteEvent.vue'
 import AcceptContribution from '../contribs/AcceptContribution.vue'
 import RefuseContribution from '../contribs/RefuseContribution.vue'
 import ContributionStatus from '../contribs/ContributionStatus.vue'
+import DiffView from '../contribs/DiffView.vue'
 import { useSession } from '@data-fair/lib/vue/session.js'
 
 const EventEdit = defineAsyncComponent(() =>
@@ -34,7 +35,7 @@ watch(() => prop.event, (event) => {
 })
 
 const operationLabel = {
-  create: 'd\' ajout',
+  create: 'd\'ajout',
   update: 'de modification',
   delete: 'de suppression'
 }
@@ -43,11 +44,11 @@ const eventData = computedAsync(async () => {
   if (!prop.event) return null
   if (!prop.event.id) mode.value = 'edit'
   if (prop.event.isContrib) {
-    const event = prop.event.payload || {}
+    const event = { ...(prop.event.payload || {}) }
     if (startDateField && endDateField) {
-      event[startDateField] = prop.event.start
-      event[endDateField] = prop.event.end
-    } else if (dateField) event[dateField] = prop.event.start
+      if (!event[startDateField]) event[startDateField] = prop.event.start
+      if (!event[endDateField]) event[endDateField] = prop.event.end
+    } else if (dateField && !event[dateField]) event[dateField] = prop.event.start
     return event
   } else if (!prop.event.id) return { ...prop.event }
   else return (await ofetch(`${(mainDataset).href}/lines?_id_eq=${prop.event.id}`)).results.pop()
@@ -98,8 +99,11 @@ async function editEvent (event) {
   >
     <template v-if="eventData">
       <template v-if="mode === 'read'">
-        <div v-if="(layout === 'admin' && event.isContrib)">
-          Proposition {{ operationLabel[event.operation] }} par {{ event._ownerName }}
+        <div v-if=" event.isContrib">
+          Proposition {{ operationLabel[event.operation] }}
+          <span v-if="(layout === 'admin')">
+            par {{ event._ownerName }}
+          </span>
         </div>
         <v-card-actions
           v-if=" layout !=='simple'"
@@ -139,7 +143,15 @@ async function editEvent (event) {
             :value="event.status"
           />
         </v-card-actions>
-        <event-view :item=" eventData" />
+        <diff-view
+          v-if="event.isContrib && event.operation === 'update'"
+          :item="eventData"
+          :old="event.original || {id:event.target_id}"
+        />
+        <event-view
+          v-else
+          :item="eventData"
+        />
       </template>
       <suspense v-if="mode === 'edit'">
         <event-edit

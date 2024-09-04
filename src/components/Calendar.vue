@@ -8,7 +8,7 @@ import frLocale from '@fullcalendar/core/locales/fr'
 import { reactive, ref } from 'vue'
 import { computedAsync } from '@vueuse/core'
 import { useTheme } from 'vuetify'
-import { getData, displayError, errorMessage, timestamp } from '@/context'
+import { events, colorPalette, displayError, errorMessage, timestamp } from '@/context'
 import reactiveSearchParams from '@data-fair/lib/vue/reactive-search-params-global.js'
 import useAppInfo from '@/composables/useAppInfo'
 import EventDetails from './events/EventDetails.vue'
@@ -17,7 +17,7 @@ import { useSession } from '@data-fair/lib/vue/session.js'
 
 const session = useSession()
 const theme = useTheme()
-const { mainDataset, contribsDataset, layout, startDateField, endDateField, dateField } = useAppInfo()
+const { config, color, mainDataset, contribsDataset, layout, startDateField, endDateField, dateField, labelField } = useAppInfo()
 
 const selectedEvent = ref(null)
 const eventMenuOpen = ref(null)
@@ -25,8 +25,52 @@ const eventMenuActivator = ref(null)
 
 reactiveSearchParams.view = reactiveSearchParams.view || 'dayGridMonth'
 
-const events = computedAsync(async () => {
-  return await getData(theme, session)
+function getColor (value, theme) {
+  if (color.type === 'monochrome') {
+    return color.colors.type === 'custom' ? color.colors.hexValue : theme.current.value.colors[color.colors.strValue]
+  } else {
+    return colorPalette.value[value]
+  }
+}
+
+const operationLabel = {
+  create: 'Ajout',
+  update: 'Modification',
+  delete: 'Suppression'
+}
+
+const allEvents = computedAsync(async () => {
+  const mainEvents = (events.value || []).map(e => ({ ...e, color: getColor(color.type === 'multicolor' && event[color.field], theme) }))
+  if (config.crowdSourcing && layout !== 'simple') {
+    const params = {
+      _c_date_match: reactiveSearchParams.start + ',' + reactiveSearchParams.end,
+      size: 1000,
+      t: timestamp.value
+    }
+    const response = await ofetch(`${contribsDataset.href + (layout === 'contrib' ? `/own/user:${session?.state?.user?.id}` : '')}/lines`, { params })
+    const contribEvents = response.results.map(event => {
+      const payload = JSON.parse(event.payload || '{}')
+      const original = event.original ? JSON.parse(event.original) : undefined
+      return {
+        editable: layout === 'contrib',
+        isContrib: true,
+        operation: event.operation,
+        status: event.status,
+        _owner: event._owner,
+        _ownerName: event._ownerName,
+        id: event._id,
+        target_id: event.target_id,
+        payload,
+        original,
+        title: `${payload[labelField]} - ${operationLabel[event.operation]}`,
+        color: config.colorContrib,
+        start: payload[startDateField && endDateField ? startDateField : dateField],
+        end: startDateField && endDateField ? payload[endDateField] : undefined,
+        allDay: !(startDateField && endDateField) || (new Date(event.end).getTime() - new Date(event.start).getTime() > 2 * 24 * 60 * 60 * 1000)
+      }
+    })
+    return [...mainEvents, ...contribEvents]
+  } else return mainEvents
 }, null, {
   onError: function (e) {
     displayError.value = true
@@ -70,7 +114,7 @@ const calendarOptions = reactive({
     center: 'title',
     end: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
   },
-  events,
+  events: allEvents,
   selectable: layout !== 'simple',
   datesSet (dateInfo) {
     reactiveSearchParams.start = dateInfo.startStr
