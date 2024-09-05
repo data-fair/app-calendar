@@ -38,6 +38,7 @@ export default function useAppInfo () {
     if (isAdmin) layout = 'admin'
     else if (config.crowdSourcing && isContrib) layout = 'contrib'
   }
+
   return {
     application,
     config,
