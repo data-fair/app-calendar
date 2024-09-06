@@ -1,5 +1,5 @@
 <script setup>
-import { displayError, errorMessage } from '../context'
+import { errorMessage, displayError } from '@/messages'
 </script>
 
 <template>

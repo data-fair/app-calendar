@@ -1,7 +1,8 @@
 <script setup>
 import { ref } from 'vue'
 import useAppInfo from '@/composables/useAppInfo'
-import { errorMessage, displayError, timestamp } from '@/context'
+import { timestamp } from '@/context'
+import { errorMessage, displayError } from '@/messages'
 import { ofetch } from 'ofetch'
 import { useSession } from '@data-fair/lib/vue/session.js'
 

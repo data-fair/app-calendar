@@ -5,9 +5,8 @@ import { ofetch } from 'ofetch'
 import { ref } from 'vue'
 import { computedAsync } from '@vueuse/core'
 import chroma from 'chroma-js'
+import { errorMessage, displayError } from '@/messages'
 
-export const displayError = ref(false)
-export const errorMessage = ref('')
 export const timestamp = ref(new Date().getTime())
 
 const conceptFilters = useConceptFilters(reactiveSearchParams)
