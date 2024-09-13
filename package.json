@@ -1,6 +1,6 @@
 {
   "name": "app-calendar",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "APP_URL=http://localhost:3000/app/ df-dev-server",
