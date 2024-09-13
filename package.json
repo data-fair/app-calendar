@@ -1,11 +1,11 @@
 {
-  "name": "app-calendar",
+  "name": "@data-fair/app-calendar",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "APP_URL=http://localhost:3000/app/ df-dev-server",
     "dev-src": "vite",
-    "build": "vite build",
+    "build": "PUBLIC_URL=https://cdn.jsdelivr.net/npm/@data-fair/app-calendar@${npm_package_version}/dist vite build",
     "build-test": "PUBLIC_URL=https://staging-koumoul.com/apps/calendar/master/ vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore"
