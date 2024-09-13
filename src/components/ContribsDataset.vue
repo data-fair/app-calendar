@@ -16,7 +16,7 @@ const createContribsDataset = async () => {
     if (window.parent) {
       window.parent.postMessage({
         type: 'set-config',
-        content: { field: 'contribsDataset', value: { title: d.title, href: d.href, schema: d.schema, timePeriod: d.timePeriod, userPermissions: d.userPermissions } }
+        content: { field: 'contribsDataset', value: { title: d.title, href: d.href, schema: d.schema, userPermissions: d.userPermissions } }
       }, '*')
     }
   } catch (e) {

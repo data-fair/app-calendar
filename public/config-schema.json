@@ -322,7 +322,7 @@
       "title": "Jeu de données des contributions externes",
       "x-if": "crowdSourcing",
       "type": "object",
-      "x-fromUrl": "api/v1/datasets?rest=true&q={q}&select=title,schema,timePeriod,userPermissions&{context.datasetFilter}&short-concept=startDate,endDate&size=100",
+      "x-fromUrl": "api/v1/datasets?rest=true&q={q}&select=title,schema,userPermissions&{context.datasetFilter}&short-concept=startDate,endDate&size=100",
       "x-itemsProp": "results",
       "x-itemTitle": "title",
       "x-itemKey": "href",
@@ -331,7 +331,6 @@
         "href": { "type": "string" },
         "title": { "type": "string" },
         "schema": { "type": "array" },
-        "timePeriod": { "type": "object" },
         "userPermissions": { "type": "array" }
       }
     }
