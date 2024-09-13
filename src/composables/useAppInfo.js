@@ -15,7 +15,7 @@ export default function useAppInfo () {
   const dateField = mainDataset.schema.find(f => f['x-refersTo'] === 'http://schema.org/Date')?.key
   if ((!startDateField || !endDateField) && !dateField) throw new Error('Veuillez ajouter un concept de type Date à vos données')
   const attachmentField = !mainDataset.attachmentsAsImage && mainDataset.schema.find(f => f['x-refersTo'] === 'http://schema.org/DigitalDocument')
-  const imageField = mainDataset.schema.find(f => f['x-refersTo'] === 'http://schema.org/image')
+  const imageField = mainDataset.schema.find(f => f['x-refersTo'] === 'http://schema.org/image')?.key
   const linkField = mainDataset.schema.find(f => f['x-refersTo'] === 'https://schema.org/WebPage')
   const fields = mainDataset.schema.reduce((a, b) => { a[b.key] = b; return a }, {})
 

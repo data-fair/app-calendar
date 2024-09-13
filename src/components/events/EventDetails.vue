@@ -12,11 +12,13 @@ import RefuseContribution from '../contribs/RefuseContribution.vue'
 import ContributionStatus from '../contribs/ContributionStatus.vue'
 import DiffView from '../contribs/DiffView.vue'
 import { useSession } from '@data-fair/lib/vue/session.js'
+import { useDisplay } from 'vuetify'
 
 const EventEdit = defineAsyncComponent(() =>
   import('./EventEdit.vue')
 )
 
+const { height } = useDisplay()
 const { mainDataset, contribsDataset, layout, startDateField, endDateField, dateField } = useAppInfo()
 const emit = defineEmits(['updated'])
 
@@ -95,8 +97,9 @@ async function editEvent (event) {
 </script>
 <template>
   <v-card
-    max-width="800"
-    min-width="200"
+    :max-width="800"
+    :min-width="200"
+    :max-height="height*0.8"
   >
     <template v-if="eventData">
       <template v-if="mode === 'read'">

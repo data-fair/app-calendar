@@ -13,7 +13,7 @@ const conceptFilters = useConceptFilters(reactiveSearchParams)
 const { config, color, mainDataset, startDateField, endDateField, dateField, labelField, layout } = useAppInfo()
 
 export const colorPalette = computedAsync(async () => {
-  if (color.colors.type !== 'multicolor') return
+  if (color.type !== 'multicolor') return
   const palette = {} // create an object who associates a category and a color
   if (color.colors.type === 'palette') {
     const categories = await ofetch(`${mainDataset.href}/values/${color.field}?size=100`)
@@ -53,6 +53,7 @@ export const events = computedAsync(async () => {
     editable: layout === 'admin',
     id: event._id,
     title: event[labelField],
+    colorFieldValue: color.type === 'multicolor' && event[config.color.field],
     start: event[startDateField && endDateField ? startDateField : dateField],
     end: startDateField && endDateField ? event[endDateField] : undefined,
     allDay: !(startDateField && endDateField) || (new Date(event[endDateField]).getTime() - new Date(event[startDateField]).getTime() > 2 * 24 * 60 * 60 * 1000)

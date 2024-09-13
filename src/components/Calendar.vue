@@ -26,7 +26,7 @@ const eventMenuActivator = ref(null)
 
 reactiveSearchParams.view = reactiveSearchParams.view || 'dayGridMonth'
 
-function getColor (value, theme) {
+function getColor (value) {
   if (color.type === 'monochrome') {
     return color.colors.type === 'custom' ? color.colors.hexValue : theme.current.value.colors[color.colors.strValue]
   } else {
@@ -41,7 +41,7 @@ const operationLabel = {
 }
 
 const allEvents = computedAsync(async () => {
-  const mainEvents = (events.value || []).map(e => ({ ...e, color: getColor(color.type === 'multicolor' && event[color.field], theme) }))
+  const mainEvents = (events.value || []).map(e => ({ ...e, color: getColor(e.colorFieldValue) }))
   if (config.crowdSourcing && layout !== 'simple') {
     const params = {
       _c_date_match: reactiveSearchParams.start + ',' + reactiveSearchParams.end,
