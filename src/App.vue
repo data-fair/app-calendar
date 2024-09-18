@@ -14,9 +14,8 @@ try {
     if ((config.datasets || []).map(d => d.id).join('-') !== datasets.map(d => d.id).join('-')) window.parent.postMessage({ type: 'set-config', content: { field: 'datasets', value: datasets } }, '*')
   }
 } catch (e) {
-  console.log(e)
   configureError = e.message
-  ofetch(window.APPLICATION.href + '/error', { body: { message: e.message || e }, method: 'POST' })
+  if (e.cause !== 'noContribsDataset') ofetch(window.APPLICATION.href + '/error', { body: { message: e.message || e }, method: 'POST' })
 }
 
 const Calendar = defineAsyncComponent(() =>

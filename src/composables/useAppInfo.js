@@ -20,7 +20,7 @@ export default function useAppInfo () {
   const fields = mainDataset.schema.reduce((a, b) => { a[b.key] = b; return a }, {})
 
   const color = config.color
-  if (color.type === 'multicolor' && !config.color.field) throw new Error('Veuillez remplir le champ : colonne de catégorie')
+  if (color?.type === 'multicolor' && !config.color.field) throw new Error('Veuillez remplir le champ : colonne de catégorie')
 
   const userPermissions = mainDataset.userPermissions || []
   const isAdmin = userPermissions.includes('readLines') && userPermissions.includes('createLine') && userPermissions.includes('updateLine') && userPermissions.includes('patchLine') && userPermissions.includes('deleteLine') && (!reactiveSearchParams.role || reactiveSearchParams.role === 'admin')
@@ -29,7 +29,7 @@ export default function useAppInfo () {
   const isContrib = contribsDataset && contribsDataset.userPermissions.includes('readOwnLines') && contribsDataset.userPermissions.includes('createOwnLine') && contribsDataset.userPermissions.includes('updateOwnLine') && contribsDataset.userPermissions.includes('patchOwnLine') && contribsDataset.userPermissions.includes('deleteOwnLine') && (!reactiveSearchParams.role || reactiveSearchParams.role === 'contrib')
 
   if (config.crowdSourcing) {
-    if (!contribsDataset) throw new Error('Veuillez sélectionner une source de données pour les contributions')
+    if (!contribsDataset) throw new Error('Veuillez sélectionner une source de données pour les contributions', { cause: 'noContribsDataset' })
     const missingFields = ['_owner', '_ownerName', 'start', 'end', 'operation', 'target_id', 'payload', 'status'].filter(fid => !contribsDataset.schema.map(f => f.key).includes(fid))
     if (missingFields.length) throw new Error('Champs manquants dans le jeu de données des contributions : ' + missingFields.join(', '))
   }
