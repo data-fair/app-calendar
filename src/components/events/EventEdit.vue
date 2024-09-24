@@ -18,7 +18,7 @@ const emit = defineEmits(['cancel', 'validate'])
 const data = ref({ ...props.item })
 const form = ref(null)
 
-const options = { plugins: [VjsfMarkdown], density: config.formDensity, titleDepth: 3, locale: 'fr', removeAdditional: true }
+const options = { plugins: [VjsfMarkdown], pluginsOptions: { markdown: { easyMDEOptions: { minHeight: '150px' } } }, density: config.formDensity, titleDepth: 3, locale: 'fr', removeAdditional: true }
 const v2Schema = (await ofetch(mainDataset.href + '/safe-schema?mimeType=application%2Fschema%2Bjson'))
 const schema = v2compat(v2Schema)
 if (startDateField && endDateField) {
@@ -26,6 +26,16 @@ if (startDateField && endDateField) {
   delete schema.properties[endDateField]
 } else if (dateField) delete schema.properties[dateField]
 if (!config.showHelpMessages)Object.values(schema.properties).forEach(p => delete p.description)
+
+const attachment = Object.values(schema.properties).find(f => f['x-concept']?.id === 'attachment')
+if (attachment) {
+  attachment.readOnly = true
+  schema.properties.__file = {
+    title: mainDataset.attachmentsAsImage ? 'Image' : 'Document numérique attaché',
+    type: 'object',
+    layout: 'file-input'
+  }
+}
 
 const startDate = ref(new Date(props.item[startDateField && endDateField ? startDateField : dateField]))
 const endDate = ref(new Date(props.item[startDateField && endDateField ? endDateField : dateField]))

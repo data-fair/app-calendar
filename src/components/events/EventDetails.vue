@@ -1,5 +1,5 @@
 <script setup>
-import { ref, defineAsyncComponent, watch } from 'vue'
+import { ref, defineAsyncComponent, watch, computed } from 'vue'
 import { computedAsync } from '@vueuse/core'
 import useAppInfo from '@/composables/useAppInfo'
 import { timestamp } from '@/context'
@@ -13,6 +13,7 @@ import ContributionStatus from '../contribs/ContributionStatus.vue'
 import DiffView from '../contribs/DiffView.vue'
 import { useSession } from '@data-fair/lib/vue/session.js'
 import { useDisplay } from 'vuetify'
+import { dayjs } from '@data-fair/lib/vue/locale-dayjs-global.js'
 
 const EventEdit = defineAsyncComponent(() =>
   import('./EventEdit.vue')
@@ -62,7 +63,9 @@ const eventData = computedAsync(async () => {
   }
 })
 
-async function editEvent (event) {
+async function editEvent (eventData) {
+  const formData = new FormData()
+  const { __file, ...event } = eventData
   const body = layout === 'contrib' ? { payload: JSON.stringify(event) } : event
   if (layout === 'contrib') {
     body.operation = prop.event.isContrib ? prop.event.operation : 'update'
@@ -74,9 +77,13 @@ async function editEvent (event) {
     if (prop.event.target_id) body.target_id = prop.event.target_id
     else if (layout === 'contrib' && !prop.event.isContrib) body.target_id = prop.event.id
   }
+  for (const [key, value] of Object.entries(body)) formData.append(key, value)
+  // formData.append('body', JSON.stringify(body))
+  if (__file) formData.append('attachment', __file)
   const params = {
     method: 'POST',
-    body
+    body: formData,
+    headers: { 'Content-Disposition': formData }
   }
   let url = `${layout === 'contrib' ? (contribsDataset.href + `/own/user:${session?.state?.user?.id}`) : mainDataset.href}/lines`
   if (((layout === 'contrib' && prop.event.isContrib) || (layout === 'admin' && !prop.event.isContrib)) && prop.event.id) {
@@ -93,6 +100,15 @@ async function editEvent (event) {
     displayError.value = true
   }
 }
+
+const formatedDate = computed(() => {
+  if (startDateField && endDateField) {
+    const start = dayjs(eventData.value[startDateField])
+    const end = dayjs(eventData.value[endDateField])
+    if (start.isSame(end, 'day')) return start.format('ddd D MMM YYYY') + ', ' + start.format('HH:mm') + ' - ' + end.format('HH:mm')
+    else return start.format('ddd D MMM YYYY, HH:mm') + ' - ' + end.format('ddd D MMM YYYY, HH:mm')
+  } else return dayjs(eventData.value[dateField]).format('dd, MMM YYYY')
+})
 
 </script>
 <template>
@@ -113,8 +129,7 @@ async function editEvent (event) {
           v-if=" layout !=='simple'"
           class=" py-0"
         >
-          {{ startDateField && endDateField ? `${new Date(eventData[startDateField]).toLocaleString()} - ${new
-            Date(eventData[endDateField]).toLocaleString()}` : new Date(eventData[dateField]).toLocaleDateString() }}
+          {{ formatedDate }}
           <v-spacer />
           <v-btn
             v-if="!event.isContrib || (layout === 'contrib' && event.operation !== 'delete' && event.status === 'submitted')"

@@ -87,6 +87,17 @@
       "x-required": true
     },
     {
+      "key": "attachmentPath",
+      "type": "string",
+      "title": "Pièce jointe mise à jour",
+      "x-refersTo": "http://schema.org/DigitalDocument",
+      "x-concept": {
+        "id": "attachment",
+        "title": "Document numérique attaché",
+        "primary": true
+      }
+    },
+    {
       "key": "status",
       "type": "string",
       "title": "Statut de validation",

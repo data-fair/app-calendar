@@ -19,6 +19,7 @@
               "additionalProperties": false,
               "properties": {
                 "href": { "type": "string" },
+                "id": { "type": "string" },
                 "title": { "type": "string" },
                 "isRest": { "type": "boolean" },
                 "schema": { "type": "array" },
@@ -329,6 +330,7 @@
       "additionalProperties": false,
       "properties": {
         "href": { "type": "string" },
+        "id": { "type": "string" },
         "title": { "type": "string" },
         "schema": { "type": "array" },
         "userPermissions": { "type": "array" }
