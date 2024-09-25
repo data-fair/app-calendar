@@ -51,6 +51,7 @@ const allEvents = computedAsync(async () => {
     const response = await ofetch(`${contribsDataset.href + (layout === 'contrib' ? `/own/user:${session?.state?.user?.id}` : '')}/lines`, { params })
     const contribEvents = response.results.map(event => {
       const payload = JSON.parse(event.payload || '{}')
+      if (event._attachment_url) payload._attachment_url = event._attachment_url
       const original = event.original ? JSON.parse(event.original) : undefined
       return {
         editable: layout === 'contrib',
@@ -62,6 +63,7 @@ const allEvents = computedAsync(async () => {
         id: event._id,
         target_id: event.target_id,
         payload,
+        attachmentPath: event.attachmentPath,
         original,
         title: `${payload[labelField]} - ${operationLabel[event.operation]}`,
         color: config.colorContrib,

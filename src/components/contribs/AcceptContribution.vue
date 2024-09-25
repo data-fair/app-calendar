@@ -30,10 +30,19 @@ async function acceptContribution () {
       params.body.original = JSON.stringify(original)
     }
   }
+  const formData = new FormData()
+  const { _attachment_url, ...body } = prop.event.payload
+  for (const [key, value] of Object.entries(body)) formData.append(key, value)
+  if (_attachment_url) {
+    const blob = await ofetch(_attachment_url, { responseType: 'blob' })
+    const filename = prop.event.attachmentPath.split('/').pop()
+    formData.append('attachment', new File([blob], filename))
+  }
   try {
     await ofetch(`${mainDataset.href}/lines${prop.event.target_id ? '/' + prop.event.target_id : ''}`, {
       method: prop.event.target_id ? 'PUT' : 'POST',
-      body: prop.event.payload
+      body: formData,
+      headers: { 'Content-Disposition': formData }
     })
     await ofetch(`${contribsDataset.href}/lines/${prop.event.id}`, params)
     acceptMenuOpen.value = false

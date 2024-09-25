@@ -30,7 +30,7 @@ export default function useAppInfo () {
 
   if (config.crowdSourcing) {
     if (!contribsDataset) throw new Error('Veuillez sélectionner une source de données pour les contributions', { cause: 'noContribsDataset' })
-    const missingFields = ['_owner', '_ownerName', 'start', 'end', 'operation', 'target_id', 'payload', 'status'].filter(fid => !contribsDataset.schema.map(f => f.key).includes(fid))
+    const missingFields = ['_owner', '_ownerName', 'start', 'end', 'operation', 'target_id', 'payload', 'attachmentPath', 'status'].filter(fid => !contribsDataset.schema.map(f => f.key).includes(fid))
     if (missingFields.length) throw new Error('Champs manquants dans le jeu de données des contributions : ' + missingFields.join(', '))
   }
   let layout = 'simple'

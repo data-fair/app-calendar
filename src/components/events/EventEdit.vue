@@ -59,7 +59,7 @@ const mergedData = computed(() => {
   return merged
 })
 
-const formWidth = Math.max(200, width * config.formWidth / 10)
+const formWidth = Math.max(200, width.value * config.formWidth / 10)
 
 </script>
 

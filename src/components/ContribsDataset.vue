@@ -3,6 +3,13 @@ import { errorMessage, displayError } from '@/messages'
 import { ofetch } from 'ofetch'
 import body from '../assets/contribs.json'
 
+const mainDataset = window.APPLICATION?.configuration?.datasets?.[0]
+
+if (mainDataset) {
+  body.title = 'Contributions - ' + mainDataset.title
+  body.attachmentsAsImage = mainDataset.attachmentsAsImage
+}
+
 const createContribsDataset = async () => {
   const params = { method: 'POST', body, headers: { 'x-organizationId': 'user' } }
   if (window.APPLICATION.owner.type === 'organization') {
