@@ -309,6 +309,18 @@
         "contribsDataset": {
           "$ref": "#/definitions/contribsDataset"
         },
+        "hideContribs": {
+          "title": "Cacher les contributions auprès des utilisateurs",
+          "type": "boolean",
+          "default": true,
+          "x-if": "parent.value.crowdSourcing"
+        },
+        "createOnlyContribs": {
+          "title": "Ne permettre que des ajouts",
+          "type": "boolean",
+          "default": true,
+          "x-if": "parent.value.crowdSourcing"
+        },
         "deleteModeratedContribs": {
           "title": "Supprimer les contributions après validation ou refus",
           "type": "boolean",

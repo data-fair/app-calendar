@@ -42,7 +42,7 @@ const operationLabel = {
 
 const allEvents = computedAsync(async () => {
   const mainEvents = (events.value || []).map(e => ({ ...e, color: getColor(e.colorFieldValue) }))
-  if (config.crowdSourcing && layout !== 'simple') {
+  if (config.crowdSourcing && (layout === 'admin' || (layout === 'contrib' && !config.hideContribs))) {
     const params = {
       _c_date_match: reactiveSearchParams.start + ',' + reactiveSearchParams.end,
       size: 1000,

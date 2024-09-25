@@ -125,7 +125,7 @@ const formatedDate = computed(() => {
           </span>
         </div>
         <v-card-actions
-          v-if=" layout !=='simple'"
+          v-if="layout === 'admin' || (layout === 'contrib' && !config.createOnlyContribs)"
           class=" py-0"
         >
           {{ formatedDate }}
