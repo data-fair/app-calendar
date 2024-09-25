@@ -18,8 +18,13 @@ const createContribsDataset = async () => {
 
   try {
     const d = await ofetch(window.APPLICATION.apiUrl + '/datasets', params)
-    // d = await ofetch(window.APPLICATION.apiUrl + '/datasets/' + d.id)
-    // if (this.userRequired) await axios.put(window.APPLICATION.apiUrl + '/datasets/' + d.id + '/permissions', [{ type: 'user', operations: ['sendUserNotification'], classes: ['manageOwnLines'], id: '*', name: '*', roles: [] }], options)
+    await ofetch(window.APPLICATION.apiUrl + '/datasets/' + d.id + '/permissions', {
+      method: 'PUT',
+      body: [{ type: window.APPLICATION.owner.type, id: window.APPLICATION.owner.id, name: window.APPLICATION.owner.name, department: '-', roles: ['contrib'], classes: ['write'], operations: ['delete'] },
+        { type: window.APPLICATION.owner.type, id: window.APPLICATION.owner.id, name: window.APPLICATION.owner.name, department: '-', roles: ['contrib'], classes: ['list', 'read', 'readAdvanced'], operations: [] },
+        { type: 'user', operations: ['sendUserNotification', 'readSafeSchema', 'downloadAttachment'], classes: ['manageOwnLines'], id: '*', name: '*', roles: [] }],
+      headers: params.headers
+    })
     if (window.parent) {
       window.parent.postMessage({
         type: 'set-config',
