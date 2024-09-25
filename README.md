@@ -33,3 +33,9 @@ npm run build
 ```sh
 npm run lint
 ```
+
+If the release is a bug fix and you don't want to wait 24h (the cache delay of jsdelivr), you can purge the cache for the index.html file of the minor version in the CDN:
+
+```bash
+curl https://purge.jsdelivr.net/npm/@data-fair/app-calendar@VER/dist/index.html
+```

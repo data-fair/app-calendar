@@ -19,8 +19,8 @@ const EventEdit = defineAsyncComponent(() =>
   import('./EventEdit.vue')
 )
 
-const { height } = useDisplay()
-const { mainDataset, contribsDataset, layout, startDateField, endDateField, dateField } = useAppInfo()
+const { width, height } = useDisplay()
+const { config, mainDataset, contribsDataset, layout, startDateField, endDateField, dateField } = useAppInfo()
 const emit = defineEmits(['updated'])
 
 const mode = ref('read')
@@ -78,7 +78,6 @@ async function editEvent (eventData) {
     else if (layout === 'contrib' && !prop.event.isContrib) body.target_id = prop.event.id
   }
   for (const [key, value] of Object.entries(body)) formData.append(key, value)
-  // formData.append('body', JSON.stringify(body))
   if (__file) formData.append('attachment', __file)
   const params = {
     method: 'POST',
@@ -113,7 +112,7 @@ const formatedDate = computed(() => {
 </script>
 <template>
   <v-card
-    :max-width="800"
+    :max-width="mode === 'read' ? 800 : width*config.formWidth/10"
     :min-width="200"
     :max-height="height*0.8"
   >

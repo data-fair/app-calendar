@@ -274,7 +274,15 @@
             { "const": "compact", "title": "Compacte" },
             { "const": "comfortable", "title": "Aérée" }
           ],
-          "default": "default"
+          "default": "compact"
+        },
+        "formWidth": {
+          "title": "Largeur du formulaire",
+          "type": "integer",
+          "x-display": "slider",
+          "minimum": 2,
+          "maximum": 10,
+          "default": 5
         },
         "formVariant": {
           "title": "Style du formulaire",

@@ -7,8 +7,10 @@ import { ofetch } from 'ofetch'
 import { ref, computed } from 'vue'
 import { VDateInput } from 'vuetify/labs/VDateInput'
 import useAppInfo from '@/composables/useAppInfo'
+import { useDisplay } from 'vuetify'
 
 const { config, mainDataset, startDateField, endDateField, dateField } = useAppInfo()
+const { width } = useDisplay()
 
 const props = defineProps({
   item: { type: Object, required: true }
@@ -56,6 +58,9 @@ const mergedData = computed(() => {
   } else if (dateField) merged[dateField] = startDate.value.toISOString()
   return merged
 })
+
+const formWidth = Math.max(200, width * config.formWidth / 10)
+
 </script>
 
 <template>
@@ -63,7 +68,10 @@ const mergedData = computed(() => {
     <v-row
       align="end"
     >
-      <v-col class="pb-0">
+      <v-col
+        :cols="formWidth < 500 ? 6 : 3"
+        class="pr-0"
+      >
         <v-date-input
           v-model="startDate"
           label="Date de début"
@@ -72,7 +80,7 @@ const mergedData = computed(() => {
       </v-col>
       <v-col
         v-if="(startDateField && endDateField) && !dateField"
-        class="pb-0"
+        :cols="formWidth < 500 ? 6 : 3"
       >
         <v-text-field
           v-model="startTime"
@@ -81,19 +89,19 @@ const mergedData = computed(() => {
           density="compact"
         />
       </v-col>
-    </v-row>
-    <v-row
-      v-if="(startDateField && endDateField) && !dateField"
-      align="end"
-    >
-      <v-col>
+      <v-col
+        :cols="formWidth < 500 ? 6 : 3"
+        class="pr-0"
+      >
         <v-date-input
           v-model="endDate"
           label="Date de fin"
           density="compact"
         />
       </v-col>
-      <v-col>
+      <v-col
+        :cols="formWidth < 500 ? 6 : 3"
+      >
         <v-text-field
           v-model="endTime"
           label="Horaire de fin"
