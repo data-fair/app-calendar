@@ -109,6 +109,11 @@ const formatedDate = computed(() => {
   } else return dayjs(eventData.value[dateField]).format('dd, MMM YYYY')
 })
 
+function cancel () {
+  mode.value = 'read'
+  if (!prop.event.id) emit('updated')
+}
+
 </script>
 <template>
   <v-card
@@ -175,7 +180,7 @@ const formatedDate = computed(() => {
         <event-edit
           :item="eventData"
           @validate="editEvent"
-          @cancel="mode = 'read'"
+          @cancel="cancel"
         />
         <template #fallback>
           <v-row

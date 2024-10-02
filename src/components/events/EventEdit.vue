@@ -23,11 +23,14 @@ const form = ref(null)
 const options = { plugins: [VjsfMarkdown], pluginsOptions: { markdown: { easyMDEOptions: { minHeight: '150px' } } }, density: config.formDensity, titleDepth: 3, locale: 'fr', removeAdditional: true }
 const v2Schema = (await ofetch(mainDataset.href + '/safe-schema?mimeType=application%2Fschema%2Bjson'))
 const schema = v2compat(v2Schema)
+Object.entries(schema.properties).forEach(([key, value]) => {
+  if (!value.title) value.title = key
+})
 if (startDateField && endDateField) {
   delete schema.properties[startDateField]
   delete schema.properties[endDateField]
 } else if (dateField) delete schema.properties[dateField]
-if (!config.showHelpMessages)Object.values(schema.properties).forEach(p => delete p.description)
+if (!config.showHelpMessages) Object.values(schema.properties).forEach(p => delete p.description)
 
 const attachment = Object.values(schema.properties).find(f => f['x-concept']?.id === 'attachment')
 if (attachment) {

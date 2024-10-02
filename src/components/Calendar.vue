@@ -160,6 +160,7 @@ const calendarOptions = reactive({
       }
     }
     selectedEvent.value = event
+    eventMenuActivator.value = e.jsEvent.target
     eventMenuOpen.value = true
   }
 })
