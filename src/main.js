@@ -1,7 +1,6 @@
 import 'vuetify/styles'
 import { createApp } from 'vue'
 import { createVuetify } from 'vuetify/lib/framework.mjs'
-import { createSession } from '@data-fair/lib/vue/session.js'
 import { defaultOptions } from '@data-fair/lib/vuetify.js'
 import App from './App.vue'
 import reactiveSearchParams from '@data-fair/lib/vue/reactive-search-params-global.js'
@@ -16,7 +15,6 @@ async function init () {
 
   const app = createApp(App)
   app.use(createVuetify(options))
-  app.use(await createSession({}))
   app.mount('#app')
 }
 

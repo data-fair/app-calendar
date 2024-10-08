@@ -4,12 +4,10 @@ import useAppInfo from '@/composables/useAppInfo'
 import { timestamp } from '@/context'
 import { errorMessage, displayError } from '@/messages'
 import { ofetch } from 'ofetch'
-import { useSession } from '@data-fair/lib/vue/session.js'
 
-const { mainDataset, contribsDataset, layout, labelField } = useAppInfo()
+const { mainDataset } = useAppInfo()
 
 const deleteMenuOpen = ref(false)
-const session = useSession()
 
 const prop = defineProps({
   event: {
@@ -21,26 +19,8 @@ const prop = defineProps({
 const emit = defineEmits(['deleted'])
 
 async function deleteEvent () {
-  const params = {
-    method: 'POST'
-  }
-  let url = `${layout === 'contrib' ? (contribsDataset.href + `/own/user:${session?.state?.user?.id}`) : mainDataset.href}/lines`
-  if ((layout === 'contrib' && prop.event.isContrib) || (layout === 'admin' && !prop.event.isContrib)) {
-    url += '/' + prop.event.id
-    params.method = 'DELETE'
-  } else {
-    params.body = {
-      operation: 'delete',
-      status: 'submitted',
-      start: new Date(prop.event.start).toISOString(),
-      end: new Date(prop.event.end).toISOString(),
-      target_id: prop.event.id,
-      payload: JSON.stringify({ [labelField]: prop.event.title })
-    }
-  }
-
   try {
-    await ofetch(url, params)
+    await ofetch(`${mainDataset.href}/lines${prop.event.id}`, { method: 'DELETE' })
     deleteMenuOpen.value = false
     emit('deleted')
     timestamp.value = new Date().getTime()

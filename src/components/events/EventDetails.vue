@@ -7,11 +7,6 @@ import { errorMessage, displayError } from '@/messages'
 import { ofetch } from 'ofetch'
 import EventView from './EventView.vue'
 import DeleteEvent from './DeleteEvent.vue'
-import AcceptContribution from '../contribs/AcceptContribution.vue'
-import RefuseContribution from '../contribs/RefuseContribution.vue'
-import ContributionStatus from '../contribs/ContributionStatus.vue'
-import DiffView from '../contribs/DiffView.vue'
-import { useSession } from '@data-fair/lib/vue/session.js'
 import { useDisplay } from 'vuetify'
 import { dayjs } from '@data-fair/lib/vue/locale-dayjs-global.js'
 
@@ -20,7 +15,7 @@ const EventEdit = defineAsyncComponent(() =>
 )
 
 const { width, height } = useDisplay()
-const { config, mainDataset, contribsDataset, layout, startDateField, endDateField, dateField } = useAppInfo()
+const { config, mainDataset, layout, startDateField, endDateField, dateField } = useAppInfo()
 const emit = defineEmits(['updated'])
 
 const mode = ref('read')
@@ -32,29 +27,14 @@ const prop = defineProps({
   }
 })
 
-const session = useSession()
-
 watch(() => prop.event, (event) => {
   mode.value = 'read'
 })
 
-const operationLabel = {
-  create: 'd\'ajout',
-  update: 'de modification',
-  delete: 'de suppression'
-}
-
 const eventData = computedAsync(async () => {
   if (!prop.event) return null
   if (!prop.event.id) mode.value = 'edit'
-  if (prop.event.isContrib) {
-    const event = { ...(prop.event.payload || {}) }
-    if (startDateField && endDateField) {
-      if (!event[startDateField]) event[startDateField] = prop.event.start
-      if (!event[endDateField]) event[endDateField] = prop.event.end
-    } else if (dateField && !event[dateField]) event[dateField] = prop.event.start
-    return event
-  } else if (!prop.event.id) return { ...prop.event }
+  if (!prop.event.id) return { ...prop.event }
   else return (await ofetch(`${(mainDataset).href}/lines?_id_eq=${prop.event.id}`)).results.pop()
 }, null, {
   onError: function (e) {
@@ -67,16 +47,6 @@ async function editEvent (eventData) {
   const formData = new FormData()
   const { __file, ...event } = eventData
   const body = layout === 'contrib' ? { payload: JSON.stringify(event) } : event
-  if (layout === 'contrib') {
-    body.operation = prop.event.isContrib ? prop.event.operation : 'update'
-    body.status = 'submitted'
-    body.start = event[startDateField && endDateField ? startDateField : dateField]
-    body.end = event[startDateField && endDateField ? endDateField : dateField]
-    body._owner = session?.state?.user?.id
-    body._ownerName = session?.state?.user?.name
-    if (prop.event.target_id) body.target_id = prop.event.target_id
-    else if (layout === 'contrib' && !prop.event.isContrib) body.target_id = prop.event.id
-  }
   for (const [key, value] of Object.entries(body)) formData.append(key, value)
   if (__file) formData.append('attachment', __file)
   const params = {
@@ -84,8 +54,8 @@ async function editEvent (eventData) {
     body: formData,
     headers: { 'Content-Disposition': formData }
   }
-  let url = `${layout === 'contrib' ? (contribsDataset.href + `/own/user:${session?.state?.user?.id}`) : mainDataset.href}/lines`
-  if (((layout === 'contrib' && prop.event.isContrib) || (layout === 'admin' && !prop.event.isContrib)) && prop.event.id) {
+  let url = `${mainDataset.href}/lines`
+  if (prop.event.id) {
     url += '/' + prop.event.id
     params.method = 'PUT'
   }
@@ -123,20 +93,13 @@ function cancel () {
   >
     <template v-if="eventData">
       <template v-if="mode === 'read'">
-        <div v-if=" event.isContrib">
-          Proposition {{ operationLabel[event.operation] }}
-          <span v-if="(layout === 'admin')">
-            par {{ event._ownerName }}
-          </span>
-        </div>
         <v-card-actions
-          v-if="layout === 'admin' || (layout === 'contrib' && !config.createOnlyContribs)"
+          v-if="layout === 'admin'"
           class=" py-0"
         >
           {{ formatedDate }}
           <v-spacer />
           <v-btn
-            v-if="!event.isContrib || (layout === 'contrib' && event.operation !== 'delete' && event.status === 'submitted')"
             v-tooltip="{
               text: 'Modifier l\'événement',
               location: 'right',
@@ -147,32 +110,11 @@ function cancel () {
             @click="mode = 'edit'"
           />
           <delete-event
-            v-if="(layout === 'contrib' && event.status === 'submitted') || !event.isContrib"
             :event="event"
             @deleted="emit('updated')"
           />
-          <refuse-contribution
-            v-if="layout === 'admin' && event.isContrib && event.status === 'submitted' "
-            :event="event"
-            @refused="emit('updated')"
-          />
-          <accept-contribution
-            v-if="layout === 'admin' && event.isContrib && event.status === 'submitted'"
-            :event="event"
-            @accepted="emit('updated')"
-          />
-          <contribution-status
-            v-if="event.isContrib && (layout === 'contrib' || event.status !== 'submitted')"
-            :value="event.status"
-          />
         </v-card-actions>
-        <diff-view
-          v-if="event.isContrib && event.operation === 'update'"
-          :item="eventData"
-          :old="event.original || {id:event.target_id}"
-        />
         <event-view
-          v-else
           :item="eventData"
         />
       </template>

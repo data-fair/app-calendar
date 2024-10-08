@@ -5,8 +5,7 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import listPlugin from '@fullcalendar/list'
 import frLocale from '@fullcalendar/core/locales/fr'
-import { reactive, ref } from 'vue'
-import { computedAsync } from '@vueuse/core'
+import { reactive, ref, computed } from 'vue'
 import { useTheme } from 'vuetify'
 import { events, colorPalette, timestamp } from '@/context'
 import { errorMessage, displayError } from '@/messages'
@@ -14,11 +13,9 @@ import reactiveSearchParams from '@data-fair/lib/vue/reactive-search-params-glob
 import useAppInfo from '@/composables/useAppInfo'
 import EventDetails from './events/EventDetails.vue'
 import { ofetch } from 'ofetch'
-import { useSession } from '@data-fair/lib/vue/session.js'
 
-const session = useSession()
 const theme = useTheme()
-const { config, color, mainDataset, contribsDataset, layout, startDateField, endDateField, dateField, labelField } = useAppInfo()
+const { color, mainDataset, layout, startDateField, endDateField, dateField } = useAppInfo()
 
 const selectedEvent = ref(null)
 const eventMenuOpen = ref(null)
@@ -34,69 +31,20 @@ function getColor (value) {
   }
 }
 
-const operationLabel = {
-  create: 'Ajout',
-  update: 'Modification',
-  delete: 'Suppression'
-}
-
-const allEvents = computedAsync(async () => {
-  const mainEvents = (events.value || []).map(e => ({ ...e, color: getColor(e.colorFieldValue) }))
-  if (config.crowdSourcing && (layout === 'admin' || (layout === 'contrib' && !config.hideContribs))) {
-    const params = {
-      _c_date_match: reactiveSearchParams.start + ',' + reactiveSearchParams.end,
-      size: 1000,
-      t: timestamp.value
-    }
-    const response = await ofetch(`${contribsDataset.href + (layout === 'contrib' ? `/own/user:${session?.state?.user?.id}` : '')}/lines`, { params })
-    const contribEvents = response.results.map(event => {
-      const payload = JSON.parse(event.payload || '{}')
-      if (event._attachment_url) payload._attachment_url = event._attachment_url
-      const original = event.original ? JSON.parse(event.original) : undefined
-      return {
-        editable: layout === 'contrib',
-        isContrib: true,
-        operation: event.operation,
-        status: event.status,
-        _owner: event._owner,
-        _ownerName: event._ownerName,
-        id: event._id,
-        target_id: event.target_id,
-        payload,
-        attachmentPath: event.attachmentPath,
-        original,
-        title: `${payload[labelField]} - ${operationLabel[event.operation]}`,
-        color: config.colorContrib,
-        start: payload[startDateField && endDateField ? startDateField : dateField],
-        end: startDateField && endDateField ? payload[endDateField] : undefined,
-        allDay: !(startDateField && endDateField) || (new Date(event.end).getTime() - new Date(event.start).getTime() > 2 * 24 * 60 * 60 * 1000)
-      }
-    })
-    return [...mainEvents, ...contribEvents]
-  } else return mainEvents
-}, null, {
-  onError: function (e) {
-    displayError.value = true
-    errorMessage.value = e.message
-  }
+const allEvents = computed(() => {
+  return (events.value || []).map(e => ({ ...e, color: getColor(e.colorFieldValue) }))
 })
 
 async function patchEvent (event) {
   const body = {}
   if (startDateField && endDateField) {
-    body[event.extendedProps?.isContrib ? 'start' : startDateField] = event.start.toISOString()
-    body[event.extendedProps?.isContrib ? 'end' : endDateField] = event.end.toISOString()
+    body[startDateField] = event.start.toISOString()
+    body[endDateField] = event.end.toISOString()
   } else if (dateField) {
-    body[event.extendedProps?.isContrib ? 'start' : dateField] = event.start.toISOString()
-    if (event.extendedProps?.isContrib) body.end = event.end.toISOString()
-  }
-  const url = `${event.extendedProps?.isContrib ? (contribsDataset.href + `/own/${event.extendedProps?._owner}`) : mainDataset.href}/lines/${event.id}`
-  const params = {
-    method: 'PATCH',
-    body
+    body[dateField] = event.start.toISOString()
   }
   try {
-    await ofetch(url, params)
+    await ofetch(`${mainDataset.href}/lines/${event.id}`, { method: 'PATCH', body })
     eventMenuOpen.value = false
     timestamp.value = new Date().getTime()
   } catch (e) {
@@ -142,23 +90,10 @@ const calendarOptions = reactive({
   },
   select (e) {
     const event = {}
-    if (layout !== 'contrib') {
-      if (startDateField && endDateField) {
-        event[startDateField] = e.start.toISOString()
-        event[endDateField] = e.end.toISOString()
-      } else if (dateField) event[dateField] = e.start.toISOString()
-    } else {
-      event.isContrib = true
-      event.operation = 'create'
-      event.status = 'submitted'
-      event.start = e.start.toISOString()
-      event.end = e.end.toISOString()
-      const user = session?.state?.user
-      if (user) {
-        event._owner = 'user:' + user.id
-        event._ownerName = user.name
-      }
-    }
+    if (startDateField && endDateField) {
+      event[startDateField] = e.start.toISOString()
+      event[endDateField] = e.end.toISOString()
+    } else if (dateField) event[dateField] = e.start.toISOString()
     selectedEvent.value = event
     eventMenuActivator.value = e.jsEvent.target
     eventMenuOpen.value = true

@@ -9,8 +9,8 @@ import { errorMessage, displayError } from '@/messages'
 
 export const timestamp = ref(new Date().getTime())
 
-const conceptFilters = useConceptFilters(reactiveSearchParams)
 const { config, color, mainDataset, startDateField, endDateField, dateField, labelField, layout } = useAppInfo()
+const conceptFilters = useConceptFilters(reactiveSearchParams, mainDataset?.id)
 
 export const colorPalette = computedAsync(async () => {
   if (color?.type !== 'multicolor') return

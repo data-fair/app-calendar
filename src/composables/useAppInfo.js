@@ -25,25 +25,12 @@ export default function useAppInfo () {
   const userPermissions = mainDataset.userPermissions || []
   const isAdmin = userPermissions.includes('readLines') && userPermissions.includes('createLine') && userPermissions.includes('updateLine') && userPermissions.includes('patchLine') && userPermissions.includes('deleteLine') && (!reactiveSearchParams.role || reactiveSearchParams.role === 'admin')
 
-  const contribsDataset = config.datasets?.[1] || config.contribsDataset
-  const isContrib = contribsDataset && contribsDataset.userPermissions.includes('readOwnLines') && contribsDataset.userPermissions.includes('createOwnLine') && contribsDataset.userPermissions.includes('updateOwnLine') && contribsDataset.userPermissions.includes('patchOwnLine') && contribsDataset.userPermissions.includes('deleteOwnLine') && (!reactiveSearchParams.role || reactiveSearchParams.role === 'contrib')
-
-  if (config.crowdSourcing) {
-    if (!contribsDataset) throw new Error('Veuillez sélectionner une source de données pour les contributions', { cause: 'noContribsDataset' })
-    const missingFields = ['_owner', '_ownerName', 'start', 'end', 'operation', 'target_id', 'payload', 'attachmentPath', 'status'].filter(fid => !contribsDataset.schema.map(f => f.key).includes(fid))
-    if (missingFields.length) throw new Error('Champs manquants dans le jeu de données des contributions : ' + missingFields.join(', '))
-  }
-  let layout = 'simple'
-  if (mainDataset.isRest) {
-    if (isAdmin) layout = 'admin'
-    else if (config.crowdSourcing && isContrib) layout = 'contrib'
-  }
+  const layout = mainDataset.isRest && isAdmin ? 'admin' : 'simple'
 
   return {
     application,
     config,
     mainDataset,
-    contribsDataset,
     startDateField,
     dateField,
     endDateField,
