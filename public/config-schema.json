@@ -12,7 +12,7 @@
               "title": "Jeu de données",
               "description": "Ce jeu doit contenir au moins un champ avec le concept de date",
               "type": "object",
-              "x-fromUrl": "api/v1/datasets?status=finalized&q={q}&select=title,isRest,schema,timePeriod,attachmentsAsImage,userPermissions&{context.datasetFilter}&short-concept=date,startDate,endDate&size=100",
+              "x-fromUrl": "api/v1/datasets?status=finalized&q={q}&select=title,isRest,schema,timePeriod,attachmentsAsImage,userPermissions&{context.datasetFilter}&short-concept=date,startDate,endDate&size=100&sort=createdAt:-1",
               "x-itemsProp": "results",
               "x-itemTitle": "title",
               "x-itemKey": "href",
@@ -259,6 +259,29 @@
           "items": {
             "type": "string"
           }
+        },
+        "imageDisplay": {
+          "title": "Rendu de l'image",
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "cover",
+              "title": "Etendre"
+            },
+            {
+              "const": "contain",
+              "title": "Redimensionner"
+            }
+          ],
+          "default": "cover"
+        },
+        "aspectRatio": {
+          "title": "Rapport de forme (largeur / hauteur)",
+          "type": "number",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 5,
+          "x-display": "slider"
         }
       }
     },
@@ -343,7 +366,7 @@
       "title": "Jeu de données des contributions externes",
       "x-if": "crowdSourcing",
       "type": "object",
-      "x-fromUrl": "api/v1/datasets?rest=true&q={q}&select=title,schema,userPermissions&{context.datasetFilter}&short-concept=startDate,endDate&size=100",
+      "x-fromUrl": "api/v1/datasets?rest=true&q={q}&select=title,schema,userPermissions&{context.datasetFilter}&short-concept=startDate,endDate&size=100&sort=createdAt:-1",
       "x-itemsProp": "results",
       "x-itemTitle": "title",
       "x-itemKey": "href",

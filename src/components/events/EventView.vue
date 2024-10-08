@@ -15,8 +15,8 @@ const { config, labelField, descriptionField, imageField, attachmentField, linkF
     <v-img
       v-if="item[imageField]"
       :src="item._thumbnail || item[imageField]"
-      :aspect-ratio="3"
-      cover
+      :aspect-ratio="config.aspectRatio || 3"
+      :cover="config.imageDisplay !== 'contain'"
     />
   </template>
   <v-card-title v-if="labelField && item[labelField]">
