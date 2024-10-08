@@ -260,6 +260,42 @@
             "type": "string"
           }
         },
+        "imageWidth": {
+          "title": "Largeur de l'image en % de la fiche",
+          "type": "number",
+          "default": 100,
+          "minimum": 20,
+          "maximum": 100,
+          "x-display": "slider"
+        },
+        "aspectRatio": {
+          "title": "Rapport de forme (largeur / hauteur)",
+          "type": "number",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 5,
+          "x-display": "slider"
+        },
+        "imagePosition": {
+          "title": "Position de l'image",
+          "description": "Ne change rien si la largeur de l'image est 100% de la fiche",
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "top",
+              "title": "En haut"
+            },
+            {
+              "const": "left",
+              "title": "A gauche"
+            },
+            {
+              "const": "right",
+              "title": "A droite"
+            }
+          ],
+          "default": "top"
+        },
         "imageDisplay": {
           "title": "Rendu de l'image",
           "type": "string",
@@ -274,14 +310,6 @@
             }
           ],
           "default": "cover"
-        },
-        "aspectRatio": {
-          "title": "Rapport de forme (largeur / hauteur)",
-          "type": "number",
-          "default": 3,
-          "minimum": 1,
-          "maximum": 5,
-          "x-display": "slider"
         }
       }
     },
