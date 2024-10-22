@@ -23,7 +23,7 @@ const { config, labelField, descriptionField, imageField, attachmentField, linkF
   <v-card-text class="pt-0">
     <h3
       v-if="labelField && item[labelField]"
-      class="mb-2"
+      class="my-2"
     >
       {{ item[labelField] }}
     </h3>
