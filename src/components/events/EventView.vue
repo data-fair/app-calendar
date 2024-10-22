@@ -20,13 +20,13 @@ const { config, labelField, descriptionField, imageField, attachmentField, linkF
       :style="`width:${config.imageWidth || 100}%${config.imagePosition !== 'top' ? ';float:' + config.imagePosition :''}`"
     />
   </template>
-  <v-card-title v-if="labelField && item[labelField]">
-    <h4>
+  <v-card-text class="pt-0">
+    <h3
+      v-if="labelField && item[labelField]"
+      class="mb-2"
+    >
       {{ item[labelField] }}
-    </h4>
-  </v-card-title>
-
-  <v-card-text>
+    </h3>
     <div
       v-if="descriptionField && item[descriptionField]"
       v-html="item[descriptionField]"
