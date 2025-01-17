@@ -63,6 +63,7 @@ const { config, labelField, descriptionField, imageField, attachmentField, linkF
               small
               style="flex:none"
               class="my-1 mr-1"
+              variant="flat"
             >
               {{ (formatField({ [field]: value }, fields[field]) + '') }}
             </v-chip>
