@@ -4,7 +4,7 @@ import VjsfMarkdown from '@koumoul/vjsf-markdown'
 import { v2compat } from '@koumoul/vjsf/compat/v2'
 import { ofetch } from 'ofetch'
 
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { VDateInput } from 'vuetify/labs/VDateInput'
 import useAppInfo from '@/composables/useAppInfo'
 import { useDisplay } from 'vuetify'
@@ -18,8 +18,12 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['cancel', 'validate'])
-const data = ref({ ...props.item })
+const data = ref(null)
 const form = ref(null)
+watch(() => props.item, item => {
+  console.log(item)
+  data.value = { ...item }
+}, { immediate: true })
 
 const options = { plugins: [VjsfMarkdown], pluginsOptions: { markdown: { easyMDEOptions: { minHeight: '150px' } } }, density: config.formDensity, titleDepth: 3, locale: 'fr', removeAdditional: true }
 const v2Schema = (await ofetch(mainDataset.href + '/safe-schema?mimeType=application%2Fschema%2Bjson'))
