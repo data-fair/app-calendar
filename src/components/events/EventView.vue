@@ -24,9 +24,8 @@ const { config, labelField, descriptionField, imageField, attachmentField, linkF
     <h3
       v-if="labelField && item[labelField]"
       class="my-2"
-    >
-      {{ item[labelField] }}
-    </h3>
+      v-html="item[labelField]"
+    />
     <div
       v-if="descriptionField && item[descriptionField]"
       v-html="item[descriptionField]"
