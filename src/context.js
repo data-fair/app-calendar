@@ -9,7 +9,7 @@ import { errorMessage, displayError } from '@/messages'
 
 export const timestamp = ref(new Date().getTime())
 
-const { config, color, mainDataset, startDateField, endDateField, dateField, labelField, layout } = useAppInfo()
+const { config, color, mainDataset, startDateField, endDateField, dateField, labelField, layout, startDateType, endDateType } = useAppInfo()
 const conceptFilters = useConceptFilters(reactiveSearchParams, mainDataset?.id)
 
 export const colorPalette = computedAsync(async () => {
@@ -56,7 +56,7 @@ export const events = computedAsync(async () => {
     colorFieldValue: color?.type === 'multicolor' && event[config.color.field],
     start: event[startDateField && endDateField ? startDateField : dateField],
     end: startDateField && endDateField ? event[endDateField] : undefined,
-    allDay: !(startDateField && endDateField) || (new Date(event[endDateField]).getTime() - new Date(event[startDateField]).getTime() > 2 * 24 * 60 * 60 * 1000)
+    allDay: !(startDateField && endDateField) || (startDateType === 'date' && endDateType === 'date') || (new Date(event[endDateField]).getTime() - new Date(event[startDateField]).getTime() > 2 * 24 * 60 * 60 * 1000)
   }))
 }, null, {
   onError: function (e) {

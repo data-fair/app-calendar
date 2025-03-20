@@ -20,7 +20,7 @@ const emit = defineEmits(['deleted'])
 
 async function deleteEvent () {
   try {
-    await ofetch(`${mainDataset.href}/lines${prop.event.id}`, { method: 'DELETE' })
+    await ofetch(`${mainDataset.href}/lines/${prop.event.id}`, { method: 'DELETE' })
     deleteMenuOpen.value = false
     emit('deleted')
     timestamp.value = new Date().getTime()

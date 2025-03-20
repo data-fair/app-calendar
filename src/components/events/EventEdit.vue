@@ -8,8 +8,9 @@ import { ref, computed } from 'vue'
 import { VDateInput } from 'vuetify/labs/VDateInput'
 import useAppInfo from '@/composables/useAppInfo'
 import { useDisplay } from 'vuetify'
+import { dayjs } from '@data-fair/lib/vue/locale-dayjs-global.js'
 
-const { config, mainDataset, startDateField, endDateField, dateField } = useAppInfo()
+const { config, mainDataset, startDateField, endDateField, dateField, startDateType, endDateType, dateType } = useAppInfo()
 const { width } = useDisplay()
 
 const props = defineProps({
@@ -51,14 +52,18 @@ const mergedData = computed(() => {
   const merged = { ...data.value }
   if (startDateField && endDateField) {
     const start = new Date(startDate.value.getTime())
-    start.setHours(startTime.value.slice(0, 2))
-    start.setMinutes(startTime.value.slice(3, 5))
+    if (startDateType === 'date-time') {
+      start.setHours(startTime.value.slice(0, 2))
+      start.setMinutes(startTime.value.slice(3, 5))
+    }
     const end = new Date(endDate.value.getTime())
-    end.setHours(endTime.value.slice(0, 2))
-    end.setMinutes(endTime.value.slice(3, 5))
-    merged[startDateField] = start.toISOString()
-    merged[endDateField] = end.toISOString()
-  } else if (dateField) merged[dateField] = startDate.value.toISOString()
+    if (endDateType === 'date-time') {
+      end.setHours(endTime.value.slice(0, 2))
+      end.setMinutes(endTime.value.slice(3, 5))
+    }
+    merged[startDateField] = startDateType === 'date' ? dayjs(start).format('YYYY-MM-DD') : start.toISOString()
+    merged[endDateField] = endDateType === 'date' ? dayjs(end).format('YYYY-MM-DD') : end.toISOString()
+  } else if (dateField) merged[dateField] = dateType === 'date' ? dayjs(startDate.value).format('YYYY-MM-DD') : startDate.value.toISOString()
   return merged
 })
 
@@ -72,7 +77,7 @@ const formWidth = Math.max(200, width.value * config.formWidth / 10)
       align="end"
     >
       <v-col
-        :cols="formWidth < 500 ? 6 : 3"
+        :cols="(formWidth < 500 ? 6 : 3)*((startDateField && endDateField && startDateType === 'date-time') && !dateField ? 1 : 2)"
         class="pr-0"
       >
         <v-date-input
@@ -82,7 +87,7 @@ const formWidth = Math.max(200, width.value * config.formWidth / 10)
         />
       </v-col>
       <v-col
-        v-if="(startDateField && endDateField) && !dateField"
+        v-if="(startDateField && endDateField && startDateType === 'date-time') && !dateField"
         :cols="formWidth < 500 ? 6 : 3"
       >
         <v-text-field
@@ -92,26 +97,29 @@ const formWidth = Math.max(200, width.value * config.formWidth / 10)
           density="compact"
         />
       </v-col>
-      <v-col
-        :cols="formWidth < 500 ? 6 : 3"
-        class="pr-0"
-      >
-        <v-date-input
-          v-model="endDate"
-          label="Date de fin"
-          density="compact"
-        />
-      </v-col>
-      <v-col
-        :cols="formWidth < 500 ? 6 : 3"
-      >
-        <v-text-field
-          v-model="endTime"
-          label="Horaire de fin"
-          type="time"
-          density="compact"
-        />
-      </v-col>
+      <template v-if="(startDateField && endDateField) && !dateField">
+        <v-col
+          :cols="(formWidth < 500 ? 6 : 3)*(endDateType === 'date-time' ? 1 : 2)"
+          class="pr-0"
+        >
+          <v-date-input
+            v-model="endDate"
+            label="Date de fin"
+            density="compact"
+          />
+        </v-col>
+        <v-col
+          v-if="endDateType === 'date-time'"
+          :cols="formWidth < 500 ? 6 : 3"
+        >
+          <v-text-field
+            v-model="endTime"
+            label="Horaire de fin"
+            type="time"
+            density="compact"
+          />
+        </v-col>
+      </template>
     </v-row>
     <v-form ref="form">
       <vjsf

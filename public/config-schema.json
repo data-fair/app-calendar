@@ -61,7 +61,7 @@
                   "type": "string",
                   "title": "Champ de catégorie",
                   "description": "Choisissez le champ permettant de distinguer les catégories d'événements suivant des couleurs distinctes.",
-                  "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
+                  "x-fromUrl": "{datasets.0.href}/schema?calculated=false&maxCardinality=12",
                   "x-itemTitle": "category",
                   "x-itemKey": "key"
                 },

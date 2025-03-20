@@ -15,7 +15,7 @@ const EventEdit = defineAsyncComponent(() =>
 )
 
 const { width, height } = useDisplay()
-const { config, mainDataset, layout, startDateField, endDateField, dateField } = useAppInfo()
+const { config, mainDataset, layout, startDateField, endDateField, dateField, startDateType, endDateType } = useAppInfo()
 const emit = defineEmits(['updated'])
 
 const mode = ref('read')
@@ -35,7 +35,7 @@ const eventData = computedAsync(async () => {
   if (!prop.event) return null
   if (!prop.event.id) mode.value = 'edit'
   if (!prop.event.id) return { ...prop.event }
-  else return (await ofetch(`${(mainDataset).href}/lines?_id_eq=${prop.event.id}`)).results.pop()
+  else return (await ofetch(`${(mainDataset).href}/lines?_id_eq=${prop.event.id}${mode.value === 'read' ? '&html=true' : ''}`)).results.pop()
 }, null, {
   onError: function (e) {
     displayError.value = true
@@ -74,8 +74,8 @@ const formatedDate = computed(() => {
   if (startDateField && endDateField) {
     const start = dayjs(eventData.value[startDateField])
     const end = dayjs(eventData.value[endDateField])
-    if (start.isSame(end, 'day')) return start.format('ddd D MMM YYYY') + ', ' + start.format('HH:mm') + ' - ' + end.format('HH:mm')
-    else return start.format('ddd D MMM YYYY, HH:mm') + ' - ' + end.format('ddd D MMM YYYY, HH:mm')
+    if (start.isSame(end, 'day')) return start.format('ddd D MMM YYYY') + (startDateType === 'date-time' ? (', ' + start.format('HH:mm')) : '') + (endDateType === 'date-time' ? (' - ' + end.format('HH:mm')) : '')
+    else return start.format('ddd D MMM YYYY' + (startDateType === 'date-time' ? ', HH:mm' : '')) + ' - ' + end.format('ddd D MMM YYYY' + (endDateType === 'date-time' ? ', HH:mm' : ''))
   } else return dayjs(eventData.value[dateField]).format('dd, MMM YYYY')
 })
 
