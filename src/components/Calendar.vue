@@ -89,13 +89,14 @@ const calendarOptions = reactive({
     patchEvent(e.event)
   },
   select (e) {
+    if (eventMenuOpen.value) return
     const event = {}
     if (startDateField && endDateField) {
       event[startDateField] = e.start.toISOString()
       event[endDateField] = e.end.toISOString()
     } else if (dateField) event[dateField] = e.start.toISOString()
     selectedEvent.value = event
-    eventMenuActivator.value = e.jsEvent.target
+    eventMenuActivator.value = e.jsEvent.toElement.parentElement.parentElement
     eventMenuOpen.value = true
   }
 })
@@ -105,6 +106,7 @@ const calendarOptions = reactive({
   <FullCalendar :options="calendarOptions" />
   <v-menu
     v-model="eventMenuOpen"
+    persistent
     :close-on-content-click="false"
     :activator="eventMenuActivator"
     :location="reactiveSearchParams.view === 'dayGridMonth' ? 'bottom' : 'start center'"

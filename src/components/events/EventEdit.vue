@@ -3,6 +3,7 @@ import Vjsf from '@koumoul/vjsf'
 import VjsfMarkdown from '@koumoul/vjsf-markdown'
 import { v2compat } from '@koumoul/vjsf/compat/v2'
 import { ofetch } from 'ofetch'
+import OpeningHoursEdit from '../OpeningHours.vue'
 
 import { ref, computed, watch } from 'vue'
 import { VDateInput } from 'vuetify/labs/VDateInput'
@@ -10,7 +11,7 @@ import useAppInfo from '@/composables/useAppInfo'
 import { useDisplay } from 'vuetify'
 import { dayjs } from '@data-fair/lib/vue/locale-dayjs-global.js'
 
-const { config, mainDataset, startDateField, endDateField, dateField, startDateType, endDateType, dateType } = useAppInfo()
+const { config, mainDataset, startDateField, endDateField, dateField, openingHoursField, startDateType, endDateType, dateType } = useAppInfo()
 const { width } = useDisplay()
 
 const props = defineProps({
@@ -20,9 +21,19 @@ const props = defineProps({
 const emit = defineEmits(['cancel', 'validate'])
 const data = ref(null)
 const form = ref(null)
+const startDate = ref(null)
+const endDate = ref(null)
+const startTime = ref(null)
+const endTime = ref(null)
+const openingHours = ref(null)
+
 watch(() => props.item, item => {
-  console.log(item)
   data.value = { ...item }
+  startDate.value = new Date(props.item[startDateField && endDateField ? startDateField : dateField])
+  endDate.value = new Date(props.item[startDateField && endDateField ? endDateField : dateField])
+  startTime.value = new Date(props.item[startDateField && endDateField ? startDateField : dateField]).toTimeString().slice(0, 5)
+  endTime.value = new Date(props.item[startDateField && endDateField ? endDateField : dateField]).toTimeString().slice(0, 5)
+  if (openingHoursField) openingHours.value = props.item[openingHoursField]
 }, { immediate: true })
 
 const options = { plugins: [VjsfMarkdown], pluginsOptions: { markdown: { easyMDEOptions: { minHeight: '150px' } } }, density: config.formDensity, titleDepth: 3, locale: 'fr', removeAdditional: true }
@@ -36,6 +47,7 @@ if (startDateField && endDateField) {
   delete schema.properties[endDateField]
 } else if (dateField) delete schema.properties[dateField]
 if (!config.showHelpMessages) Object.values(schema.properties).forEach(p => delete p.description)
+if (openingHoursField) delete schema.properties[openingHoursField]
 
 const attachment = Object.values(schema.properties).find(f => f['x-concept']?.id === 'attachment')
 if (attachment) {
@@ -46,11 +58,6 @@ if (attachment) {
     layout: 'file-input'
   }
 }
-
-const startDate = ref(new Date(props.item[startDateField && endDateField ? startDateField : dateField]))
-const endDate = ref(new Date(props.item[startDateField && endDateField ? endDateField : dateField]))
-const startTime = ref(new Date(props.item[startDateField && endDateField ? startDateField : dateField]).toTimeString().slice(0, 5))
-const endTime = ref(new Date(props.item[startDateField && endDateField ? endDateField : dateField]).toTimeString().slice(0, 5))
 
 const mergedData = computed(() => {
   const merged = { ...data.value }
@@ -68,6 +75,7 @@ const mergedData = computed(() => {
     merged[startDateField] = startDateType === 'date' ? dayjs(start).format('YYYY-MM-DD') : start.toISOString()
     merged[endDateField] = endDateType === 'date' ? dayjs(end).format('YYYY-MM-DD') : end.toISOString()
   } else if (dateField) merged[dateField] = dateType === 'date' ? dayjs(startDate.value).format('YYYY-MM-DD') : startDate.value.toISOString()
+  if (openingHoursField) merged[openingHoursField] = openingHours.value
   return merged
 })
 
@@ -125,6 +133,10 @@ const formWidth = Math.max(200, width.value * config.formWidth / 10)
         </v-col>
       </template>
     </v-row>
+    <opening-hours-edit
+      v-if="openingHoursField"
+      v-model="openingHours"
+    />
     <v-form ref="form">
       <vjsf
         v-model="data"
@@ -138,7 +150,6 @@ const formWidth = Math.max(200, width.value * config.formWidth / 10)
   >
     <v-spacer />
     <v-btn
-      color="warning"
       @click="emit('cancel')"
     >
       Annuler

@@ -17,6 +17,7 @@ export default function useAppInfo () {
   const dateField = mainDataset.schema.find(f => f['x-refersTo'] === 'http://schema.org/Date')?.key
   const dateType = mainDataset.schema.find(f => f['x-refersTo'] === 'http://schema.org/Date')?.format
   if ((!startDateField || !endDateField) && !dateField) throw new Error('Veuillez ajouter un concept de type Date à vos données')
+  const openingHoursField = mainDataset.schema.find(f => f['x-refersTo'] === 'https://schema.org/openingHours')?.key
   const attachmentField = !mainDataset.attachmentsAsImage && mainDataset.schema.find(f => f['x-refersTo'] === 'http://schema.org/DigitalDocument')
   const imageField = mainDataset.schema.find(f => f['x-refersTo'] === 'http://schema.org/image')?.key
   const linkField = mainDataset.schema.find(f => f['x-refersTo'] === 'https://schema.org/WebPage')?.key
@@ -40,6 +41,7 @@ export default function useAppInfo () {
     dateType,
     endDateField,
     endDateType,
+    openingHoursField,
     labelField,
     descriptionField,
     attachmentField,

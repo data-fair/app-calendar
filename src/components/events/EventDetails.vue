@@ -88,7 +88,7 @@ function cancel () {
 <template>
   <v-card
     :max-width="mode === 'read' ? 800 : width*config.formWidth/10"
-    :min-width="200"
+    :min-width="300"
     :max-height="height*0.8"
   >
     <template v-if="eventData">
