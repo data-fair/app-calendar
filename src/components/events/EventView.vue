@@ -1,6 +1,6 @@
 <script setup>
 import useAppInfo from '../../composables/useAppInfo'
-import { formatField } from '@data-fair/lib/format.js'
+import { formatField } from '@data-fair/lib-vue/format/field.js'
 import Actions from './Actions.vue'
 
 defineProps({

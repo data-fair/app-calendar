@@ -9,7 +9,7 @@ import { reactive, ref, computed } from 'vue'
 import { useTheme } from 'vuetify'
 import { events, colorPalette, timestamp } from '@/context'
 import { errorMessage, displayError } from '@/messages'
-import reactiveSearchParams from '@data-fair/lib/vue/reactive-search-params-global.js'
+import reactiveSearchParams from '@data-fair/lib-vue/reactive-search-params-global.js'
 import useAppInfo from '@/composables/useAppInfo'
 import EventDetails from './events/EventDetails.vue'
 import { ofetch } from 'ofetch'
@@ -44,7 +44,7 @@ async function patchEvent (event) {
     body[dateField] = event.start.toISOString()
   }
   try {
-    await ofetch(`${mainDataset.href}/lines/${event.id}`, { method: 'PATCH', body })
+    await ofetch(`${mainDataset.href}/lines/${event.originalId}`, { method: 'PATCH', body })
     eventMenuOpen.value = false
     timestamp.value = new Date().getTime()
   } catch (e) {

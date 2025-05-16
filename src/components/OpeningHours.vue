@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
-import { getDailyOpeningHours, encodeOpeningHours, getOpeningHours } from '@wojtekmaj/opening-hours-utils'
+import { getDailyOpeningHours, encodeOpeningHours } from '@wojtekmaj/opening-hours-utils'
 
 const model = defineModel({ type: String, default: '' })
 

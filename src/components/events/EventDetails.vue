@@ -8,14 +8,15 @@ import { ofetch } from 'ofetch'
 import EventView from './EventView.vue'
 import DeleteEvent from './DeleteEvent.vue'
 import { useDisplay } from 'vuetify'
-import { dayjs } from '@data-fair/lib/vue/locale-dayjs-global.js'
+import { useLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
 
 const EventEdit = defineAsyncComponent(() =>
   import('./EventEdit.vue')
 )
 
 const { width, height } = useDisplay()
-const { config, mainDataset, layout, startDateField, endDateField, dateField, startDateType, endDateType } = useAppInfo()
+const { config, mainDataset, layout, startDateField, endDateField, dateField, openingHoursField, startDateType, endDateType } = useAppInfo()
+const { dayjs } = useLocaleDayjs()
 const emit = defineEmits(['updated'])
 
 const mode = ref('read')
@@ -35,7 +36,7 @@ const eventData = computedAsync(async () => {
   if (!prop.event) return null
   if (!prop.event.id) mode.value = 'edit'
   if (!prop.event.id) return { ...prop.event }
-  else return (await ofetch(`${(mainDataset).href}/lines?_id_eq=${prop.event.id}${mode.value === 'read' ? '&html=true' : ''}`)).results.pop()
+  else return (await ofetch(`${(mainDataset).href}/lines?_id_eq=${prop.event.originalId}${mode.value === 'read' ? '&html=true' : ''}`)).results.pop()
 }, null, {
   onError: function (e) {
     displayError.value = true
@@ -55,8 +56,8 @@ async function editEvent (eventData) {
     headers: { 'Content-Disposition': formData }
   }
   let url = `${mainDataset.href}/lines`
-  if (prop.event.id) {
-    url += '/' + prop.event.id
+  if (prop.event.originalId) {
+    url += '/' + prop.event.originalId
     params.method = 'PUT'
   }
 

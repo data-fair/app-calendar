@@ -9,10 +9,11 @@ import { ref, computed, watch } from 'vue'
 import { VDateInput } from 'vuetify/labs/VDateInput'
 import useAppInfo from '@/composables/useAppInfo'
 import { useDisplay } from 'vuetify'
-import { dayjs } from '@data-fair/lib/vue/locale-dayjs-global.js'
+import { useLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
 
 const { config, mainDataset, startDateField, endDateField, dateField, openingHoursField, startDateType, endDateType, dateType } = useAppInfo()
 const { width } = useDisplay()
+const { dayjs } = useLocaleDayjs()
 
 const props = defineProps({
   item: { type: Object, required: true }

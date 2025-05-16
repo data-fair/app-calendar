@@ -1,9 +1,9 @@
-import reactiveSearchParams from '@data-fair/lib/vue/reactive-search-params-global.js'
+import reactiveSearchParams from '@data-fair/lib-vue/reactive-search-params-global.js'
 
 export default function useAppInfo () {
   // @ts-ignore
-  const application = /** @type {import('@data-fair/lib/shared/application.js').Application} */ (window.APPLICATION)
-  const config = /** @type {import('../config/.type/types.js').Config} */ (application.configuration)
+  const application = window.APPLICATION
+  const config = application.configuration
   if (!config) throw new Error('Il n\'y a pas de configuration définie')
   const mainDataset = config.datasets?.[0]
   if (!mainDataset) throw new Error('Veuillez sélectionner la source de données des évènements')
