@@ -106,7 +106,7 @@ const calendarOptions = reactive({
   <FullCalendar :options="calendarOptions" />
   <v-menu
     v-model="eventMenuOpen"
-    persistent
+    :persistent="layout === 'admin'"
     :close-on-content-click="false"
     :activator="eventMenuActivator"
     :location="reactiveSearchParams.view === 'dayGridMonth' ? 'bottom' : 'start center'"
@@ -114,6 +114,7 @@ const calendarOptions = reactive({
     <event-details
       :event="selectedEvent"
       @updated="eventMenuOpen = false"
+      @close="eventMenuOpen = false"
     />
   </v-menu>
 </template>

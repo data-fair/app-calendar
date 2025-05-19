@@ -74,7 +74,7 @@ function updateOpeningHours (mode) {
 </script>
 
 <template>
-  Horaires hebdomadaires : {{ model }}
+  <!-- Horaires hebdomadaires : {{ model }} -->
   <v-row style="min-width:490px">
     <div
       v-for="day in days"
@@ -100,9 +100,13 @@ function updateOpeningHours (mode) {
         class="d-flex flex-column"
         @click="dayEdit = day;rangeEdit=i;startTime=range.from;endTime=range.to;menuOpen = true"
       >
-        <caption>{{ range.from }}</caption>
+        <caption class="text-caption">
+          {{ range.from }}
+        </caption>
         <v-spacer />
-        <caption>{{ range.to }}</caption>
+        <caption class="text-caption">
+          {{ range.to }}
+        </caption>
       </v-sheet>
     </div>
   </v-row>

@@ -76,7 +76,7 @@ const mergedData = computed(() => {
     merged[startDateField] = startDateType === 'date' ? dayjs(start).format('YYYY-MM-DD') : start.toISOString()
     merged[endDateField] = endDateType === 'date' ? dayjs(end).format('YYYY-MM-DD') : end.toISOString()
   } else if (dateField) merged[dateField] = dateType === 'date' ? dayjs(startDate.value).format('YYYY-MM-DD') : startDate.value.toISOString()
-  if (openingHoursField) merged[openingHoursField] = openingHours.value
+  if (openingHoursField && openingHours.value) merged[openingHoursField] = openingHours.value
   return merged
 })
 

@@ -73,39 +73,35 @@ export const events = computedAsync(async () => {
           Su: 'di'
         }[oh.day]]: oh.hours.map(h => ({ from: h.from.split(':'), to: h.to.split(':') }))
       })))
-      console.log(event, openingHours)
       let start = dayjs(reactiveSearchParams.start.localeCompare(event[startDateField]) > 0 ? reactiveSearchParams.start : event[startDateField])
       const end = dayjs(reactiveSearchParams.end.localeCompare(event[endDateField]) < 0 ? reactiveSearchParams.end : event[endDateField])
       const evts = []
-      try {
-        while (!start.isAfter(end)) {
-          const hours = openingHours[start.format('dd')]
-          if (hours) {
-            if (reactiveSearchParams.view === 'dayGridMonth') {
+      while (!start.isAfter(end)) {
+        const hours = openingHours[start.format('dd')]
+        if (hours) {
+          if (reactiveSearchParams.view === 'dayGridMonth') {
+            evts.push({
+              ...baseEvent,
+              id: start.toISOString() + baseEvent.id,
+              start: start.hour(hours[0].from[0]).minute(hours[0].from[1]).toISOString(),
+              end: start.hour(hours[hours.length - 1].to[0]).minute(hours[hours.length - 1].to[1]).toISOString(),
+              allDay: false
+            })
+            start = start.add(1, 'day').hour(0).minute(0)
+          } else {
+            hours.forEach(hour => {
               evts.push({
                 ...baseEvent,
-                id: start.toISOString() + baseEvent.id,
-                start: start.hour(hours[0].from[0]).minute(hours[0].from[1]).toISOString(),
-                end: start.hour(hours[hours.length - 1].to[0]).minute(hours[hours.length - 1].to[1]).toISOString(),
+                id: start.hour(hour.from[0]).minute(hour.from[1]).toISOString() + baseEvent.id,
+                start: start.hour(hour.from[0]).minute(hour.from[1]).toISOString(),
+                end: start.hour(hour.to[0]).minute(hour.to[1]).toISOString(),
                 allDay: false
               })
-              start = start.add(1, 'day').hour(0).minute(0)
-              console.log(start.toISOString())
-            } else {
-              const next = hours.find(h => h.from.localeCompare(start.format('HH:mm')) >= 0)
-              if (next) {
-                // ds
-              }
-              start = start.add(1, 'day')
-            }
-
-            // console.log(start.format('dd'), start.format('HH:mm'), next, hours)
-          } else start = start.add(1, 'day')
-        }
-      } catch (err) {
-        console.log(err)
+            })
+            start = start.add(1, 'day').hour(0).minute(0)
+          }
+        } else start = start.add(1, 'day')
       }
-      console.log(evts)
       // console.log(reactiveSearchParams.start.localeCompare(event[startDateField]))
       // console.log(reactiveSearchParams.start, event[startDateField])
       // dayjs(reactiveSearchParams.start), dayjs(event[startDateField])

@@ -15,9 +15,9 @@ const EventEdit = defineAsyncComponent(() =>
 )
 
 const { width, height } = useDisplay()
-const { config, mainDataset, layout, startDateField, endDateField, dateField, openingHoursField, startDateType, endDateType } = useAppInfo()
+const { config, mainDataset, layout, startDateField, endDateField, dateField, startDateType, endDateType } = useAppInfo()
 const { dayjs } = useLocaleDayjs()
-const emit = defineEmits(['updated'])
+const emit = defineEmits(['updated', 'close'])
 
 const mode = ref('read')
 
@@ -113,6 +113,10 @@ function cancel () {
           <delete-event
             :event="event"
             @deleted="emit('updated')"
+          />
+          <v-btn
+            icon="mdi-close"
+            @click="emit('close')"
           />
         </v-card-actions>
         <event-view
