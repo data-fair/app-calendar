@@ -63,7 +63,7 @@ async function deleteEvent () {
           :model-value="true"
           type="error"
         >
-          Voulez vous vraiment supprimer l'événement ?
+          Voulez vous vraiment supprimer {{ event.openingHoursField ? 'l\'ensemble des créneaux liés à cet ' : 'l\'' }}événement ?
         </v-alert>
       </v-card-text>
       <v-card-actions>

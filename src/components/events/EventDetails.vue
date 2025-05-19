@@ -73,11 +73,11 @@ async function editEvent (eventData) {
 
 const formatedDate = computed(() => {
   if (startDateField && endDateField) {
-    const start = dayjs(prop.event[startDateField])
-    const end = dayjs(prop.event[endDateField])
+    const start = dayjs(prop.event.start)
+    const end = dayjs(prop.event.end)
     if (start.isSame(end, 'day')) return start.format('ddd D MMM YYYY') + (startDateType === 'date-time' || openingHoursField ? (', ' + start.format('HH:mm')) : '') + (endDateType === 'date-time' || openingHoursField ? (' - ' + end.format('HH:mm')) : '')
     else return start.format('ddd D MMM YYYY' + (startDateType === 'date-time' ? ', HH:mm' : '')) + ' - ' + end.format('ddd D MMM YYYY' + (endDateType === 'date-time' ? ', HH:mm' : ''))
-  } else return dayjs(prop.event[dateField]).format('dd, MMM YYYY')
+  } else return dayjs(prop.event.start).format('dd, MMM YYYY')
 })
 
 function cancel () {
@@ -119,6 +119,12 @@ function cancel () {
             @click="emit('close')"
           />
         </v-card-actions>
+        <v-card-title
+          v-else
+          class="text-subtitle-1"
+        >
+          {{ formatedDate }}
+        </v-card-title>
         <event-view
           :item="eventData"
         />

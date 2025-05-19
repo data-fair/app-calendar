@@ -62,6 +62,7 @@ export const events = computedAsync(async () => {
       colorFieldValue: color?.type === 'multicolor' && event[config.color.field]
     }
     if (openingHoursField && event[openingHoursField]) {
+      baseEvent.openingHoursField = event[openingHoursField]
       const openingHours = Object.assign({}, ...getDailyOpeningHours(event[openingHoursField]).map(oh => ({
         [{
           Mo: 'lu',
@@ -102,24 +103,6 @@ export const events = computedAsync(async () => {
           }
         } else start = start.add(1, 'day')
       }
-      // console.log(reactiveSearchParams.start.localeCompare(event[startDateField]))
-      // console.log(reactiveSearchParams.start, event[startDateField])
-      // dayjs(reactiveSearchParams.start), dayjs(event[startDateField])
-      // try {
-      //   dayjsModule.setBusinessTime(businessOurs)
-      //   const start = dayjsModule.max()
-      //   console.log(start)
-
-      //   console.log(dayjsModule(reactiveSearchParams.start).nextBusinessTime())
-      // } catch (err) {
-      //   console.log(err)
-      // }
-
-      // oh.forEach(day => {
-      //   day.hours.forEach(hours => {
-
-      //   })
-      // })
       return evts
     } else {
       return [{
