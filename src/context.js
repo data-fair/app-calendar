@@ -62,7 +62,7 @@ export const events = computedAsync(async () => {
       colorFieldValue: color?.type === 'multicolor' && event[config.color.field]
     }
     if (openingHoursField && event[openingHoursField]) {
-      baseEvent.openingHoursField = event[openingHoursField]
+      baseEvent.openingHours = event[openingHoursField]
       const openingHours = Object.assign({}, ...getDailyOpeningHours(event[openingHoursField]).map(oh => ({
         [{
           Mo: 'lu',
@@ -108,7 +108,7 @@ export const events = computedAsync(async () => {
       return [{
         ...baseEvent,
         start: event[startDateField && endDateField ? startDateField : dateField],
-        end: startDateField && endDateField ? event[endDateField] : undefined,
+        end: startDateField && endDateField ? (endDateType !== 'date-time' ? dayjs(event[endDateField]).add(1, 'day').format('YYYY-MM-DD') : event[endDateField]) : undefined,
         allDay: !(startDateField && endDateField) || (startDateType === 'date' && endDateType === 'date') || (new Date(event[endDateField]).getTime() - new Date(event[startDateField]).getTime() > 2 * 24 * 60 * 60 * 1000)
       }]
     }

@@ -13,9 +13,11 @@ import reactiveSearchParams from '@data-fair/lib-vue/reactive-search-params-glob
 import useAppInfo from '@/composables/useAppInfo'
 import EventDetails from './events/EventDetails.vue'
 import { ofetch } from 'ofetch'
+import { useLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
 
 const theme = useTheme()
-const { color, mainDataset, layout, startDateField, endDateField, dateField } = useAppInfo()
+const { color, mainDataset, layout, startDateField, endDateField, dateField, endDateType } = useAppInfo()
+const { dayjs } = useLocaleDayjs()
 
 const selectedEvent = ref(null)
 const eventMenuOpen = ref(null)
@@ -94,6 +96,9 @@ const calendarOptions = reactive({
     if (startDateField && endDateField) {
       event[startDateField] = e.start.toISOString()
       event[endDateField] = e.end.toISOString()
+      if (endDateType !== 'date-time') {
+        event[endDateField] = dayjs(event[endDateField]).subtract(1, 'day').toISOString()
+      }
     } else if (dateField) event[dateField] = e.start.toISOString()
     selectedEvent.value = event
     eventMenuActivator.value = e.jsEvent.toElement.parentElement.parentElement
