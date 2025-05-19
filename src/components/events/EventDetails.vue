@@ -15,7 +15,7 @@ const EventEdit = defineAsyncComponent(() =>
 )
 
 const { width, height } = useDisplay()
-const { config, mainDataset, layout, startDateField, endDateField, dateField, startDateType, endDateType } = useAppInfo()
+const { config, mainDataset, layout, startDateField, endDateField, dateField, openingHoursField, startDateType, endDateType } = useAppInfo()
 const { dayjs } = useLocaleDayjs()
 const emit = defineEmits(['updated', 'close'])
 
@@ -73,11 +73,11 @@ async function editEvent (eventData) {
 
 const formatedDate = computed(() => {
   if (startDateField && endDateField) {
-    const start = dayjs(eventData.value[startDateField])
-    const end = dayjs(eventData.value[endDateField])
-    if (start.isSame(end, 'day')) return start.format('ddd D MMM YYYY') + (startDateType === 'date-time' ? (', ' + start.format('HH:mm')) : '') + (endDateType === 'date-time' ? (' - ' + end.format('HH:mm')) : '')
+    const start = dayjs(prop.event[startDateField])
+    const end = dayjs(prop.event[endDateField])
+    if (start.isSame(end, 'day')) return start.format('ddd D MMM YYYY') + (startDateType === 'date-time' || openingHoursField ? (', ' + start.format('HH:mm')) : '') + (endDateType === 'date-time' || openingHoursField ? (' - ' + end.format('HH:mm')) : '')
     else return start.format('ddd D MMM YYYY' + (startDateType === 'date-time' ? ', HH:mm' : '')) + ' - ' + end.format('ddd D MMM YYYY' + (endDateType === 'date-time' ? ', HH:mm' : ''))
-  } else return dayjs(eventData.value[dateField]).format('dd, MMM YYYY')
+  } else return dayjs(prop.event[dateField]).format('dd, MMM YYYY')
 })
 
 function cancel () {
