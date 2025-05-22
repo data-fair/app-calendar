@@ -63,23 +63,29 @@ export const events = computedAsync(async () => {
     }
     if (openingHoursField && event[openingHoursField]) {
       baseEvent.openingHours = event[openingHoursField]
-      const openingHours = Object.assign({}, ...getDailyOpeningHours(event[openingHoursField]).map(oh => ({
-        [{
-          Mo: 'lu',
-          Tu: 'ma',
-          We: 'me',
-          Th: 'je',
-          Fr: 've',
-          Sa: 'sa',
-          Su: 'di'
-        }[oh.day]]: oh.hours.map(h => ({ from: h.from.split(':'), to: h.to.split(':') }))
-      })))
+      let openingHours = {}
+      try {
+        openingHours = Object.assign({}, ...getDailyOpeningHours(event[openingHoursField]).map(oh => ({
+          [{
+            Mo: 'lu',
+            Tu: 'ma',
+            We: 'me',
+            Th: 'je',
+            Fr: 've',
+            Sa: 'sa',
+            Su: 'di'
+          }[oh.day]]: oh.hours.map(h => ({ from: h.from.split(':'), to: h.to.split(':') }))
+        })))
+      } catch (err) {
+        console.log(baseEvent.openingHours, err)
+      }
+
       let start = dayjs(reactiveSearchParams.start.localeCompare(event[startDateField]) > 0 ? reactiveSearchParams.start : event[startDateField])
       const end = dayjs(reactiveSearchParams.end.localeCompare(event[endDateField]) < 0 ? reactiveSearchParams.end : event[endDateField])
       const evts = []
       while (!start.isAfter(end)) {
         const hours = openingHours[start.format('dd')]
-        if (hours) {
+        if (hours?.length) {
           if (reactiveSearchParams.view === 'dayGridMonth') {
             evts.push({
               ...baseEvent,
