@@ -16,7 +16,7 @@ import { ofetch } from 'ofetch'
 import { useLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
 
 const theme = useTheme()
-const { color, mainDataset, layout, startDateField, endDateField, dateField, endDateType } = useAppInfo()
+const { config, color, mainDataset, layout, startDateField, endDateField, dateField, endDateType } = useAppInfo()
 const { dayjs } = useLocaleDayjs()
 
 const selectedEvent = ref(null)
@@ -60,7 +60,7 @@ const midDate = reactiveSearchParams.start && reactiveSearchParams.end && new Da
 const calendarOptions = reactive({
   plugins: [dayGridPlugin, interactionPlugin, timeGridPlugin, listPlugin],
   initialView: reactiveSearchParams.view || 'dayGridMonth',
-  initialDate: (midDate && new Date(midDate)) || (mainDataset.timePeriod?.startDate && new Date(mainDataset.timePeriod.startDate)) || new Date(),
+  initialDate: config.openOnCurrentDay ? new Date() : (midDate && new Date(midDate)) || (mainDataset.timePeriod?.startDate && new Date(mainDataset.timePeriod.startDate)),
   locale: frLocale,
   headerToolbar: {
     start: 'prev,next today',

@@ -44,6 +44,11 @@
           "x-itemTitle": "label",
           "x-itemKey": "key"
         },
+        "openOnCurrentDay": {
+          "type": "boolean",
+          "title": "Afficher initial à la date du jour",
+          "default": false
+        },
         "color": {
           "type": "object",
           "title": "Réglage des couleurs",
