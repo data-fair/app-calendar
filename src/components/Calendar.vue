@@ -14,6 +14,7 @@ import useAppInfo from '@/composables/useAppInfo'
 import EventDetails from './events/EventDetails.vue'
 import { ofetch } from 'ofetch'
 import { useLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
+import { dateFromConfig } from '@/assets/utils'
 
 const theme = useTheme()
 const { config, color, mainDataset, layout, startDateField, endDateField, dateField, endDateType } = useAppInfo()
@@ -23,7 +24,7 @@ const selectedEvent = ref(null)
 const eventMenuOpen = ref(null)
 const eventMenuActivator = ref(null)
 
-reactiveSearchParams.view = reactiveSearchParams.view || 'dayGridMonth'
+reactiveSearchParams.view = reactiveSearchParams.view || config.initialView || 'dayGridMonth'
 
 function getColor (value) {
   if (color.type === 'monochrome') {
@@ -65,10 +66,24 @@ const calendarOptions = reactive({
   headerToolbar: {
     start: 'prev,next today',
     center: 'title',
-    end: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
+    end: 'dayGridMonth,timeGridWeek,timeGridDay,listNextYear'
+  },
+  views: {
+    listNextYear: {
+      type: 'list',
+      visibleRange: {
+        start: dateFromConfig(dayjs, 'day'),
+        end: dateFromConfig(dayjs, 'one-year-later')
+      },
+      buttonText: 'Planning'
+    }
   },
   events: allEvents,
   selectable: layout !== 'simple',
+  selectConstraint: {
+    start: dateFromConfig(dayjs, config.minDate),
+    end: dayjs(dateFromConfig(dayjs, config.maxDate)).add(1, 'day').format('YYYY-MM-DD')
+  },
   datesSet (dateInfo) {
     reactiveSearchParams.start = dateInfo.startStr
     reactiveSearchParams.end = dateInfo.endStr

@@ -10,8 +10,9 @@ import { VDateInput } from 'vuetify/labs/VDateInput'
 import useAppInfo from '@/composables/useAppInfo'
 import { useDisplay } from 'vuetify'
 import { useLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
+import { dateFromConfig } from '@/assets/utils'
 
-const { config, mainDataset, startDateField, endDateField, dateField, openingHoursField, startDateType, endDateType, dateType } = useAppInfo()
+const { config, mainDataset, startDateField, endDateField, dateField, openingHoursField, startDateType, endDateType, dateType, fields } = useAppInfo()
 const { width } = useDisplay()
 const { dayjs } = useLocaleDayjs()
 
@@ -95,6 +96,8 @@ const formWidth = Math.max(200, width.value * config.formWidth / 10)
       >
         <v-date-input
           v-model="startDate"
+          :min="dateFromConfig(dayjs, config.minDate)"
+          :max="dateFromConfig(dayjs, config.maxDate)"
           label="Date de début"
           density="compact"
         />
@@ -117,6 +120,8 @@ const formWidth = Math.max(200, width.value * config.formWidth / 10)
         >
           <v-date-input
             v-model="endDate"
+            :min="dateFromConfig(dayjs, config.minDate)"
+            :max="dateFromConfig(dayjs, config.maxDate)"
             label="Date de fin"
             density="compact"
           />
@@ -134,6 +139,12 @@ const formWidth = Math.max(200, width.value * config.formWidth / 10)
         </v-col>
       </template>
     </v-row>
+    <v-label
+      v-if="openingHoursField"
+      class="mb-1"
+    >
+      {{ fields[openingHoursField].title ? fields[openingHoursField].title : (fields[openingHoursField]['x-originalName'] || openingHoursField) }}
+    </v-label>
     <opening-hours-edit
       v-if="openingHoursField"
       v-model="openingHours"

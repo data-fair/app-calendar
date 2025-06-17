@@ -49,6 +49,29 @@
           "title": "Afficher initial à la date du jour",
           "default": false
         },
+        "initialView": {
+          "title": "Vue initiale",
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "dayGridMonth",
+              "title": "Mois"
+            },
+            {
+              "const": "timeGridWeek",
+              "title": "Semaine"
+            },
+            {
+              "const": "timeGridDay",
+              "title": "Jour"
+            },
+            {
+              "const": "listNextYear",
+              "title": "Planning"
+            }
+          ],
+          "default": "dayGridMonth"
+        },
         "color": {
           "type": "object",
           "title": "Réglage des couleurs",
@@ -354,6 +377,56 @@
           "type": "boolean",
           "title": "Afficher les descriptions des champs en bulles d'aide",
           "default": false
+        },
+        "minDate": {
+          "title": "Valeur minimale pour la date de début",
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "none",
+              "title": "Pas de contrainte"
+            },
+            {
+              "const": "day",
+              "title": "Date du jour"
+            },
+            {
+              "const": "tomorrow",
+              "title": "Lendemain de la date du jour"
+            },
+            {
+              "const": "one-week-later",
+              "title": "Une semaine après la date du jour"
+            },
+            {
+              "const": "one-month-later",
+              "title": "Un mois après la date du jour"
+            }
+          ],
+          "default": "none"
+        },
+        "maxDate": {
+          "title": "Valeur maximale pour la date de fin",
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "none",
+              "title": "Pas de contrainte"
+            },
+            {
+              "const": "one-week-later",
+              "title": "Une semaine après la date du jour"
+            },
+            {
+              "const": "one-month-later",
+              "title": "Un mois après la date du jour"
+            },
+            {
+              "const": "one-year-later",
+              "title": "Un an après la date du jour"
+            }
+          ],
+          "default": "none"
         }
       }
     }
