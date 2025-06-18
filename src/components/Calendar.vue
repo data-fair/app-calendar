@@ -123,7 +123,10 @@ const calendarOptions = reactive({
 </script>
 
 <template>
-  <FullCalendar :options="calendarOptions" />
+  <FullCalendar
+    :options="calendarOptions"
+    data-iframe-height
+  />
   <v-menu
     v-model="eventMenuOpen"
     :persistent="layout === 'admin'"
