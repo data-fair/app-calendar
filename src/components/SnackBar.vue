@@ -5,6 +5,7 @@ import { errorMessage, displayError } from '@/messages'
 <template>
   <v-snackbar
     v-model="displayError"
+    variant="elevated"
     :timeout="'5000'"
     color="red"
   >
