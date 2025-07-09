@@ -82,7 +82,7 @@ const calendarOptions = reactive({
   selectable: layout !== 'simple',
   selectConstraint: {
     start: dateFromConfig(dayjs, config.minDate),
-    end: dayjs(dateFromConfig(dayjs, config.maxDate)).add(1, 'day').format('YYYY-MM-DD')
+    end: dateFromConfig(dayjs, config.maxDate) ? dayjs(dateFromConfig(dayjs, config.maxDate)).add(1, 'day').format('YYYY-MM-DD') : undefined
   },
   datesSet (dateInfo) {
     reactiveSearchParams.start = dateInfo.startStr
