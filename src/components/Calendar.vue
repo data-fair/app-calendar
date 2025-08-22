@@ -30,7 +30,7 @@ function getColor (value) {
   if (color.type === 'monochrome') {
     return color.colors.type === 'custom' ? color.colors.hexValue : theme.current.value.colors[color.colors.strValue]
   } else {
-    return colorPalette.value[value]
+    return colorPalette.value?.[value]
   }
 }
 
@@ -116,7 +116,7 @@ const calendarOptions = reactive({
       }
     } else if (dateField) event[dateField] = e.start.toISOString()
     selectedEvent.value = event
-    eventMenuActivator.value = e.jsEvent.toElement.parentElement.parentElement
+    eventMenuActivator.value = e.jsEvent.target.parentElement.parentElement
     eventMenuOpen.value = true
   }
 })

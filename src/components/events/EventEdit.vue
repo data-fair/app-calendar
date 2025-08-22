@@ -60,6 +60,27 @@ if (attachment) {
     layout: 'file-input'
   }
 }
+if (config.formLayout !== 'none') {
+  const groups = {}
+  const properties = {}
+  for (const [key, prop] of Object.entries(schema.properties)) {
+    if (config.groups !== 'none' && prop['x-group']) {
+      groups[prop['x-group']] = groups[prop['x-group']] || { }
+      groups[prop['x-group']][key] = prop
+    } else {
+      properties[key] = prop
+    }
+  }
+  if (Object.values(groups).length) {
+    schema.allOf = Object.entries(groups).map(([title, properties]) => ({ title, properties }))
+    schema.layout = config.formLayout
+  }
+  if (Object.values(properties).length) {
+    schema.properties = properties
+  } else {
+    delete schema.properties
+  }
+}
 
 const mergedData = computed(() => {
   const merged = { ...data.value }

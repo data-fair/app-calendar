@@ -346,11 +346,11 @@
           "title": "Densité du formulaire",
           "type": "string",
           "oneOf": [
-            { "const": "default", "title": "Normale" },
             { "const": "compact", "title": "Compacte" },
-            { "const": "comfortable", "title": "Aérée" }
+            { "const": "comfortable", "title": "Normale" },
+            { "const": "default", "title": "Aérée" }
           ],
-          "default": "compact"
+          "default": "comfortable"
         },
         "formWidth": {
           "title": "Largeur du formulaire",
@@ -372,6 +372,17 @@
             { "const": "solo-filled", "title": "Solo rempli" }
           ],
           "default": "underlined"
+        },
+        "formLayout": {
+          "title": "Rendu des groupes",
+          "type": "string",
+          "oneOf": [
+            { "const": "sections", "title": "Sections" },
+            { "const": "tabs", "title": "Onglets" },
+            { "const": "expansion-panels", "title": "Accordéon" },
+            { "const": "none", "title": "Aucun" }
+          ],
+          "default": "sections"
         },
         "showHelpMessages": {
           "type": "boolean",
