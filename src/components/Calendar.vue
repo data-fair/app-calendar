@@ -27,7 +27,7 @@ const eventMenuActivator = ref(null)
 reactiveSearchParams.view = reactiveSearchParams.view || config.initialView || 'dayGridMonth'
 
 function getColor (value) {
-  if (color.type === 'monochrome') {
+  if (color?.type === 'monochrome') {
     return color.colors.type === 'custom' ? color.colors.hexValue : theme.current.value.colors[color.colors.strValue]
   } else {
     return colorPalette.value?.[value]
