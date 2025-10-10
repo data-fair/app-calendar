@@ -3,8 +3,9 @@
   "version": "1.2.11",
   "type": "module",
   "scripts": {
-    "dev": "APP_URL=http://localhost:3000/app/ df-dev-server",
-    "dev-src": "vite",
+    "dev": "zellij --layout .zellij.kdl",
+    "dev-server": "APP_URL=http://localhost:3000/app/ df-dev-server",
+    "dev-app": "vite",
     "build": "PUBLIC_URL=https://cdn.jsdelivr.net/npm/@data-fair/app-calendar@${npm_package_version}/dist vite build",
     "build-test": "PUBLIC_URL=https://staging-koumoul.com/apps/calendar/master/ vite build",
     "preview": "vite preview",
@@ -40,7 +41,7 @@
     "vuetify": "^3.9.5"
   },
   "devDependencies": {
-    "@data-fair/dev-server": "^1.12.0",
+    "@data-fair/dev-server": "^2.0.21",
     "@vitejs/plugin-vue": "^5.0.5",
     "eslint": "^8.57.0",
     "eslint-config-standard": "^17.1.0",

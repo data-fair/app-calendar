@@ -12,10 +12,6 @@
               "title": "Jeu de données",
               "description": "Ce jeu doit contenir au moins un champ avec le concept de date",
               "type": "object",
-              "x-fromUrl": "api/v1/datasets?status=finalized&q={q}&select=title,isRest,schema,timePeriod,attachmentsAsImage,userPermissions&{context.datasetFilter}&short-concept=date,startDate,endDate&size=100&sort=createdAt:-1",
-              "x-itemsProp": "results",
-              "x-itemTitle": "title",
-              "x-itemKey": "href",
               "additionalProperties": false,
               "properties": {
                 "href": { "type": "string" },
@@ -26,10 +22,19 @@
                 "timePeriod": { "type": "object" },
                 "attachmentsAsImage": { "type": "boolean" },
                 "userPermissions": { "type": "array" }
+              },
+              "layout": {
+                "getItems": {
+                  "url": "api/v1/datasets?status=finalized&q={q}&select=title,isRest,schema,timePeriod,attachmentsAsImage,userPermissions&${context.datasetFilter}&short-concept=date,startDate,endDate&size=100&sort=createdAt:-1",
+                  "itemKey": "data.href",
+                  "itemTitle": "data.title",
+                  "itemsResults": "data.results"
+                }
               }
             }
           ]
-        }
+        },
+        "filters": { "$ref": "#/definitions/filters" }
       }
     },
     {
@@ -40,9 +45,13 @@
           "type": "object",
           "title": "Champ de libellé",
           "description": "Choisissez le champ représentant le libellé d'un événement.",
-          "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
-          "x-itemTitle": "label",
-          "x-itemKey": "key"
+          "layout": {
+            "getItems": {
+              "url": "${rootData.datasets[0].href}/schema?calculated=false",
+              "itemKey": "data.key",
+              "itemTitle": "data.label"
+            }
+          }
         },
         "openOnCurrentDay": {
           "type": "boolean",
@@ -53,45 +62,35 @@
           "title": "Vue initiale",
           "type": "string",
           "oneOf": [
-            {
-              "const": "dayGridMonth",
-              "title": "Mois"
-            },
-            {
-              "const": "timeGridWeek",
-              "title": "Semaine"
-            },
-            {
-              "const": "timeGridDay",
-              "title": "Jour"
-            },
-            {
-              "const": "listNextYear",
-              "title": "Planning"
-            }
+            { "const": "dayGridMonth", "title": "Mois" },
+            { "const": "timeGridWeek", "title": "Semaine" },
+            { "const": "timeGridDay", "title": "Jour" },
+            { "const": "listNextYear", "title": "Planning" }
           ],
           "default": "dayGridMonth"
         },
         "color": {
           "type": "object",
           "title": "Réglage des couleurs",
-          "required": ["type"],
+          "required": [],
           "oneOf": [
             {
               "title": "Calendrier multicolore",
               "additionalProperties": false,
               "required": ["field"],
               "properties": {
-                "type": {
-                  "const": "multicolor"
-                },
+                "type": { "const": "multicolor" },
                 "field": {
                   "type": "string",
                   "title": "Champ de catégorie",
                   "description": "Choisissez le champ permettant de distinguer les catégories d'événements suivant des couleurs distinctes.",
-                  "x-fromUrl": "{datasets.0.href}/schema?calculated=false&maxCardinality=12",
-                  "x-itemTitle": "category",
-                  "x-itemKey": "key"
+                  "layout": {
+                    "getItems": {
+                      "url": "${rootData.datasets[0].href}/schema?calculated=false&maxCardinality=12",
+                      "itemKey": "data.key",
+                      "itemTitle": "data[\"category\"]"
+                    }
+                  }
                 },
                 "colors": {
                   "type": "object",
@@ -102,45 +101,19 @@
                       "required": ["type", "name"],
                       "additionalProperties": false,
                       "properties": {
-                        "type": {
-                          "const": "palette"
-                        },
+                        "type": { "const": "palette" },
                         "name": {
                           "title": "Palette",
                           "type": "string",
                           "oneOf": [
-                            {
-                              "const": "Accent",
-                              "title": "Accent"
-                            },
-                            {
-                              "const": "Dark2",
-                              "title": "Foncé"
-                            },
-                            {
-                              "const": "Paired",
-                              "title": "Paires"
-                            },
-                            {
-                              "const": "Set1",
-                              "title": "Ensemble 1"
-                            },
-                            {
-                              "const": "Set2",
-                              "title": "Ensemble 2"
-                            },
-                            {
-                              "const": "Set3",
-                              "title": "Ensemble 3"
-                            },
-                            {
-                              "const": "Pastel1",
-                              "title": "Pastel 1"
-                            },
-                            {
-                              "const": "Pastel2",
-                              "title": "Pastel 2"
-                            }
+                            { "const": "Accent", "title": "Accent" },
+                            { "const": "Dark2", "title": "Foncé" },
+                            { "const": "Paired", "title": "Paires" },
+                            { "const": "Set1", "title": "Ensemble 1" },
+                            { "const": "Set2", "title": "Ensemble 2" },
+                            { "const": "Set3", "title": "Ensemble 3" },
+                            { "const": "Pastel1", "title": "Pastel 1" },
+                            { "const": "Pastel2", "title": "Pastel 2" }
                           ],
                           "default": "Accent"
                         },
@@ -156,33 +129,31 @@
                       "required": ["type", "categories"],
                       "additionalProperties": false,
                       "properties": {
-                        "type": {
-                          "const": "manual"
-                        },
+                        "type": { "const": "manual" },
                         "categories": {
                           "title": "Couleurs",
                           "type": "array",
-                          "x-fromUrl": "{datasets.0.href}/values_agg?field={parent.parent.parent.value.field}&size=0&agg_size=15",
-                          "x-display": "list",
-                          "x-itemTitle": "value",
-                          "x-itemKey": "value",
-                          "x-itemsProp": "aggs",
                           "items": {
                             "type": "object",
                             "required": ["value"],
                             "additionalProperties": false,
                             "properties": {
-                              "value": {
-                                "type": "string",
-                                "x-display": "hidden"
-                              },
+                              "value": { "type": "string", "layout": "none" },
                               "color": {
                                 "type": "string",
                                 "title": "Couleur",
-                                "format": "hexcolor",
                                 "default": "#828282",
-                                "x-display": "color-picker"
+                                "layout": "color-picker"
                               }
+                            }
+                          },
+                          "layout": {
+                            "comp": "list",
+                            "getItems": {
+                              "url": "${rootData.datasets[0].href}/values_agg?field=${parent.parent.parent.data.field}&size=0&agg_size=15",
+                              "itemKey": "data.value",
+                              "itemTitle": "data.value",
+                              "itemsResults": "data.aggs"
                             }
                           }
                         }
@@ -201,33 +172,23 @@
               "title": "Calendrier monochrome",
               "additionalProperties": false,
               "properties": {
-                "type": {
-                  "const": "monochrome"
-                },
+                "type": { "const": "monochrome" },
                 "colors": {
                   "type": "object",
                   "title": "Couleur",
-                  "required": ["type"],
+                  "required": [],
                   "oneOf": [
                     {
                       "title": "Thème",
                       "additionalProperties": false,
                       "properties": {
-                        "type": {
-                          "const": "theme"
-                        },
+                        "type": { "const": "theme" },
                         "strValue": {
                           "title": "Couleur",
                           "type": "string",
                           "oneOf": [
-                            {
-                              "const": "primary",
-                              "title": "Primaire"
-                            },
-                            {
-                              "const": "secondary",
-                              "title": "Secondaire"
-                            }
+                            { "const": "primary", "title": "Primaire" },
+                            { "const": "secondary", "title": "Secondaire" }
                           ]
                         }
                       }
@@ -236,30 +197,22 @@
                       "title": "Personnalisée",
                       "additionalProperties": false,
                       "properties": {
-                        "type": {
-                          "const": "custom"
-                        },
+                        "type": { "const": "custom" },
                         "hexValue": {
                           "type": "string",
                           "title": "Couleur",
-                          "format": "hexcolor",
                           "default": "#828282",
-                          "x-display": "color-picker"
+                          "layout": "color-picker"
                         }
                       }
                     }
                   ],
-                  "default": {
-                    "type": "theme",
-                    "strValue": "primary"
-                  }
+                  "default": { "type": "theme", "strValue": "primary" }
                 }
               }
             }
           ],
-          "default": {
-            "type": "monochrome"
-          }
+          "default": { "type": "monochrome" }
         }
       }
     },
@@ -271,18 +224,24 @@
           "type": "object",
           "title": "Champ de description",
           "description": "Choisissez le champ permettant de fournir une description de l'événement, interprète le html et le markdown.",
-          "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
-          "x-itemTitle": "title",
-          "x-itemKey": "key"
+          "layout": {
+            "getItems": {
+              "url": "${rootData.datasets[0].href}/schema?calculated=false",
+              "itemKey": "data.key",
+              "itemTitle": "data.title"
+            }
+          }
         },
         "additionalFields": {
           "title": "Champs supplémentaires à afficher.",
           "type": "array",
-          "x-fromUrl": "{datasets.0.href}/schema?calculated=false",
-          "x-itemTitle": "label",
-          "x-itemKey": "key",
-          "items": {
-            "type": "string"
+          "items": { "type": "string" },
+          "layout": {
+            "getItems": {
+              "url": "${rootData.datasets[0].href}/schema?calculated=false",
+              "itemKey": "data.key",
+              "itemTitle": "data.label"
+            }
           }
         },
         "imageWidth": {
@@ -291,7 +250,7 @@
           "default": 100,
           "minimum": 20,
           "maximum": 100,
-          "x-display": "slider"
+          "layout": "slider"
         },
         "aspectRatio": {
           "title": "Rapport de forme (largeur / hauteur)",
@@ -299,25 +258,16 @@
           "default": 3,
           "minimum": 1,
           "maximum": 5,
-          "x-display": "slider"
+          "layout": "slider"
         },
         "imagePosition": {
           "title": "Position de l'image",
           "description": "Ne change rien si la largeur de l'image est 100% de la fiche",
           "type": "string",
           "oneOf": [
-            {
-              "const": "top",
-              "title": "En haut"
-            },
-            {
-              "const": "left",
-              "title": "A gauche"
-            },
-            {
-              "const": "right",
-              "title": "A droite"
-            }
+            { "const": "top", "title": "En haut" },
+            { "const": "left", "title": "A gauche" },
+            { "const": "right", "title": "A droite" }
           ],
           "default": "top"
         },
@@ -325,14 +275,8 @@
           "title": "Rendu de l'image",
           "type": "string",
           "oneOf": [
-            {
-              "const": "cover",
-              "title": "Etendre"
-            },
-            {
-              "const": "contain",
-              "title": "Redimensionner"
-            }
+            { "const": "cover", "title": "Etendre" },
+            { "const": "contain", "title": "Redimensionner" }
           ],
           "default": "cover"
         }
@@ -340,7 +284,6 @@
     },
     {
       "title": "Edition",
-      "x-if": "datasets.0.isRest",
       "properties": {
         "formDensity": {
           "title": "Densité du formulaire",
@@ -355,10 +298,10 @@
         "formWidth": {
           "title": "Largeur du formulaire",
           "type": "integer",
-          "x-display": "slider",
           "minimum": 2,
           "maximum": 10,
-          "default": 5
+          "default": 5,
+          "layout": "slider"
         },
         "formVariant": {
           "title": "Style du formulaire",
@@ -393,18 +336,9 @@
           "title": "Valeur minimale pour la date de début",
           "type": "string",
           "oneOf": [
-            {
-              "const": "none",
-              "title": "Pas de contrainte"
-            },
-            {
-              "const": "day",
-              "title": "Date du jour"
-            },
-            {
-              "const": "tomorrow",
-              "title": "Lendemain de la date du jour"
-            },
+            { "const": "none", "title": "Pas de contrainte" },
+            { "const": "day", "title": "Date du jour" },
+            { "const": "tomorrow", "title": "Lendemain de la date du jour" },
             {
               "const": "one-week-later",
               "title": "Une semaine après la date du jour"
@@ -420,10 +354,7 @@
           "title": "Valeur maximale pour la date de fin",
           "type": "string",
           "oneOf": [
-            {
-              "const": "none",
-              "title": "Pas de contrainte"
-            },
+            { "const": "none", "title": "Pas de contrainte" },
             {
               "const": "one-week-later",
               "title": "Une semaine après la date du jour"
@@ -439,7 +370,108 @@
           ],
           "default": "none"
         }
+      },
+      "layout": { "if": "rootData.datasets[0].isRest" }
+    }
+  ],
+  "definitions": {
+    "filters": {
+      "title": "Filtres prédéfinis",
+      "type": "array",
+      "layout": { "messages": { "addItem": "ajouter un filtre" } },
+      "items": {
+        "type": "object",
+        "default": { "type": "in" },
+        "required": [],
+        "oneOf": [
+          {
+            "title": "Restreindre à des valeurs",
+            "required": ["field", "values"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "in" },
+              "field": { "$ref": "#/definitions/filterField" },
+              "values": {
+                "type": "array",
+                "title": "Valeurs",
+                "items": { "type": "string" },
+                "layout": {
+                  "getItems": {
+                    "url": "${rootData.datasets[0].href}/values-labels/${parent.data.field}?q={q}&q_mode=complete&size=1000&stringify=true",
+                    "itemKey": "data.value",
+                    "itemTitle": "data.label"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "title": "Restreindre à un interval de valeurs",
+            "required": ["field"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "interval" },
+              "field": { "$ref": "#/definitions/filterField" },
+              "minValue": {
+                "type": "string",
+                "title": "Valeur min",
+                "layout": {
+                  "getItems": {
+                    "url": "${rootData.datasets[0].href}/values-labels/$${parent.data.field}?sort=asc&{parent.data.field}_gte={q}&stringify=true",
+                    "itemKey": "data.value",
+                    "itemTitle": "data.label"
+                  }
+                }
+              },
+              "maxValue": {
+                "type": "string",
+                "title": "Valeur max",
+                "layout": {
+                  "getItems": {
+                    "url": "${rootData.datasets[0].href}/values-labels/$${parent.data.field}?sort=desc&{parent.data.field}_lte={q}&stringify=true",
+                    "itemKey": "data.value",
+                    "itemTitle": "data.label"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "title": "Exclure des valeurs",
+            "required": ["field"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "nin" },
+              "field": { "$ref": "#/definitions/filterField" },
+              "values": {
+                "type": "array",
+                "title": "Valeurs à exclure",
+                "items": { "type": "string" },
+                "layout": {
+                  "getItems": {
+                    "url": "${rootData.datasets[0].href}/values-labels/${parent.data.field}?q={q}&q_mode=complete&size=1000&stringify=true",
+                    "itemKey": "data.value",
+                    "itemTitle": "data.label"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "filterField": {
+      "type": "string",
+      "title": "Colonne de filtre",
+      "layout": {
+        "getItems": {
+          "url": "${rootData.datasets[0].href}/schema?calculated=false",
+          "itemKey": "data.key",
+          "itemTitle": "data.label"
+        }
       }
     }
-  ]
+  },
+  "$id": "config-schema",
+  "layout": "tabs"
 }

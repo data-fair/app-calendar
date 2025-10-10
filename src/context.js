@@ -46,6 +46,14 @@ export const events = computedAsync(async () => {
     size: 1000,
     select: '_id,' + labelField
   }
+  config.filters?.forEach(filter => {
+    if (filter.type === 'in') params[`${filter.field}_in`] = filter.values.join(',')
+    else if (filter.type === 'nin') params[`${filter.field}_nin`] = filter.values.join(',')
+    else if (filter.type === 'interval') {
+      if (filter.minValue != null) params[`${filter.field}_gte`] = filter.minValue
+      if (filter.maxValue != null) params[`${filter.field}_lte`] = filter.maxValue
+    }
+  })
   if (layout !== 'simple') params.t = timestamp.value
   else params.finalizedAt = mainDataset.finalizedAt
   if (color?.type === 'multicolor') params.select += ',' + config.color.field
