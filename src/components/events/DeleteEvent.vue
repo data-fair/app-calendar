@@ -1,11 +1,12 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
-import useAppInfo from '@/composables/useAppInfo'
-import { timestamp } from '@/context'
-import { errorMessage, displayError } from '@/messages'
+import { mdiDelete } from '@mdi/js'
+import { useConfig } from '@/composables/config'
+import { timestamp } from '@/composables/useCalendarData'
+import { useAsyncAction } from '@data-fair/lib-vue/async-action'
 import { ofetch } from 'ofetch'
 
-const { mainDataset } = useAppInfo()
+const { dataset: mainDataset } = useConfig()
 
 const deleteMenuOpen = ref(false)
 
@@ -18,24 +19,23 @@ const prop = defineProps({
 
 const emit = defineEmits(['deleted'])
 
-async function deleteEvent () {
-  try {
-    await ofetch(`${mainDataset.href}/lines/${prop.event.originalId}`, { method: 'DELETE' })
+const { execute: deleteEventAction, loading: deleteLoading } = useAsyncAction(
+  async () => {
+    if (!prop.event) return
+    await ofetch(`${mainDataset.value?.href}/lines/${prop.event.originalId}`, { method: 'DELETE' })
     deleteMenuOpen.value = false
     emit('deleted')
     timestamp.value = new Date().getTime()
-  } catch (e) {
-    errorMessage.value = e.status + ' - ' + e._data
-    displayError.value = true
-  }
-}
+  },
+  { error: 'Erreur lors de la suppression' }
+)
 </script>
 
 <template>
   <v-menu
     v-model="deleteMenuOpen"
     :close-on-content-click="false"
-    :close-on-click="false"
+    persistent
     min-width="300px"
     max-width="500px"
   >
@@ -46,13 +46,13 @@ async function deleteEvent () {
           location: 'right',
           openDelay: '500'
         }"
-        icon="mdi-delete"
+        :icon="mdiDelete"
         color="error"
         v-bind="props"
       />
     </template>
     <v-card
-      outlined
+      border
       data-iframe-height
     >
       <v-card-title primary-title>
@@ -63,20 +63,21 @@ async function deleteEvent () {
           :model-value="true"
           type="error"
         >
-          Voulez vous vraiment supprimer {{ event.openingHours ? 'l\'ensemble des créneaux liés à cet ' : 'l\'' }}événement ?
+          Voulez vous vraiment supprimer {{ event?.openingHours ? 'l\'ensemble des créneaux liés à cet ' : 'l\'' }}événement ?
         </v-alert>
       </v-card-text>
       <v-card-actions>
         <v-spacer />
         <v-btn
-          text
+          variant="text"
           @click="deleteMenuOpen = false"
         >
           Annuler
         </v-btn>
         <v-btn
           color="error"
-          @click="deleteEvent()"
+          :loading="deleteLoading"
+          @click="deleteEventAction()"
         >
           Supprimer
         </v-btn>

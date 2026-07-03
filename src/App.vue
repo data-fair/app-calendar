@@ -1,37 +1,27 @@
-<script setup>
-import { defineAsyncComponent } from 'vue'
-import useAppInfo from './composables/useAppInfo'
+<script setup lang="ts">
+import { defineAsyncComponent, watch } from 'vue'
+import { useConfig } from '@/composables/config'
 import { ofetch } from 'ofetch'
 
-let configureError
-try {
-  useAppInfo()
-} catch (e) {
-  configureError = e.message
-  ofetch(window.APPLICATION.href + '/error', { body: { message: e.message || e }, method: 'POST' })
-}
+const { error } = useConfig()
 
-const Calendar = defineAsyncComponent(() =>
-  import('./components/Calendar.vue')
-)
-const SnackBar = defineAsyncComponent(() =>
-  import('./components/SnackBar.vue')
-)
+watch(error, (message) => {
+  if (message) ofetch(window.APPLICATION.href + '/error', { body: { message }, method: 'POST' })
+}, { immediate: true })
 
+const Calendar = defineAsyncComponent(() => import('./components/Calendar.vue'))
+const SnackBar = defineAsyncComponent(() => import('./components/SnackBar.vue'))
 </script>
+
 <template>
-  <template v-if="!configureError">
+  <template v-if="!error">
     <calendar />
     <snack-bar />
   </template>
-  <template v-else>
-    <v-img
-      src="/undraw_building_websites_i78t.png"
-      style="height:80%"
-    >
-      <h1 class="text-center">
-        Configuration incomplète
-      </h1>
-    </v-img>
-  </template>
+  <v-empty-state
+    v-else
+    :title="error"
+    headline="Configuration incomplète"
+    icon="mdi-calendar"
+  />
 </template>

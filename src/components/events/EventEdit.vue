@@ -1,200 +1,79 @@
-<script setup>
-import Vjsf from '@koumoul/vjsf'
-import VjsfMarkdown from '@koumoul/vjsf-markdown'
-import { v2compat } from '@koumoul/vjsf/compat/v2'
-import { ofetch } from 'ofetch'
-import OpeningHoursEdit from '../OpeningHours.vue'
-
-import { ref, computed, watch } from 'vue'
-import { VDateInput } from 'vuetify/labs/VDateInput'
-import useAppInfo from '@/composables/useAppInfo'
-import { useDisplay } from 'vuetify'
+<script setup lang="ts">
+import { computed, watch } from 'vue'
+import { useConfig } from '@/composables/config'
+import { useWS } from '@data-fair/lib-vue/ws.js'
+import { timestamp } from '@/composables/useCalendarData.js'
 import { useLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
-import { dateFromConfig } from '@/assets/utils'
 
-const { config, mainDataset, startDateField, endDateField, dateField, openingHoursField, startDateType, endDateType, dateType, fields } = useAppInfo()
-const { width } = useDisplay()
+const { dataset, accessKey, dFrameAdapter, startDateField, endDateField, dateField } = useConfig()
 const { dayjs } = useLocaleDayjs()
 
-const props = defineProps({
-  item: { type: Object, required: true }
-})
+function toISOAware (value: unknown): string | null {
+  if (!value) return null
+  const str = String(value)
+  // Date-only (YYYY-MM-DD) : pas de conversion UTC pour éviter le décalage de jour
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str
+  return dayjs(str).toISOString()
+}
+const ws = useWS('/data-fair')
 
-const emit = defineEmits(['cancel', 'validate'])
-const data = ref(null)
-const form = ref(null)
-const startDate = ref(null)
-const endDate = ref(null)
-const startTime = ref(null)
-const endTime = ref(null)
-const openingHours = ref(null)
+const props = defineProps<{
+  item: Record<string, unknown>
+  pendingEvent?: Record<string, unknown> | null
+}>()
+const emit = defineEmits(['validate', 'cancel'])
 
-watch(() => props.item, item => {
-  data.value = { ...item }
-  startDate.value = new Date(props.item[startDateField && endDateField ? startDateField : dateField])
-  endDate.value = new Date(props.item[startDateField && endDateField ? endDateField : dateField])
-  startTime.value = new Date(props.item[startDateField && endDateField ? startDateField : dateField]).toTimeString().slice(0, 5)
-  endTime.value = new Date(props.item[startDateField && endDateField ? endDateField : dateField]).toTimeString().slice(0, 5)
-  if (openingHoursField) openingHours.value = props.item[openingHoursField]
+let handled = false
+
+function handleSaveSuccess () {
+  if (handled) return
+  handled = true
+  timestamp.value = Date.now()
+  emit('cancel')
+}
+
+watch(() => dataset.value?.id, (id) => {
+  if (!id) return
+  ws?.subscribe(`datasets/${id}/journal`, (data: { type: string }) => {
+    console.log('journal event:', data)
+    if (data.type === 'finalize-end') handleSaveSuccess()
+  })
 }, { immediate: true })
 
-const options = { plugins: [VjsfMarkdown], pluginsOptions: { markdown: { easyMDEOptions: { minHeight: '150px' } } }, density: config.formDensity, titleDepth: 3, locale: 'fr', removeAdditional: true }
-const v2Schema = (await ofetch(mainDataset.href + '/safe-schema?mimeType=application%2Fschema%2Bjson'))
-const schema = v2compat(v2Schema)
-Object.entries(schema.properties).forEach(([key, value]) => {
-  if (!value.title) value.title = key
-})
-if (startDateField && endDateField) {
-  delete schema.properties[startDateField]
-  delete schema.properties[endDateField]
-} else if (dateField) delete schema.properties[dateField]
-if (!config.showHelpMessages) Object.values(schema.properties).forEach(p => delete p.description)
-if (openingHoursField) delete schema.properties[openingHoursField]
-
-const attachment = Object.values(schema.properties).find(f => f['x-concept']?.id === 'attachment')
-if (attachment) {
-  attachment.readOnly = true
-  schema.properties.__file = {
-    title: mainDataset.attachmentsAsImage ? 'Image' : 'Document numérique attaché',
-    type: 'object',
-    layout: 'file-input'
-  }
-}
-if (config.formLayout !== 'none') {
-  const groups = {}
-  const properties = {}
-  for (const [key, prop] of Object.entries(schema.properties)) {
-    if (config.groups !== 'none' && prop['x-group']) {
-      groups[prop['x-group']] = groups[prop['x-group']] || { }
-      groups[prop['x-group']][key] = prop
-    } else {
-      properties[key] = prop
-    }
-  }
-  if (Object.values(groups).length) {
-    schema.allOf = Object.entries(groups).map(([title, properties]) => ({ title, properties }))
-    schema.layout = config.formLayout
-  }
-  if (Object.values(properties).length) {
-    schema.properties = properties
-  } else {
-    delete schema.properties
-  }
+function onDFrameNotif (e: Event) {
+  const detail = (e as CustomEvent).detail
+  if (detail?.type === 'error' || detail?.type === 'warning') return
+  // Fallback : si le WebSocket ne répond pas dans 1.5s, on déclenche le rafraîchissement
+  setTimeout(handleSaveSuccess, 1500)
 }
 
-const mergedData = computed(() => {
-  const merged = { ...data.value }
-  if (startDateField && endDateField) {
-    const start = new Date(startDate.value.getTime())
-    if (startDateType === 'date-time') {
-      start.setHours(startTime.value.slice(0, 2))
-      start.setMinutes(startTime.value.slice(3, 5))
-    }
-    const end = new Date(endDate.value.getTime())
-    if (endDateType === 'date-time') {
-      end.setHours(endTime.value.slice(0, 2))
-      end.setMinutes(endTime.value.slice(3, 5))
-    }
-    merged[startDateField] = startDateType === 'date' ? dayjs(start).format('YYYY-MM-DD') : start.toISOString()
-    merged[endDateField] = endDateType === 'date' ? dayjs(end).format('YYYY-MM-DD') : end.toISOString()
-  } else if (dateField) merged[dateField] = dateType === 'date' ? dayjs(startDate.value).format('YYYY-MM-DD') : startDate.value.toISOString()
-  if (openingHoursField && openingHours.value) merged[openingHoursField] = openingHours.value
-  return merged
+const src = computed(() => {
+  if (!dataset.value?.id) return null
+  const id = `${accessKey ? accessKey + '%3A' : ''}${dataset.value.id}`
+  const lineId = props.item._id as string | undefined
+
+  // Valeurs de date à pré-remplir dans le formulaire.
+  // pendingEvent contient les nouvelles dates pour drag/resize, item contient les données API (anciennes dates).
+  // TODO: les passer en paramètres d'URL de l'iframe une fois que data-fair les supportera.
+  const source = props.pendingEvent ?? props.item
+  const defaultStart = toISOAware(
+    (startDateField.value && source[startDateField.value]) ?? (dateField.value && source[dateField.value])
+  )
+  const defaultEnd = toISOAware(endDateField.value && source[endDateField.value])
+  console.log('[EventEdit] default dates:', { defaultStart, defaultEnd })
+
+  if (lineId) return `/data-fair/embed/dataset/${id}/form?_id_eq=${lineId}`
+  return `/data-fair/embed/dataset/${id}/form`
 })
-
-const formWidth = Math.max(200, width.value * config.formWidth / 10)
-
 </script>
-
 <template>
-  <v-card-text>
-    <v-row
-      align="end"
-    >
-      <v-col
-        :cols="(formWidth < 500 ? 6 : 3)*((startDateField && endDateField && startDateType === 'date-time') && !dateField ? 1 : 2)"
-        class="pr-0"
-      >
-        <v-date-input
-          v-model="startDate"
-          :min="dateFromConfig(dayjs, config.minDate)"
-          :max="dateFromConfig(dayjs, config.maxDate)"
-          label="Date de début"
-          density="compact"
-        />
-      </v-col>
-      <v-col
-        v-if="(startDateField && endDateField && startDateType === 'date-time') && !dateField"
-        :cols="formWidth < 500 ? 6 : 3"
-      >
-        <v-text-field
-          v-model="startTime"
-          label="Horaire de début"
-          type="time"
-          density="compact"
-        />
-      </v-col>
-      <template v-if="(startDateField && endDateField) && !dateField">
-        <v-col
-          :cols="(formWidth < 500 ? 6 : 3)*(endDateType === 'date-time' ? 1 : 2)"
-          class="pr-0"
-        >
-          <v-date-input
-            v-model="endDate"
-            :min="dateFromConfig(dayjs, config.minDate)"
-            :max="dateFromConfig(dayjs, config.maxDate)"
-            label="Date de fin"
-            density="compact"
-          />
-        </v-col>
-        <v-col
-          v-if="endDateType === 'date-time'"
-          :cols="formWidth < 500 ? 6 : 3"
-        >
-          <v-text-field
-            v-model="endTime"
-            label="Horaire de fin"
-            type="time"
-            density="compact"
-          />
-        </v-col>
-      </template>
-    </v-row>
-    <v-label
-      v-if="openingHoursField"
-      class="mb-1"
-    >
-      {{ fields[openingHoursField].title ? fields[openingHoursField].title : (fields[openingHoursField]['x-originalName'] || openingHoursField) }}
-    </v-label>
-    <opening-hours-edit
-      v-if="openingHoursField"
-      v-model="openingHours"
+  <div style="max-height: 600px; overflow-y: auto; display: block; position: relative;">
+    <d-frame
+      v-if="src"
+      :adapter="dFrameAdapter"
+      :src="src"
+      style="width: 100%; display: block;"
+      @notif="onDFrameNotif"
     />
-    <v-form ref="form">
-      <vjsf
-        v-model="data"
-        :schema="schema"
-        :options="options"
-      />
-    </v-form>
-  </v-card-text>
-  <v-card-actions
-    class="py-0"
-  >
-    <v-spacer />
-    <v-btn
-      @click="emit('cancel')"
-    >
-      Annuler
-    </v-btn>
-    <v-spacer />
-    <v-btn
-      color="primary"
-      :disabled="!form?.validate()"
-      @click="emit('validate', mergedData)"
-    >
-      Valider
-    </v-btn>
-    <v-spacer />
-  </v-card-actions>
+  </div>
 </template>

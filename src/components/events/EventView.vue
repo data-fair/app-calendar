@@ -1,5 +1,5 @@
-<script setup>
-import useAppInfo from '../../composables/useAppInfo'
+<script setup lang="ts">
+import { useConfig } from '@/composables/config'
 import { formatField } from '@data-fair/lib-vue/format/field.js'
 import Actions from './Actions.vue'
 
@@ -7,7 +7,7 @@ defineProps({
   item: { type: Object, required: true }
 })
 
-const { config, labelField, descriptionField, imageField, attachmentField, linkField, fields } = useAppInfo()
+const { config, labelField, descriptionField, imageField, attachmentField, linkField, fields } = useConfig()
 </script>
 
 <template>
@@ -31,12 +31,12 @@ const { config, labelField, descriptionField, imageField, attachmentField, linkF
       v-html="item[descriptionField]"
     />
     <v-list
-      dense
-      class="transparent"
+      density="compact"
+      class="bg-transparent"
       lines="two"
     >
       <v-list-item
-        v-for="field in config.additionalFields.filter(f => !!item[f])"
+        v-for="field in (config.additionalFields || []).filter((f: string) => !!item[f])"
         :key="field"
         style="min-height:24px;max-width:100%"
       >
@@ -59,7 +59,7 @@ const { config, labelField, descriptionField, imageField, attachmentField, linkF
             :key="value"
           >
             <v-chip
-              small
+              size="small"
               style="flex:none"
               class="my-1 mr-1"
               variant="flat"

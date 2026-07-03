@@ -1,8 +1,10 @@
 {
   "type": "object",
-  "required": [
-    "datasets"
+  "x-exports": [
+    "types",
+    "resolvedSchemaJson"
   ],
+  "required": ["datasets"],
   "allOf": [
     {
       "title": "Source de données",
@@ -17,7 +19,7 @@
               "additionalProperties": false,
               "properties": {
                 "href": {
-                  "type": "string"
+                  "type": "string" 
                 },
                 "id": {
                   "type": "string"
@@ -39,7 +41,7 @@
                 },
                 "userPermissions": {
                   "type": "array"
-                },
+              },
                 "finalizedAt": {
                   "type": "string"
                 }
@@ -60,22 +62,14 @@
           "type": "array",
           "items": {
             "type": "object",
-            "default": {
-              "type": "in"
-            },
+            "default": { "type": "in" },
             "oneOf": [
               {
                 "title": "Restreindre à des valeurs",
-                "required": [
-                  "type",
-                  "field",
-                  "values"
-                ],
+                "required": ["type", "field", "values"],
                 "additionalProperties": false,
                 "properties": {
-                  "type": {
-                    "const": "in"
-                  },
+                  "type": { "const": "in" },
                   "field": {
                     "type": "string",
                     "title": "Colonne de filtre",
@@ -90,9 +84,7 @@
                   "values": {
                     "type": "array",
                     "title": "Valeurs",
-                    "items": {
-                      "type": "string"
-                    },
+                    "items": { "type": "string" },
                     "layout": {
                       "getItems": {
                         "url": "${rootData.datasets[0].href}/values-labels/${parent.data.field}?q={q}&q_mode=complete&size=100&stringify=true",
@@ -105,15 +97,10 @@
               },
               {
                 "title": "Restreindre à un intervalle de valeurs",
-                "required": [
-                  "type",
-                  "field"
-                ],
+                "required": ["type", "field"],
                 "additionalProperties": false,
                 "properties": {
-                  "type": {
-                    "const": "interval"
-                  },
+                  "type": { "const": "interval" },
                   "field": {
                     "type": "string",
                     "title": "Colonne de filtre",
@@ -151,16 +138,10 @@
               },
               {
                 "title": "Exclure des valeurs",
-                "required": [
-                  "type",
-                  "field",
-                  "values"
-                ],
+                "required": ["type", "field", "values"],
                 "additionalProperties": false,
                 "properties": {
-                  "type": {
-                    "const": "out"
-                  },
+                  "type": { "const": "out" },
                   "field": {
                     "type": "string",
                     "title": "Colonne de filtre",
@@ -175,9 +156,7 @@
                   "values": {
                     "type": "array",
                     "title": "Valeurs à exclure",
-                    "items": {
-                      "type": "string"
-                    },
+                    "items": { "type": "string" },
                     "layout": {
                       "getItems": {
                         "url": "${rootData.datasets[0].href}/values-labels/${parent.data.field}?q={q}&q_mode=complete&size=100&stringify=true",
@@ -211,9 +190,9 @@
           },
           "layout": {
             "getItems": {
-              "url": "${rootData.datasets[0].href}/schema?calculated=false",
-              "itemKey": "data[\"key\"]",
-              "itemTitle": "data[\"label\"]"
+                "url": "${rootData.datasets[0].href}/schema?calculated=false",
+                "itemKey": "data[\"key\"]",
+                "itemTitle": "data[\"label\"]"
             }
           }
         },
@@ -248,16 +227,12 @@
         "color": {
           "type": "object",
           "title": "Réglage des couleurs",
-          "required": [
-            "type"
-          ],
+          "required": ["type"],
           "oneOf": [
             {
               "title": "Calendrier multicolore",
               "additionalProperties": false,
-              "required": [
-                "field"
-              ],
+              "required": ["field"],
               "properties": {
                 "type": {
                   "const": "multicolor"
@@ -280,10 +255,7 @@
                   "oneOf": [
                     {
                       "title": "Palette précalculée",
-                      "required": [
-                        "type",
-                        "name"
-                      ],
+                      "required": ["type", "name"],
                       "additionalProperties": false,
                       "properties": {
                         "type": {
@@ -337,10 +309,7 @@
                     },
                     {
                       "title": "Palette personnalisée",
-                      "required": [
-                        "type",
-                        "categories"
-                      ],
+                      "required": ["type", "categories"],
                       "additionalProperties": false,
                       "properties": {
                         "type": {
@@ -351,9 +320,7 @@
                           "type": "array",
                           "items": {
                             "type": "object",
-                            "required": [
-                              "value"
-                            ],
+                            "required": ["value"],
                             "additionalProperties": false,
                             "properties": {
                               "value": {
@@ -370,10 +337,7 @@
                                 }
                               },
                               "color": {
-                                "type": "string",
-                                "title": "Couleur",
-                                "default": "#828282",
-                                "layout": "color-picker"
+                                "$ref": "#/definitions/hexColor"
                               }
                             }
                           }
@@ -399,9 +363,7 @@
                 "colors": {
                   "type": "object",
                   "title": "Couleur",
-                  "required": [
-                    "type"
-                  ],
+                  "required": ["type"],
                   "oneOf": [
                     {
                       "title": "Thème",
@@ -434,10 +396,7 @@
                           "const": "custom"
                         },
                         "hexValue": {
-                          "type": "string",
-                          "title": "Couleur",
-                          "default": "#828282",
-                          "layout": "color-picker"
+                          "$ref": "#/definitions/hexColor"
                         }
                       }
                     }
@@ -620,6 +579,5 @@
       "default": "#828282",
       "layout": "color-picker"
     }
-  },
-  "$id": "config-resolved"
+  }
 }

@@ -1,12 +1,13 @@
-<script setup>
+<script setup lang="ts">
 import { computed, ref } from 'vue'
 import { getDailyOpeningHours, encodeOpeningHours } from '@wojtekmaj/opening-hours-utils'
+import type { WeekdayName, RecurringOpeningHours } from '@wojtekmaj/opening-hours-utils'
 
 const model = defineModel({ type: String, default: '' })
 
-const menuOpen = ref(null)
-const dayEdit = ref(null)
-const rangeEdit = ref(null)
+const menuOpen = ref<boolean | undefined>(undefined)
+const dayEdit = ref<{ id: string, title: string } | null>(null)
+const rangeEdit = ref<number | null>(null)
 const startTime = ref(null)
 const endTime = ref(null)
 
@@ -24,17 +25,18 @@ const openingHours = computed(() => {
   return Object.assign({}, ...(getDailyOpeningHours(model.value) || []).map(d => ({ [d.day]: d.hours })))
 })
 
-function time2Int (time) {
+function time2Int (time: string) {
   const [hours, minutes] = time.split(':')
   return Number(hours) * 60 + Number(minutes)
 }
 
-function updateOpeningHours (mode) {
-  if (!startTime.value || !endTime.value) return
+function updateOpeningHours (mode: 'create' | 'update' | 'delete') {
+  if (!startTime.value || !endTime.value || !dayEdit.value || !rangeEdit.value) return
+  const dayEditValue = dayEdit.value
   const currentOH = getDailyOpeningHours(model.value) || []
-  let currentDay = currentOH.find(oh => oh.day === dayEdit.value.id)
+  let currentDay = currentOH.find(oh => oh.day === dayEditValue.id)
   if (!currentDay) {
-    currentDay = { day: dayEdit.value.id, hours: [] }
+    currentDay = { day: dayEditValue.id as WeekdayName, hours: [] }
     currentOH.push(currentDay)
   }
   if (mode === 'create') {
@@ -44,19 +46,19 @@ function updateOpeningHours (mode) {
   } else if (mode === 'delete') {
     currentDay.hours.splice(rangeEdit.value, 1)
     if (!currentDay.hours.length) {
-      const idx = currentOH.findIndex(oh => oh.day === dayEdit.value.id)
+      const idx = currentOH.findIndex(oh => oh.day === dayEditValue.id)
       currentOH.splice(idx, 1)
     }
   }
-  const newOH = [].concat(...currentOH.map(d => {
+  const newOH = ([] as RecurringOpeningHours[]).concat(...currentOH.map(d => {
     d.hours.sort((a, b) => a.from.localeCompare(b.from))
     const merged = [d.hours[0]]
     for (let i = 1; i < d.hours.length; i++) {
       const current = d.hours[i]
       const previous = merged[merged.length - 1]
 
-      if (current.from.localeCompare(previous.to) <= 0) {
-        previous.to = previous.to.localeCompare(current.to) < 0 ? current.to : previous.to
+      if (current.from.localeCompare(previous.to ?? '') <= 0) {
+        previous.to = (previous.to ?? '').localeCompare(current.to ?? '') < 0 ? current.to : previous.to
       } else {
         merged.push(current)
       }
@@ -98,7 +100,7 @@ function updateOpeningHours (mode) {
         :height="(time2Int(range.to)-time2Int(range.from))/6"
         color="primary"
         class="d-flex flex-column"
-        @click="dayEdit = day;rangeEdit=i;startTime=range.from;endTime=range.to;menuOpen = true"
+        @click="dayEdit = day;rangeEdit=i as number;startTime=range.from;endTime=range.to ?? null;menuOpen = true"
       >
         <caption class="text-caption">
           {{ range.from }}

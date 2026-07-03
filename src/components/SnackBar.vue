@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { errorMessage, displayError } from '@/messages'
 </script>
 

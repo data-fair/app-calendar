@@ -1,23 +1,30 @@
-<script setup>
+<script setup lang="ts">
 import { ref, defineAsyncComponent, watch, computed } from 'vue'
-import { computedAsync } from '@vueuse/core'
-import useAppInfo from '@/composables/useAppInfo'
-import { timestamp } from '@/context'
+import { mdiClose, mdiPencil } from '@mdi/js'
+import { useConfig } from '@/composables/config'
+import { timestamp } from '@/composables/useCalendarData.js'
 import { errorMessage, displayError } from '@/messages'
 import { ofetch } from 'ofetch'
+import { useFetch } from '@data-fair/lib-vue/fetch'
 import EventView from './EventView.vue'
 import DeleteEvent from './DeleteEvent.vue'
 import { useDisplay } from 'vuetify'
 import { useLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
+import useAsyncAction from '@data-fair/lib-vue/async-action.js'
 
 const EventEdit = defineAsyncComponent(() =>
   import('./EventEdit.vue')
 )
 
 const { width, height } = useDisplay()
-const { config, mainDataset, layout, startDateField, endDateField, startDateType, endDateType } = useAppInfo()
+const { config, dataset: mainDataset, layout, startDateField, endDateField, startDateType, endDateType } = useConfig()
 const { dayjs } = useLocaleDayjs()
-const emit = defineEmits(['updated', 'close'])
+const emit = defineEmits<{
+  updated: []
+  close: []
+  cancel: []
+  'mode-change': [mode: string]
+}>()
 
 const mode = ref('read')
 
@@ -29,67 +36,121 @@ const prop = defineProps({
 })
 
 watch(() => prop.event, (event) => {
-  mode.value = 'read'
-})
+  mode.value = (event?.id && !event?.forceEdit) ? 'read' : 'edit'
+}, { immediate: true })
 
-const eventData = computedAsync(async () => {
+watch(mode, (m) => emit('mode-change', m), { immediate: true })
+
+const { data: eventLineData, error: eventLineError } = useFetch(
+  computed(() => prop.event?.id && mainDataset.value?.href
+    ? `${mainDataset.value.href}/lines`
+    : null
+  ),
+  {
+    query: computed(() => prop.event?.id
+      ? {
+          _id_eq: prop.event.originalId,
+          ...(mode.value === 'read' ? { html: 'true' } : {}),
+          t: timestamp.value
+        }
+      : {}
+    )
+  }
+)
+
+const eventData = computed(() => {
   if (!prop.event) return null
-  if (!prop.event.id) mode.value = 'edit'
   if (!prop.event.id) return { ...prop.event }
-  else return (await ofetch(`${(mainDataset).href}/lines?_id_eq=${prop.event.originalId}${mode.value === 'read' ? '&html=true' : ''}`)).results.pop()
-}, null, {
-  onError: function (e) {
+  const results = (eventLineData.value as any)?.results
+  return results?.[results.length - 1] ?? null
+})
+watch(eventLineError, (e) => {
+  if (e) {
     displayError.value = true
     errorMessage.value = e.message
   }
 })
 
-async function editEvent (eventData) {
-  const formData = new FormData()
-  const { __file, ...event } = eventData
-  const body = layout === 'contrib' ? { payload: JSON.stringify(event) } : event
-  for (const [key, value] of Object.entries(body)) formData.append(key, value)
-  if (__file) formData.append('attachment', __file)
-  const params = {
-    method: 'POST',
-    body: formData,
-    headers: { 'Content-Disposition': formData }
-  }
-  let url = `${mainDataset.href}/lines`
-  if (prop.event.originalId) {
-    url += '/' + prop.event.originalId
-    params.method = 'PUT'
-  }
+const { execute: editEventAction } = useAsyncAction(
+  async (eventData: Record<string, unknown>) => {
+    const formData = new FormData()
+    const { __file, ...event } = eventData as { __file?: File, [key: string]: unknown }
+    const body = layout.value === 'contrib' ? { payload: JSON.stringify(event) } : event
+    for (const [key, value] of Object.entries(body)) formData.append(key, value as string)
+    if (__file) formData.append('attachment', __file)
+    const params = {
+      method: 'POST',
+      body: formData,
+      // headers: { 'Content-Disposition': formData }
+    }
+    let url = `${mainDataset.value?.href}/lines`
+    if (prop.event?.originalId) {
+      url += '/' + prop.event.originalId
+      params.method = 'PUT'
+    }
 
-  try {
     await ofetch(url, params)
     emit('updated')
     timestamp.value = new Date().getTime()
-  } catch (e) {
-    errorMessage.value = e.status + ' - ' + e._data
-    displayError.value = true
-  }
-}
+  },
+  { error: 'Erreur lors de la sauvegarde de l\'événement' }
+)
+
+const missingStart = computed(() =>
+  !!(startDateField.value && eventData.value && !eventData.value[startDateField.value])
+)
+const missingEnd = computed(() =>
+  !!(endDateField.value && eventData.value && !eventData.value[endDateField.value])
+)
 
 const formatedDate = computed(() => {
-  if (startDateField && endDateField) {
+  if (!prop.event) return ''
+  if (startDateField.value && endDateField.value) {
+    const start = dayjs(prop.event.start as string)
+    const endRaw = (prop.event.originalEnd ?? prop.event.end) as string | undefined
+    if (!endRaw) {
+      return start.format('ddd D MMM YYYY') + (startDateType.value === 'date-time' || prop.event.openingHours ? `, ${start.format('HH:mm')}` : '')
+    }
+    const end = dayjs(endRaw).subtract(startDateType.value === 'date-time' || prop.event.openingHours ? 0 : 1, 'day')
+    if (!end.isValid() || end.isBefore(start)) {
+      return start.format('ddd D MMM YYYY') + (startDateType.value === 'date-time' || prop.event.openingHours ? `, ${start.format('HH:mm')}` : '')
+    }
+    if (start.isSame(end, 'day')) {
+      const startTimeStr = startDateType.value === 'date-time' || prop.event.openingHours ? start.format('HH:mm') : null
+      const endTimeStr = endDateType.value === 'date-time' || prop.event.openingHours ? end.format('HH:mm') : null
+      return start.format('ddd D MMM YYYY') +
+        (startTimeStr ? `, ${startTimeStr}` : '') +
+        (endTimeStr && endTimeStr !== startTimeStr ? ` - ${endTimeStr}` : '')
+    } else return start.format('ddd D MMM YYYY' + (startDateType.value === 'date-time' ? ', HH:mm' : '')) + ' - ' + end.format('ddd D MMM YYYY' + (endDateType.value === 'date-time' ? ', HH:mm' : ''))
+  } else {
     const start = dayjs(prop.event.start)
-    const end = dayjs(prop.event.end).subtract(startDateType === 'date-time' || prop.event.openingHours ? 0 : 1, 'day')
-    if (start.isSame(end, 'day')) return start.format('ddd D MMM YYYY') + (startDateType === 'date-time' || prop.event.openingHours ? (', ' + start.format('HH:mm')) : '') + (endDateType === 'date-time' || prop.event.openingHours ? (' - ' + end.format('HH:mm')) : '')
-    else return start.format('ddd D MMM YYYY' + (startDateType === 'date-time' ? ', HH:mm' : '')) + ' - ' + end.format('ddd D MMM YYYY' + (endDateType === 'date-time' ? ', HH:mm' : ''))
-  } else return dayjs(prop.event.start).format('dd, MMM YYYY')
+    const hasTime = start.format('HH:mm') !== '00:00'
+    return start.format('ddd D MMM YYYY') + (hasTime ? ', ' + start.format('HH:mm') : '')
+  }
 })
 
 function cancel () {
   mode.value = 'read'
-  if (!prop.event.id) emit('updated')
+  if (!prop.event?.id) emit('updated')
+}
+
+function closeOrCancel () {
+  // Si on ferme depuis le mode édition, on force un rafraîchissement du calendrier
+  if (mode.value === 'edit') {
+    timestamp.value = new Date().getTime()
+    emit('updated')
+  } else if (prop.event?.id) {
+    emit('cancel')
+  } else {
+    emit('close')
+  }
 }
 
 </script>
 <template>
   <v-card
-    :max-width="mode === 'read' ? 800 : width*config.formWidth/10"
-    :min-width="300"
+    :max-width="mode === 'read' ? 800 : width*(config.formWidth ?? 5)/10"
+    :min-width="mode === 'edit' ? 400 : 300"
     :max-height="height*0.8"
   >
     <template v-if="eventData">
@@ -106,7 +167,7 @@ function cancel () {
               location: 'right',
               openDelay: '500'
             }"
-            icon="mdi-pencil"
+            :icon="mdiPencil"
             color="primary"
             @click="mode = 'edit'"
           />
@@ -115,7 +176,7 @@ function cancel () {
             @deleted="emit('updated')"
           />
           <v-btn
-            icon="mdi-close"
+            :icon="mdiClose"
             @click="emit('close')"
           />
         </v-card-actions>
@@ -125,16 +186,45 @@ function cancel () {
         >
           {{ formatedDate }}
         </v-card-title>
+        <v-alert
+          v-if="missingStart"
+          type="warning"
+          density="compact"
+          variant="tonal"
+          class="mx-3 mt-2"
+        >
+          La date de début n'est pas renseignée
+        </v-alert>
+        <v-alert
+          v-if="missingEnd"
+          type="warning"
+          density="compact"
+          variant="tonal"
+          class="mx-3 mt-2"
+        >
+          La date de fin n'est pas renseignée
+        </v-alert>
         <event-view
           :item="eventData"
         />
       </template>
       <suspense v-if="mode === 'edit'">
-        <event-edit
-          :item="eventData"
-          @validate="editEvent"
-          @cancel="cancel"
-        />
+        <div>
+          <v-card-actions class="py-0">
+            <span class="text-subtitle-1">{{ prop.event?.id ? 'Modifier un événement' : 'Ajouter un événement' }}</span>
+            <v-spacer />
+            <v-btn
+              :icon="mdiClose"
+              @click="closeOrCancel"
+            />
+          </v-card-actions>
+          <event-edit
+            :item="eventData"
+            :pending-event="prop.event"
+            @validate="editEventAction"
+            @cancel="cancel"
+          />
+        </div>
         <template #fallback>
           <v-row
             align="center"

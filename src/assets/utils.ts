@@ -1,4 +1,6 @@
-export const dateFromConfig = function (dayjs, configDate) {
+import type dayjsType from 'dayjs'
+
+export const dateFromConfig = function (dayjs: typeof dayjsType, configDate : 'none' | 'day' | 'tomorrow' | 'one-week-later' | 'one-month-later' | 'one-year-later'): string | undefined {
   if (configDate === 'none') return undefined
   else if (configDate === 'day') return dayjs().format('YYYY-MM-DD')
   else if (configDate === 'tomorrow') return dayjs().add(1, 'day').format('YYYY-MM-DD')

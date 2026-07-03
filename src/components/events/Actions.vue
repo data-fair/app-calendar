@@ -1,16 +1,16 @@
-<script setup>
-import useAppInfo from '../../composables/useAppInfo'
+<script setup lang="ts">
+import { useConfig } from '@/composables/config'
 
 defineProps({
   item: { type: Object, required: true }
 })
 
-const { linkField, attachmentField, mainDataset } = useAppInfo()
+const { linkField, attachmentField, dataset: mainDataset } = useConfig()
 
-function displayBytes (bytes) {
+function displayBytes (bytes : number) {
   const sizes = ['Octets', 'Ko', 'Mo', 'Go']
   if (bytes === 0) return '0 Octet'
-  const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1000)))
+  const i = parseInt(String(Math.floor(Math.log(bytes) / Math.log(1000))))
   if (i === 0) return `${bytes} ${sizes[i]}`
   return `${(bytes / (1000 ** i)).toFixed(2)} ${sizes[i]}`
 }
@@ -22,8 +22,8 @@ function displayBytes (bytes) {
     <v-btn
       v-if="linkField && item[linkField]"
       :href="(!item[linkField].includes('http') ? 'http://' : '') + item[linkField]"
-      text
-      small
+      variant="text"
+      size="small"
       target="_blank"
       class="px-6"
       color="primary"
@@ -32,11 +32,11 @@ function displayBytes (bytes) {
     </v-btn>
     <v-tooltip
       v-if="attachmentField"
-      top
+      location="top"
     >
       <template #activator="{ props }">
         <v-btn
-          :href="item[attachmentField].includes('http') ? item[attachmentField] : mainDataset.href + '/attachments/' + item[attachmentField]"
+          :href="item[attachmentField.key].includes('http') ? item[attachmentField.key] : mainDataset?.href + '/attachments/' + item[attachmentField.key]"
           color="accent"
           icon
           v-bind="props"
