@@ -4,13 +4,11 @@ import { mdiClose, mdiPencil } from '@mdi/js'
 import { useConfig } from '@/composables/config'
 import { timestamp } from '@/composables/useCalendarData.js'
 import { errorMessage, displayError } from '@/messages'
-import { ofetch } from 'ofetch'
 import { useFetch } from '@data-fair/lib-vue/fetch'
 import EventView from './EventView.vue'
 import DeleteEvent from './DeleteEvent.vue'
 import { useDisplay } from 'vuetify'
 import { useLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
-import useAsyncAction from '@data-fair/lib-vue/async-action.js'
 
 const EventEdit = defineAsyncComponent(() =>
   import('./EventEdit.vue')
@@ -71,30 +69,10 @@ watch(eventLineError, (e) => {
   }
 })
 
-const { execute: editEventAction } = useAsyncAction(
-  async (eventData: Record<string, unknown>) => {
-    const formData = new FormData()
-    const { __file, ...event } = eventData as { __file?: File, [key: string]: unknown }
-    const body = layout.value === 'contrib' ? { payload: JSON.stringify(event) } : event
-    for (const [key, value] of Object.entries(body)) formData.append(key, value as string)
-    if (__file) formData.append('attachment', __file)
-    const params = {
-      method: 'POST',
-      body: formData,
-      // headers: { 'Content-Disposition': formData }
-    }
-    let url = `${mainDataset.value?.href}/lines`
-    if (prop.event?.originalId) {
-      url += '/' + prop.event.originalId
-      params.method = 'PUT'
-    }
-
-    await ofetch(url, params)
-    emit('updated')
-    timestamp.value = new Date().getTime()
-  },
-  { error: 'Erreur lors de la sauvegarde de l\'événement' }
-)
+function onEditUpdated () {
+  timestamp.value = new Date().getTime()
+  emit('updated')
+}
 
 const missingStart = computed(() =>
   !!(startDateField.value && eventData.value && !eventData.value[startDateField.value])
@@ -221,7 +199,7 @@ function closeOrCancel () {
           <event-edit
             :item="eventData"
             :pending-event="prop.event"
-            @validate="editEventAction"
+            @updated="onEditUpdated"
             @cancel="cancel"
           />
         </div>

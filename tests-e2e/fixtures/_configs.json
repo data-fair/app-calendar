@@ -1,0 +1,309 @@
+{
+  "no_config": {
+    "dataset": "accidents_velos",
+    "comment": "Configuration vide (sans champ datasets)",
+    "config": {}
+  },
+  "no_dataset": {
+    "dataset": "accidents_velos",
+    "comment": "Configuration sans dataset pour tester l'empty state",
+    "config": {
+      "datasets": []
+    }
+  },
+  "accidents_velos_month": {
+    "dataset": "accidents_velos",
+    "comment": "Vue Mois, color monochrome primary, labelField explicite",
+    "config": {
+      "color": {
+        "type": "monochrome",
+        "colors": {
+          "type": "theme",
+          "strValue": "primary"
+        }
+      },
+      "initialView": "dayGridMonth",
+      "openOnCurrentDay": true,
+      "labelField": {
+        "key": "Num_Acc",
+        "label": "Identifiant accident"
+      },
+      "imageDisplay": "cover",
+      "imagePosition": "top",
+      "aspectRatio": 3,
+      "imageWidth": 100,
+      "additionalFields": [
+        "dep",
+        "an"
+      ]
+    }
+  },
+  "accidents_velos_week": {
+    "dataset": "accidents_velos",
+    "comment": "Vue Semaine (timeGridWeek)",
+    "config": {
+      "color": {
+        "type": "monochrome",
+        "colors": {
+          "type": "theme",
+          "strValue": "primary"
+        }
+      },
+      "initialView": "timeGridWeek",
+      "labelField": {
+        "key": "Num_Acc",
+        "label": "Identifiant accident"
+      },
+      "imageDisplay": "cover",
+      "imagePosition": "top",
+      "aspectRatio": 3,
+      "imageWidth": 100,
+      "additionalFields": [
+        "dep"
+      ],
+      "openOnCurrentDay": true
+    }
+  },
+  "accidents_velos_day": {
+    "dataset": "accidents_velos",
+    "comment": "Vue Jour (timeGridDay)",
+    "config": {
+      "color": {
+        "type": "monochrome",
+        "colors": {
+          "type": "theme",
+          "strValue": "primary"
+        }
+      },
+      "initialView": "timeGridDay",
+      "labelField": {
+        "key": "Num_Acc",
+        "label": "Identifiant accident"
+      },
+      "imageDisplay": "cover",
+      "imagePosition": "top",
+      "aspectRatio": 3,
+      "imageWidth": 100,
+      "additionalFields": [
+        "dep"
+      ],
+      "openOnCurrentDay": true
+    }
+  },
+  "accidents_velos_planning": {
+    "dataset": "accidents_velos",
+    "comment": "Vue Planning (liste d'événements à venir)",
+    "config": {
+      "color": {
+        "type": "monochrome",
+        "colors": {
+          "type": "theme",
+          "strValue": "primary"
+        }
+      },
+      "initialView": "planning",
+      "labelField": {
+        "key": "Num_Acc",
+        "label": "Identifiant accident"
+      },
+      "additionalFields": [
+        "dep"
+      ],
+      "openOnCurrentDay": true
+    }
+  },
+  "accidents_velos_multicolor_palette": {
+    "dataset": "accidents_velos",
+    "comment": "Couleur multicolor basée sur le champ 'agg' (en/hors agglomération)",
+    "config": {
+      "color": {
+        "type": "multicolor",
+        "field": "agg",
+        "colors": {
+          "type": "palette",
+          "name": "Spectral",
+          "offset": 0
+        }
+      },
+      "initialView": "dayGridMonth",
+      "labelField": {
+        "key": "Num_Acc",
+        "label": "Identifiant accident"
+      },
+      "additionalFields": [
+        "agg"
+      ],
+      "openOnCurrentDay": true
+    }
+  },
+  "accidents_velos_multicolor_custom": {
+    "dataset": "accidents_velos",
+    "comment": "Couleur multicolor avec catégories custom + couleurs explicites",
+    "config": {
+      "color": {
+        "type": "multicolor",
+        "field": "grav",
+        "colors": {
+          "type": "custom",
+          "categories": [
+            {
+              "value": "1",
+              "color": "#4caf50"
+            },
+            {
+              "value": "2",
+              "color": "#f44336"
+            },
+            {
+              "value": "3",
+              "color": "#ff9800"
+            },
+            {
+              "value": "4",
+              "color": "#2196f3"
+            }
+          ]
+        }
+      },
+      "initialView": "dayGridMonth",
+      "labelField": {
+        "key": "Num_Acc",
+        "label": "Identifiant accident"
+      },
+      "additionalFields": [
+        "grav"
+      ],
+      "openOnCurrentDay": true
+    }
+  },
+  "accidents_velos_admin": {
+    "dataset": "accidents_velos_admin",
+    "comment": "Admin layout (isRest + permissions complètes) : edit/delete d'événements",
+    "config": {
+      "color": {
+        "type": "monochrome",
+        "colors": {
+          "type": "theme",
+          "strValue": "primary"
+        }
+      },
+      "initialView": "timeGridWeek",
+      "labelField": {
+        "key": "Num_Acc",
+        "label": "Identifiant accident"
+      },
+      "imageDisplay": "cover",
+      "imagePosition": "top",
+      "aspectRatio": 3,
+      "imageWidth": 100,
+      "additionalFields": [
+        "dep",
+        "an"
+      ],
+      "openOnCurrentDay": true
+    }
+  },
+  "jep_month": {
+    "dataset": "jep_2024",
+    "comment": "Dataset JEP : startDate+endDate, événements sur plusieurs jours",
+    "config": {
+      "color": {
+        "type": "monochrome",
+        "colors": {
+          "type": "theme",
+          "strValue": "primary"
+        }
+      },
+      "initialView": "dayGridMonth",
+      "labelField": {
+        "key": "title_fr",
+        "label": "Titre"
+      },
+      "imageDisplay": "cover",
+      "imagePosition": "top",
+      "aspectRatio": 3,
+      "imageWidth": 100,
+      "additionalFields": [
+        "location_city",
+        "updatedat"
+      ],
+      "openOnCurrentDay": true
+    }
+  },
+  "jep_planning": {
+    "dataset": "jep_2024",
+    "comment": "Vue Planning sur JEP (avec événements futurs)",
+    "config": {
+      "color": {
+        "type": "monochrome",
+        "colors": {
+          "type": "theme",
+          "strValue": "primary"
+        }
+      },
+      "initialView": "planning",
+      "labelField": {
+        "key": "title_fr",
+        "label": "Titre"
+      },
+      "additionalFields": [
+        "location_city"
+      ],
+      "openOnCurrentDay": true
+    }
+  },
+  "jep_admin_week": {
+    "dataset": "jep_2024_admin",
+    "comment": "Admin JEP semaine : startDate+endDate date-time pour tester drag/resize",
+    "config": {
+      "color": {
+        "type": "monochrome",
+        "colors": {
+          "type": "theme",
+          "strValue": "primary"
+        }
+      },
+      "initialView": "timeGridWeek",
+      "openOnCurrentDay": true,
+      "labelField": {
+        "key": "title_fr",
+        "label": "Titre"
+      },
+      "imageDisplay": "cover",
+      "imagePosition": "top",
+      "aspectRatio": 3,
+      "imageWidth": 100,
+      "additionalFields": [
+        "location_city",
+        "updatedat"
+      ]
+    }
+  },
+  "accidents_admin_week": {
+    "dataset": "accidents_velos_admin",
+    "comment": "Admin accidents : day-view pour créer sur cellules journalières",
+    "config": {
+      "color": {
+        "type": "monochrome",
+        "colors": {
+          "type": "theme",
+          "strValue": "primary"
+        }
+      },
+      "initialView": "timeGridWeek",
+      "openOnCurrentDay": true,
+      "labelField": {
+        "key": "Num_Acc",
+        "label": "Identifiant accident"
+      },
+      "imageDisplay": "cover",
+      "imagePosition": "top",
+      "aspectRatio": 3,
+      "imageWidth": 100,
+      "additionalFields": [
+        "dep",
+        "an"
+      ]
+    }
+  }
+}

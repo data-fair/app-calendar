@@ -11,7 +11,11 @@
     "build-types": "df-build-types && ncp src/config/.type/resolved-schema.json public/config-schema.json",
     "preview": "vite preview",
     "lint": "eslint . --fix",
-    "type-check": "vue-tsc --noEmit"
+    "type-check": "vue-tsc --noEmit",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:install": "playwright install --with-deps chromium",
+    "test:webserver": "vite --port 4100 --strictPort"
   },
   "files": [
     "dist"
@@ -27,6 +31,8 @@
     "@data-fair/lib-utils": "^1.10.2",
     "@data-fair/lib-vue": "^1.27.2",
     "@data-fair/lib-vuetify": "^2.3.0",
+    "@koumoul/vjsf": "^4.3.1",
+    "@koumoul/vjsf-markdown": "^0.5.1",
     "@vueuse/core": "^10.7.2",
     "@wojtekmaj/opening-hours-utils": "^1.0.0",
     "ajv-formats": "^3.0.1",
@@ -40,6 +46,7 @@
   "devDependencies": {
     "@data-fair/dev-server": "^2.1.0",
     "@data-fair/lib-types-builder": "^1.12.0",
+    "@playwright/test": "^1.61.1",
     "@types/chroma-js": "^3.1.2",
     "@types/node": "^25.6.0",
     "@typescript-eslint/parser": "^8.59.1",

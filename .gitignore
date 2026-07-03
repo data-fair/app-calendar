@@ -17,6 +17,11 @@ coverage
 /cypress/videos/
 /cypress/screenshots/
 
+# Playwright test artifacts
+test-results/
+playwright-report/
+/blob-report/
+
 # Editor directories and files
 .vscode/*
 .type
@@ -34,3 +39,4 @@ docs
 .dev-config.json
 .package.json
 *.test*
+test-results/
