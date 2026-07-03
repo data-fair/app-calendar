@@ -7,6 +7,7 @@ import { mockDataFairApi } from '../helpers/mock-api'
 import { expectCalendarVisible } from '../helpers/assertions'
 import { linesAccidentsVelos } from '../fixtures/api-responses'
 import { configs } from '../fixtures/configs'
+import { makeDatasetEntry } from '../fixtures/datasets'
 
 const test = setupAppTest('accidents_velos_month', { lines: linesAccidentsVelos })
 
@@ -46,13 +47,7 @@ test('staticFilters présent : la requête /lines inclut qs=<field>:<value>', as
     staticFilters: [
       { type: 'in', field: 'dep', values: ['75', '92'] }
     ],
-    datasets: [{
-      href: '/api/v1/datasets/accidents-velos',
-      id: 'accidents-velos',
-      title: 'Accidents',
-      finalizedAt: '2024-01-01T00:00:00.000Z',
-      schema: [],
-    }],
+    datasets: [makeDatasetEntry('accidents_velos')],
   })
   await expectCalendarVisible(page)
   // Au moins une requête /lines inclut le param qs= avec le filtre dep

@@ -5,6 +5,7 @@ import { expect, setupAppTest, prepareApp } from '../helpers/test-fixture'
 import { injectConfig } from '../helpers/inject-config'
 import { expectCalendarVisible, getSearchParam } from '../helpers/assertions'
 import { linesAccidentsVelos } from '../fixtures/api-responses'
+import { makeDatasetEntry } from '../fixtures/datasets'
 
 const test = setupAppTest('accidents_velos_month', { lines: linesAccidentsVelos })
 
@@ -47,13 +48,7 @@ test('changement de l\'URL view répercute la vue (cas iframe sync)', async ({ p
     imageWidth: 100,
     additionalFields: ['dep'],
     openOnCurrentDay: true,
-    datasets: [{
-      href: '/api/v1/datasets/accidents-velos',
-      id: 'accidents-velos',
-      title: 'Accidents',
-      finalizedAt: '2024-01-01T00:00:00.000Z',
-      schema: linesAccidentsVelos.results[0] ? [] : [],
-    }]
+    datasets: [makeDatasetEntry('accidents_velos')]
   })
   // La vue initiale est forcée à "day" via l'URL
   // Note: la détection de la vue day est dans .v-calendar-daily__pane

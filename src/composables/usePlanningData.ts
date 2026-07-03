@@ -1,8 +1,8 @@
 import { ref, computed, watch } from 'vue'
 import { useLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
 import { useConfig } from './config'
+import { useUiNotif } from '@data-fair/lib-vue/ui-notif.js'
 import { ofetch } from 'ofetch'
-import { errorMessage, displayError } from '@/messages'
 import { getConceptFilters } from '@data-fair/lib-vue/concept-filters.js'
 import reactiveSearchParams from '@data-fair/lib-vue/reactive-search-params-global.js'
 import { filters2qs } from '@data-fair/lib-utils/filters'
@@ -43,6 +43,7 @@ export function usePlanningData (getColor: (value: string) => unknown) {
     color: colorConfig,
     layout,
   } = useConfig()
+  const { sendUiNotif } = useUiNotif()
 
   const nextUrl = ref<string | null>(null)
   const rawResults = ref<Record<string, unknown>[]>([])
@@ -94,6 +95,9 @@ export function usePlanningData (getColor: (value: string) => unknown) {
 
     isLoading.value = true
     try {
+      // ofetch direct conservé : useFetch est inadapté à la pagination impérative
+      // (nextUrl n'est connu qu'après le fetch précédent, ce qui empêche tout
+      // computed url stable). Cf. TODO P1-3.
       const response = await ofetch(url)
       rawResults.value = [...rawResults.value, ...response.results]
       nextUrl.value = response.next ?? null
@@ -102,8 +106,7 @@ export function usePlanningData (getColor: (value: string) => unknown) {
       hasMore.value = false
       nextUrl.value = null
       if (e?.response?.status !== 400) {
-        displayError.value = true
-        errorMessage.value = e.message
+        sendUiNotif({ type: 'error', msg: 'Erreur lors du chargement du planning', error: e })
       }
     } finally {
       isLoading.value = false

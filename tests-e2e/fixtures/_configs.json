@@ -11,6 +11,40 @@
       "datasets": []
     }
   },
+  "no_label_field": {
+    "dataset": "accidents_velos",
+    "comment": "Dataset sans rdfs:label et config sans labelField → empty state « champ de libellé »",
+    "config": {
+      "color": {
+        "type": "monochrome",
+        "colors": {
+          "type": "theme",
+          "strValue": "primary"
+        }
+      },
+      "initialView": "dayGridMonth",
+      "openOnCurrentDay": true
+    }
+  },
+  "no_date_field": {
+    "dataset": "accidents_no_date",
+    "comment": "Dataset sans aucun champ de date (ni startDate, ni endDate, ni Date) → empty state « Aucun champ de date »",
+    "config": {
+      "color": {
+        "type": "monochrome",
+        "colors": {
+          "type": "theme",
+          "strValue": "primary"
+        }
+      },
+      "initialView": "dayGridMonth",
+      "labelField": {
+        "key": "Num_Acc",
+        "label": "Identifiant accident"
+      },
+      "openOnCurrentDay": true
+    }
+  },
   "accidents_velos_month": {
     "dataset": "accidents_velos",
     "comment": "Vue Mois, color monochrome primary, labelField explicite",

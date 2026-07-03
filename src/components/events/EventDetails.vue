@@ -3,7 +3,7 @@ import { ref, defineAsyncComponent, watch, computed } from 'vue'
 import { mdiClose, mdiPencil } from '@mdi/js'
 import { useConfig } from '@/composables/config'
 import { timestamp } from '@/composables/useCalendarData.js'
-import { errorMessage, displayError } from '@/messages'
+import { useUiNotif } from '@data-fair/lib-vue/ui-notif.js'
 import { useFetch } from '@data-fair/lib-vue/fetch'
 import EventView from './EventView.vue'
 import DeleteEvent from './DeleteEvent.vue'
@@ -17,6 +17,7 @@ const EventEdit = defineAsyncComponent(() =>
 const { width, height } = useDisplay()
 const { config, dataset: mainDataset, layout, startDateField, endDateField, startDateType, endDateType } = useConfig()
 const { dayjs } = useLocaleDayjs()
+const { sendUiNotif } = useUiNotif()
 const emit = defineEmits<{
   updated: []
   close: []
@@ -63,10 +64,7 @@ const eventData = computed(() => {
   return results?.[results.length - 1] ?? null
 })
 watch(eventLineError, (e) => {
-  if (e) {
-    displayError.value = true
-    errorMessage.value = e.message
-  }
+  if (e) sendUiNotif({ type: 'error', msg: 'Erreur lors du chargement de l\'événement', error: e })
 })
 
 function onEditUpdated () {

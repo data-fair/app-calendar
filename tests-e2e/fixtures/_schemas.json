@@ -3162,5 +3162,70 @@
       "patchLine",
       "deleteLine"
     ]
+  },
+  "accidents_no_date": {
+    "id": "accidents-no-date",
+    "title": "Accidents sans champ de date",
+    "finalizedAt": "2024-01-01T00:00:00.000Z",
+    "schema": [
+      {
+        "key": "Num_Acc",
+        "type": "string",
+        "title": "Identifiant accident",
+        "label": "Identifiant accident",
+        "description": "Numéro d'identification de l'accident",
+        "x-originalName": "Num_Acc",
+        "x-capabilities": {
+          "insensitive": false,
+          "textAgg": false,
+          "text": false,
+          "textStandard": false,
+          "values": false
+        }
+      },
+      {
+        "key": "dep",
+        "type": "string",
+        "title": "Département",
+        "label": "Département",
+        "description": "Département de l'accident",
+        "x-refersTo": "http://rdf.insee.fr/def/geo#codeDepartement",
+        "x-originalName": "dep",
+        "x-concept": {
+          "id": "codeDepartement",
+          "title": "Code département",
+          "primary": true
+        },
+        "x-capabilities": {
+          "insensitive": false,
+          "textAgg": false,
+          "text": false,
+          "textStandard": false
+        },
+        "x-cardinality": 113
+      },
+      {
+        "key": "_id",
+        "type": "string",
+        "title": "Identifiant",
+        "description": "Identifiant unique parmi toutes les lignes du jeu de données",
+        "format": "uri-reference",
+        "x-calculated": true
+      },
+      {
+        "key": "_i",
+        "type": "integer",
+        "title": "Numéro de ligne",
+        "description": "Indice de la ligne dans le fichier d'origine",
+        "x-calculated": true
+      },
+      {
+        "key": "_rand",
+        "type": "integer",
+        "title": "Nombre aléatoire",
+        "description": "Un nombre aléatoire associé à la ligne qui permet d'obtenir un tri aléatoire par exemple",
+        "x-calculated": true
+      }
+    ]
   }
 }

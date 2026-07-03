@@ -1,12 +1,12 @@
 import { useConfig } from './config'
-import { useConceptFilters } from '@data-fair/lib-vue/concept-filters.js'
+import { getConceptFilters } from '@data-fair/lib-vue/concept-filters.js'
 import reactiveSearchParams from '@data-fair/lib-vue/reactive-search-params-global.js'
 import type { QueryObject } from 'ufo'
 import { useFetch } from '@data-fair/lib-vue/fetch'
 import { ref, computed, watch } from 'vue'
 import { useDebounce } from '@vueuse/core'
 import chroma from 'chroma-js'
-import { errorMessage, displayError } from '@/messages'
+import { useUiNotif } from '@data-fair/lib-vue/ui-notif.js'
 import { getDailyOpeningHours } from '@wojtekmaj/opening-hours-utils'
 import { getLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
 import { filters2qs } from '@data-fair/lib-utils/filters'
@@ -23,8 +23,8 @@ export const timestamp = ref(new Date().getTime())
 
 export function useCalendarData () {
   const { config, color, dataset: mainDataset, startDateField, endDateField, dateField, labelField, openingHoursField, layout, startDateType, endDateType } = useConfig()
-  const conceptFilters = useConceptFilters(reactiveSearchParams, mainDataset.value?.id)
   const { dayjs } = getLocaleDayjs()
+  const { sendUiNotif } = useUiNotif()
 
   const { data: categoriesData, error: categoriesError } = useFetch(
     computed(() => color.value?.type === 'multicolor' && color.value?.field
@@ -60,16 +60,13 @@ export function useCalendarData () {
     return palette
   })
   watch(categoriesError, (e) => {
-    if (e) {
-      displayError.value = true
-      errorMessage.value = e.message
-    }
+    if (e) sendUiNotif({ type: 'error', msg: 'Erreur lors du chargement des couleurs', error: e })
   })
 
   const eventsQueryRaw = computed(() => {
     if (!reactiveSearchParams.start || !reactiveSearchParams.end) return {}
     const params: Record<string, unknown> = {
-      ...conceptFilters,
+      ...getConceptFilters(reactiveSearchParams, mainDataset.value?.id),
       _c_date_match: decodeURIComponent(reactiveSearchParams.start) + ',' + decodeURIComponent(reactiveSearchParams.end),
       size: 1000,
       select: '_id,' + labelField.value
@@ -99,7 +96,7 @@ export function useCalendarData () {
     if (!eventsData.value) return []
     const response = eventsData.value as { results: Record<string, unknown>[] }
 
-    if (!labelField.value || labelField.value === undefined) return
+    if (!labelField.value) return []
 
     const result = ([] as unknown[]).concat(...response.results.map(event => {
       const baseEvent : { editable: boolean, id: string, originalId: string, title: string, colorFieldValue: string | false, openingHours?: string } = {
@@ -132,7 +129,7 @@ export function useCalendarData () {
           console.log('Erreur : ', baseEvent.openingHours, err)
         }
 
-        if (!startDateField.value || startDateField.value === undefined || !endDateField.value || startDateField.value === undefined) return []
+        if (!startDateField.value || !endDateField.value) return []
         let start = dayjs(reactiveSearchParams.start.localeCompare(event[startDateField.value] as string) > 0 ? reactiveSearchParams.start : event[startDateField.value] as string)
         const end = dayjs(reactiveSearchParams.end.localeCompare(event[endDateField.value] as string) < 0 ? reactiveSearchParams.end : event[endDateField.value] as string)
         const evts = []
@@ -182,10 +179,7 @@ export function useCalendarData () {
     return result
   })
   watch(eventsError, (e) => {
-    if (e) {
-      displayError.value = true
-      if (e instanceof Error) errorMessage.value = e.message
-    }
+    if (e) sendUiNotif({ type: 'error', msg: 'Erreur lors du chargement des événements', error: e })
   })
 
   return { events, colorPalette }

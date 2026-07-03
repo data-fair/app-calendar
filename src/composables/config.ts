@@ -89,6 +89,8 @@ export function createConfig () {
   const error = computed(() => {
     if (!config.value) return 'Il n\'y a pas de configuration définie'
     if (!dataset.value) return 'Veuillez sélectionner une source de données'
+    if (!labelField.value) return 'Veuillez sélectionner un champ de libellé'
+    if (!startDateField.value && !dateField.value) return 'Aucun champ de date trouvé dans le dataset'
     return null
   })
 
