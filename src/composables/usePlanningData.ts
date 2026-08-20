@@ -141,6 +141,9 @@ export function usePlanningData (getColor: (value: string) => unknown) {
 
       const startDate = dayjs(startStr)
       const rawEndDate = dayjs(endStr || startStr)
+      // Garde-fou : une date invalide (ex. "2026-08-32") rend les boucles while
+      // ci-dessous infinies (dayjs.isAfter/isSame retournent false et add() reste invalide).
+      if (!startDate.isValid() || !rawEndDate.isValid()) return
 
       const startHasTime = startDate.format('HH:mm') !== '00:00'
       const endTimeStr = endStr ? rawEndDate.format('HH:mm') : '00:00'
@@ -176,9 +179,18 @@ export function usePlanningData (getColor: (value: string) => unknown) {
       const todayStart = dayjs().startOf('day')
 
       if (isAllDay) {
-        // endDate for all-day: if end is exactly midnight, it's exclusive (event ends at start of that day)
+        // Convention d'exclusivité de la fin :
+        // - champs de type "date" : la fin est inclusive (dernier jour compris),
+        //   aucune soustraction.
+        // - date-time finissant à minuit sur un autre jour : fin exclusive
+        //   (l'événement se termine à la fin du jour précédent).
+        // - date-time même jour (début = fin à minuit) : jour unique inclus.
+        const endIsExclusiveMidnight =
+          endDateType.value !== 'date' &&
+          rawEndDate.format('HH:mm') === '00:00' &&
+          rawEndDate.isAfter(startDate, 'day')
         const lastDay = endStr
-          ? (rawEndDate.format('HH:mm') === '00:00' ? rawEndDate.subtract(1, 'day') : rawEndDate).startOf('day')
+          ? (endIsExclusiveMidnight ? rawEndDate.subtract(1, 'day') : rawEndDate).startOf('day')
           : startDate.startOf('day')
         let cursor = startDate.startOf('day').isBefore(todayStart) ? todayStart : startDate.startOf('day')
         const allDayLabel = isDateOnly ? '' : 'Toute la journée'

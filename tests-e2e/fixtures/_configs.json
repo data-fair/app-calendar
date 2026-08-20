@@ -339,5 +339,29 @@
         "an"
       ]
     }
+  },
+  "events_opening_admin": {
+    "dataset": "events_opening",
+    "comment": "Admin opening-hours : startDate+endDate+openingHours pour tester l'éditeur d'horaires",
+    "config": {
+      "color": {
+        "type": "monochrome",
+        "colors": {
+          "type": "theme",
+          "strValue": "primary"
+        }
+      },
+      "initialView": "timeGridWeek",
+      "openOnCurrentDay": true,
+      "labelField": {
+        "key": "title",
+        "label": "Titre"
+      },
+      "imageDisplay": "cover",
+      "imagePosition": "top",
+      "aspectRatio": 3,
+      "imageWidth": 100,
+      "additionalFields": []
+    }
   }
 }

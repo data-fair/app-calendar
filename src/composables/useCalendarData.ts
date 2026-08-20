@@ -132,10 +132,14 @@ export function useCalendarData () {
         if (!startDateField.value || !endDateField.value) return []
         let start = dayjs(reactiveSearchParams.start.localeCompare(event[startDateField.value] as string) > 0 ? reactiveSearchParams.start : event[startDateField.value] as string)
         const end = dayjs(reactiveSearchParams.end.localeCompare(event[endDateField.value] as string) < 0 ? reactiveSearchParams.end : event[endDateField.value] as string)
+        if (!start.isValid() || !end.isValid()) return []
         const evts = []
 
         while (!start.isAfter(end)) {
-          const hours = openingHours[start.format('dd')]
+          // format('dd') dépend de la locale (2 lettres en fr : 'je'), alors que
+          // les clés d'`openingHours` sont les abréviations 3 lettres fr ('jeu').
+          // Utiliser day() (0-6, indépendant de la locale) pour l'indexation.
+          const hours = openingHours[['dim', 'lun', 'mar', 'mer', 'jeu', 'ven', 'sam'][start.day()]]
           if (hours?.length) {
             if (reactiveSearchParams.view === 'dayGridMonth') {
               evts.push({

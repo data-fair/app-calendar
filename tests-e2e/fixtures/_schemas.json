@@ -3227,5 +3227,72 @@
         "x-calculated": true
       }
     ]
+  },
+  "events_opening": {
+    "id": "events-opening",
+    "title": "Événements avec horaires",
+    "finalizedAt": "2024-01-01T00:00:00.000Z",
+    "isRest": true,
+    "userPermissions": [
+      "readLines",
+      "createLine",
+      "updateLine",
+      "patchLine",
+      "deleteLine"
+    ],
+    "schema": [
+      {
+        "key": "title",
+        "type": "string",
+        "title": "Titre",
+        "x-refersTo": "http://www.w3.org/2000/01/rdf-schema#label"
+      },
+      {
+        "key": "start",
+        "type": "string",
+        "format": "date-time",
+        "title": "Début",
+        "x-refersTo": "https://schema.org/startDate"
+      },
+      {
+        "key": "end",
+        "type": "string",
+        "format": "date-time",
+        "title": "Fin",
+        "x-refersTo": "https://schema.org/endDate"
+      },
+      {
+        "key": "hours",
+        "type": "string",
+        "title": "Horaires",
+        "x-refersTo": "https://schema.org/openingHours"
+      }
+    ]
+  },
+  "events_opening_no_end": {
+    "id": "events-opening-no-end",
+    "title": "Événements avec horaires sans date de fin",
+    "finalizedAt": "2024-01-01T00:00:00.000Z",
+    "schema": [
+      {
+        "key": "title",
+        "type": "string",
+        "title": "Titre",
+        "x-refersTo": "http://www.w3.org/2000/01/rdf-schema#label"
+      },
+      {
+        "key": "start",
+        "type": "string",
+        "format": "date-time",
+        "title": "Début",
+        "x-refersTo": "https://schema.org/startDate"
+      },
+      {
+        "key": "hours",
+        "type": "string",
+        "title": "Horaires",
+        "x-refersTo": "https://schema.org/openingHours"
+      }
+    ]
   }
 }

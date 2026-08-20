@@ -9,7 +9,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // Borner les workers locaux : à 16 workers contre un seul serveur Vite, les
+  // timeouts de montage (waitForAppReady, v-calendar) explosent sous charge.
+  workers: process.env.CI ? 1 : 4,
   reporter: process.env.CI ? [['github'], ['list']] : 'list',
 
   use: {

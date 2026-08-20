@@ -137,6 +137,7 @@ export function useCalendarEvents (
 
       const startDate = dayjs(e.start as string)
       const rawEndDate = dayjs((e.end as string) || (e.start as string))
+      if (!startDate.isValid() || !rawEndDate.isValid()) return
 
       const endTimeStr = rawEndDate.format('HH:mm')
       const endIsEffectivelyAllDay = endTimeStr === '00:00' || endTimeStr >= '23:59'

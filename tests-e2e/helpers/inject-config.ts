@@ -12,7 +12,7 @@ export async function waitForAppReady (page: Page) {
   await page.waitForFunction(() => {
     const appEl = document.querySelector('#app') as any
     return !!appEl && !!appEl.__vue_app__ && !!(window as any).APPLICATION
-  }, null, { timeout: 15_000 })
+  }, null, { timeout: 25_000 })
 }
 
 /**

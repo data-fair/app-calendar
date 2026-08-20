@@ -36,10 +36,13 @@ export default defineConfig({
     },
     extensions: ['.js', '.json', '.jsx', '.mjs', '.ts', '.tsx', '.vue']
   },
+  optimizeDeps: {
+    include: ['ajv-formats', 'ajv-errors', 'ajv/dist/2019.js', 'ajv/dist/standalone/index.js', 'ajv-i18n', 'debug', 'debug/src/browser.js', 'fast-deep-equal']
+  },
   server: {
     port: 3000,
     hmr: {
-      port: 3000,
+      port: process.env.VITE_HMR_PORT ? Number(process.env.VITE_HMR_PORT) : 3000,
       protocol: 'ws'
     }
   }

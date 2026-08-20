@@ -11,7 +11,7 @@ import { useConfig } from '@/composables/config'
 import { useLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
 import OpeningHoursNode from './OpeningHoursNode.vue'
 
-const { dataset: mainDataset, startDateField, endDateField, dateField } = useConfig()
+const { dataset: mainDataset, startDateField, endDateField, dateField, startDateType, endDateType } = useConfig()
 const { dayjs } = useLocaleDayjs()
 const { sendUiNotif } = useUiNotif()
 
@@ -94,10 +94,13 @@ watch(schemaError, (e) => {
   if (e) sendUiNotif({ type: 'error', msg: 'Erreur lors du chargement du formulaire' })
 })
 
-function toISOAware (value: unknown): string | null {
+function toISOAware (value: unknown, fieldType?: string): string | null {
   if (!value) return null
   const str = String(value)
-  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str
+  // Une valeur au format "date" seule n'est valide que pour les champs de type
+  // "date". Pour un champ date-time il faut une ISO complète, sinon le
+  // formulaire vjsf rejette la valeur ("doit correspondre au format date-time").
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str) && fieldType === 'date') return str
   return dayjs(str).toISOString()
 }
 
@@ -109,12 +112,12 @@ function initData () {
   const initial: Record<string, unknown> = { ...props.item }
   const source = props.pendingEvent ?? props.item
   if (startDateField.value && source[startDateField.value]) {
-    initial[startDateField.value] = toISOAware(source[startDateField.value])
+    initial[startDateField.value] = toISOAware(source[startDateField.value], startDateType.value)
   } else if (dateField.value && source[dateField.value]) {
     initial[dateField.value] = toISOAware(source[dateField.value])
   }
   if (endDateField.value && source[endDateField.value]) {
-    initial[endDateField.value] = toISOAware(source[endDateField.value])
+    initial[endDateField.value] = toISOAware(source[endDateField.value], endDateType.value)
   }
   data.value = initial
 }
@@ -130,6 +133,9 @@ const options = computed(() => ({
   initialValidation: 'always' as const,
   nodeComponents: {
     'opening-hours': OpeningHoursNode
+  },
+  components: {
+    'opening-hours': { name: 'opening-hours' }
   }
 }))
 
