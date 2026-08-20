@@ -136,10 +136,4 @@ export async function mockSimpleDirectory (page: Page) {
       body: JSON.stringify({ theme: { colors: {} } })
     })
   })
-  // /simple-directory/api/sites/_theme.css: CSS file linked in index.html.
-  // The dev server normally provides it; with plain Vite it 404s, which
-  // is harmless but the network request is unnecessary in tests.
-  await page.route('**/simple-directory/api/sites/_theme.css', async (route: Route) => {
-    return route.fulfill({ status: 200, contentType: 'text/css', body: '' })
-  })
 }

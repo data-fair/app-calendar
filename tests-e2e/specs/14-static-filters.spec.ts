@@ -1,5 +1,5 @@
-// 14 — staticFilters : injectés dans la requête /lines via qs=.
-// Covers: useCalendarData.eventsQueryRaw → staticFilters + filters2qs (lib-utils).
+// 14 — staticFilters : injectés dans la requête /lines via des params REST suffixés.
+// Covers: useCalendarData.eventsQueryRaw → staticFilters + filters2params (lib-utils).
 
 import { expect, setupAppTest, prepareApp } from '../helpers/test-fixture'
 import { injectConfig } from '../helpers/inject-config'
@@ -11,28 +11,28 @@ import { makeDatasetEntry } from '../fixtures/datasets'
 
 const test = setupAppTest('accidents_velos_month', { lines: linesAccidentsVelos })
 
-test('staticFilters absent : la requête /lines de useCalendarData n\'a pas qs=', async ({ appPage }) => {
+test('staticFilters absent : la requête /lines de useCalendarData n\'a pas de param de filtre', async ({ appPage }) => {
   // Surveiller les requêtes émises par le calendar
   const requests: string[] = []
   appPage.on('request', (req) => {
     const u = req.url()
     // useCalendarData émet /lines, mais pas la useFetch qui fetch les events
     // uniquement après que start+end soient définis dans l'URL
-    if (u.includes('/lines') && u.includes('qs=')) requests.push(u)
+    if (u.includes('/lines') && (u.includes('qs=') || u.includes('dep_'))) requests.push(u)
   })
-  // Attendre que le calendrier fasse sa requête /lines (sans qs)
+  // Attendre que le calendrier fasse sa requête /lines (sans filtre)
   await expect.poll(() => appPage.evaluate(() => {
     return (window as any).__test_lines_with_qs_count__ ?? 0
   }), { timeout: 1_000 }).toBe(0)
   expect(requests.length).toBe(0)
 })
 
-test('staticFilters présent : la requête /lines inclut qs=<field>:<value>', async ({ page }) => {
+test('staticFilters présent : la requête /lines inclut le param REST dep_in=', async ({ page }) => {
   const lines = linesAccidentsVelos
   const requests: string[] = []
   page.on('request', (req) => {
     const u = req.url()
-    if (u.includes('/lines') && u.includes('qs=')) requests.push(u)
+    if (u.includes('/lines') && u.includes('dep_in=')) requests.push(u)
   })
 
   await prepareApp(page)
@@ -50,10 +50,10 @@ test('staticFilters présent : la requête /lines inclut qs=<field>:<value>', as
     datasets: [makeDatasetEntry('accidents_velos')],
   })
   await expectCalendarVisible(page)
-  // Au moins une requête /lines inclut le param qs= avec le filtre dep
+  // Au moins une requête /lines inclut le param REST dep_in= avec le filtre dep
   await expect.poll(() => requests.length, { timeout: 5_000, intervals: [200, 500] }).toBeGreaterThan(0)
-  // Le format filters2qs encode `in` → `dep:(75,92)` ou similaire
-  expect(requests.some((u) => /dep:/.test(u))).toBe(true)
+  // Le format filters2params encode `in` → `dep_in=75,92`
+  expect(requests.some((u) => /dep_in=75,92/.test(u))).toBe(true)
 })
 
 // Sanity : la fixture de base est correcte

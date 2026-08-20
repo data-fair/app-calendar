@@ -187,6 +187,83 @@
                     }
                   }
                 }
+              },
+              {
+                "title": "Commence par",
+                "required": [
+                  "type",
+                  "field",
+                  "value"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "type": {
+                    "const": "starts"
+                  },
+                  "field": {
+                    "type": "string",
+                    "title": "Colonne de filtre",
+                    "layout": {
+                      "getItems": {
+                        "url": "${rootData.datasets[0].href}/schema?calculated=false",
+                        "itemKey": "data[\"key\"]",
+                        "itemTitle": "data[\"label\"]"
+                      }
+                    }
+                  },
+                  "value": {
+                    "type": "string",
+                    "title": "Valeur"
+                  }
+                }
+              },
+              {
+                "title": "Exclure les valeurs vides ou non définies",
+                "required": [
+                  "type",
+                  "field"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "type": {
+                    "const": "exists"
+                  },
+                  "field": {
+                    "type": "string",
+                    "title": "Colonne de filtre",
+                    "layout": {
+                      "getItems": {
+                        "url": "${rootData.datasets[0].href}/schema?calculated=false",
+                        "itemKey": "data[\"key\"]",
+                        "itemTitle": "data[\"label\"]"
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "title": "Restreindre aux valeurs vides ou non définies",
+                "required": [
+                  "type",
+                  "field"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "type": {
+                    "const": "notExists"
+                  },
+                  "field": {
+                    "type": "string",
+                    "title": "Colonne de filtre",
+                    "layout": {
+                      "getItems": {
+                        "url": "${rootData.datasets[0].href}/schema?calculated=false",
+                        "itemKey": "data[\"key\"]",
+                        "itemTitle": "data[\"label\"]"
+                      }
+                    }
+                  }
+                }
               }
             ]
           }

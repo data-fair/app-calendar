@@ -1,4 +1,4 @@
-import { inject, computed, ref, type App, type Ref } from 'vue'
+import { inject, computed, ref, toRaw, type App, type Ref } from 'vue'
 import type { Application, Dataset, Field } from '@data-fair/lib-common-types/application/index.js'
 import type { Config, ReglageDesCouleurs } from '@/config'
 import reactiveSearchParams from '@data-fair/lib-vue/reactive-search-params-global.js'
@@ -159,7 +159,9 @@ export function createConfig () {
           if (content.configuration) {
             config.value = content.configuration
           } else if (content.chart || content.datasets || content.layers || content.metrics) {
-            config.value = content
+            // Fusionner avec la config existante plutôt qu'écraser : certains
+            // émetteurs n'envoient qu'un sous-arbre modifié (perte des champs frères sinon).
+            config.value = { ...toRaw(config.value), ...content }
           } else if (content.field && 'value' in content) {
             const newConfig = JSON.parse(JSON.stringify(config.value))
             setByPath(newConfig, content.field, content.value)

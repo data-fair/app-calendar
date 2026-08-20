@@ -5,7 +5,7 @@ import { useUiNotif } from '@data-fair/lib-vue/ui-notif.js'
 import { ofetch } from 'ofetch'
 import { getConceptFilters } from '@data-fair/lib-vue/concept-filters.js'
 import reactiveSearchParams from '@data-fair/lib-vue/reactive-search-params-global.js'
-import { filters2qs } from '@data-fair/lib-utils/filters'
+import { filters2params } from '@data-fair/lib-utils/filters'
 
 const PAGE_SIZE = 20
 
@@ -73,9 +73,12 @@ export function usePlanningData (getColor: (value: string) => unknown) {
 
     const staticFilters = config.value.staticFilters
     if (staticFilters?.length) {
-      params.set('qs', filters2qs(staticFilters.map((f: any) =>
+      const normalized = staticFilters.map((f: any) =>
         typeof f.field === 'string' ? { ...f, field: { key: f.field } } : f
-      ) as any))
+      )
+      for (const [key, value] of Object.entries(filters2params(normalized))) {
+        params.set(key, value as string)
+      }
     }
 
     const conceptFilters = getConceptFilters(reactiveSearchParams, dataset.value.id)

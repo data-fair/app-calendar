@@ -9,7 +9,7 @@ import chroma from 'chroma-js'
 import { useUiNotif } from '@data-fair/lib-vue/ui-notif.js'
 import { getDailyOpeningHours } from '@wojtekmaj/opening-hours-utils'
 import { getLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
-import { filters2qs } from '@data-fair/lib-utils/filters'
+import { filters2params } from '@data-fair/lib-utils/filters'
 
 function normalizeFilters (filters: any[]) {
   return filters.map(f => {
@@ -75,7 +75,7 @@ export function useCalendarData () {
     else params.finalizedAt = mainDataset.value?.finalizedAt
     const staticFilters = config.value.staticFilters
     if (staticFilters?.length) {
-      params.qs = filters2qs(normalizeFilters(staticFilters) as any)
+      Object.assign(params, filters2params(normalizeFilters(staticFilters)))
     }
     if (color.value?.type === 'multicolor') params.select += ',' + color.value.field
     if (startDateField.value && endDateField.value) params.select += ',' + startDateField.value + ',' + endDateField.value
@@ -126,7 +126,7 @@ export function useCalendarData () {
             })))
           }
         } catch (err) {
-          console.log('Erreur : ', baseEvent.openingHours, err)
+          // horaires d'ouverture invalides : l'événement est ignoré pour la vue planning
         }
 
         if (!startDateField.value || !endDateField.value) return []

@@ -219,7 +219,7 @@ export function useCalendarEvents (
       if (dragState.value) return
       allEventsRef.value = buildEvents()
     },
-    { immediate: true, deep: true }
+    { immediate: true }
   )
 
   return { allEventsRef, selectionEvents, allEventsComputed, splitMultiDayEvent, getColor, buildEvents }
