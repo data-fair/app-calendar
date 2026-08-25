@@ -63,6 +63,8 @@
           "items": {
             "type": "object",
             "default": { "type": "in" },
+            "discriminator": { "propertyName": "type" },
+            "oneOfLayout": { "label": "Type de filtre" },
             "oneOf": [
               {
                 "title": "Restreindre à des valeurs",
@@ -117,7 +119,7 @@
                     "title": "Valeur min",
                     "layout": {
                       "getItems": {
-                        "url": "${rootData.datasets[0].href}/values-labels/${parent.data.field}?sort=asc&${parent.data.field}_gte={q}&stringify=true",
+                        "url": "${rootData.datasets[0].href}/values-labels/${parent.data.field}?sort=asc&${parent.data.field}_gte={q}&size=100&stringify=true",
                         "itemKey": "data[\"value\"]",
                         "itemTitle": "data[\"label\"]"
                       }
@@ -128,7 +130,7 @@
                     "title": "Valeur max",
                     "layout": {
                       "getItems": {
-                        "url": "${rootData.datasets[0].href}/values-labels/${parent.data.field}?sort=desc&${parent.data.field}_lte={q}&stringify=true",
+                        "url": "${rootData.datasets[0].href}/values-labels/${parent.data.field}?sort=desc&${parent.data.field}_lte={q}&size=100&stringify=true",
                         "itemKey": "data[\"value\"]",
                         "itemTitle": "data[\"label\"]"
                       }
@@ -289,6 +291,8 @@
           "type": "object",
           "title": "Réglage des couleurs",
           "required": ["type"],
+          "discriminator": { "propertyName": "type" },
+          "oneOfLayout": { "label": "Mode de couleurs" },
           "oneOf": [
             {
               "title": "Calendrier multicolore",
@@ -306,13 +310,15 @@
                     "getItems": {
                       "url": "${rootData.datasets[0].href}/schema?calculated=false&maxCardinality=12",
                       "itemKey": "data[\"key\"]",
-                      "itemTitle": "data[\"category\"]"
+                      "itemTitle": "data[\"label\"]"
                     }
                   }
                 },
                 "colors": {
                   "type": "object",
                   "title": "Couleurs",
+                  "discriminator": { "propertyName": "type" },
+                  "oneOfLayout": { "label": "Type de palette" },
                   "oneOf": [
                     {
                       "title": "Palette précalculée",
@@ -387,8 +393,8 @@
                               "value": {
                                 "type": "string",
                                 "title": "Valeur",
-                                "x-display": "select",
                                 "layout": {
+                                  "comp": "select",
                                   "getItems": {
                                     "url": "${rootData.datasets[0].href}/values_agg?field=${rootData.color.field}&size=0&agg_size=15",
                                     "itemKey": "item.value",
@@ -425,6 +431,8 @@
                   "type": "object",
                   "title": "Couleur",
                   "required": ["type"],
+                  "discriminator": { "propertyName": "type" },
+                  "oneOfLayout": { "label": "Mode de couleur" },
                   "oneOf": [
                     {
                       "title": "Thème",
@@ -444,6 +452,10 @@
                             {
                               "const": "secondary",
                               "title": "Secondaire"
+                            },
+                            {
+                              "const": "accent",
+                              "title": "Accent"
                             }
                           ]
                         }
@@ -498,7 +510,7 @@
           }
         },
         "additionalFields": {
-          "title": "Champs supplémentaires à afficher.",
+          "title": "Champs supplémentaires à afficher",
           "type": "array",
           "items": {
             "type": "string",
@@ -517,7 +529,13 @@
           "default": 100,
           "minimum": 20,
           "maximum": 100,
-          "layout": "slider"
+          "layout": {
+            "comp": "slider",
+            "step": 1,
+            "label": "",
+            "slots": { "before": "Largeur de l'image en % de la fiche" },
+            "props": { "showTicks": "always", "thumbLabel": true }
+          }
         },
         "aspectRatio": {
           "title": "Rapport de forme (largeur / hauteur)",
@@ -525,7 +543,13 @@
           "default": 3,
           "minimum": 1,
           "maximum": 5,
-          "layout": "slider"
+          "layout": {
+            "comp": "slider",
+            "step": 0.1,
+            "label": "",
+            "slots": { "before": "Rapport de forme (largeur / hauteur)" },
+            "props": { "showTicks": "always", "thumbLabel": true }
+          }
         },
         "imagePosition": {
           "title": "Position de l'image",
@@ -538,11 +562,11 @@
             },
             {
               "const": "left",
-              "title": "A gauche"
+              "title": "À gauche"
             },
             {
               "const": "right",
-              "title": "A droite"
+              "title": "À droite"
             }
           ],
           "default": "top"
@@ -553,7 +577,7 @@
           "oneOf": [
             {
               "const": "cover",
-              "title": "Etendre"
+              "title": "Étendre"
             },
             {
               "const": "contain",
@@ -573,7 +597,13 @@
         "formWidth": {
           "title": "Largeur du formulaire",
           "type": "integer",
-          "layout": "slider",
+          "layout": {
+            "comp": "slider",
+            "step": 1,
+            "label": "",
+            "slots": { "before": "Largeur du formulaire" },
+            "props": { "showTicks": "always", "thumbLabel": true }
+          },
           "minimum": 2,
           "maximum": 10,
           "default": 5
