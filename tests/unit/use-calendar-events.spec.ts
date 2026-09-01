@@ -2,13 +2,15 @@ import { describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { nextTick, ref } from 'vue'
 import dayjs from 'dayjs'
-import { makeConfigState, makeDataset, field, LABEL_REFERS_TO, mountComposable, START_REFERS_TO, END_REFERS_TO } from './helpers'
+import { makeConfigState, makeDataset, field, createTestI18n, LABEL_REFERS_TO, mountComposable, START_REFERS_TO, END_REFERS_TO } from './helpers'
 import { useCalendarEvents } from '@/composables/useCalendarEvents'
 
 const ofetchMock = vi.hoisted(() => vi.fn())
 vi.mock('ofetch', () => ({ ofetch: ofetchMock }))
 const searchParams = vi.hoisted(() => ({}) as Record<string, string>)
 vi.mock('@data-fair/lib-vue/reactive-search-params-global.js', () => ({ default: searchParams }))
+
+const i18n = createTestI18n()
 
 function setup (type: 'month' | 'week' | 'day', lines: Record<string, unknown>[]) {
   searchParams.start = '2026-08-24T00:00:00.000Z'
@@ -23,7 +25,7 @@ function setup (type: 'month' | 'week' | 'day', lines: Record<string, unknown>[]
   const dragState = ref<{ originalId: string } | null>(null)
   const menuOpen = ref(false)
   const typeRef = ref<'month' | 'week' | 'day'>(type)
-  const events = mountComposable(state, () => useCalendarEvents(dragState, menuOpen, typeRef))
+  const events = mountComposable(state, () => useCalendarEvents(dragState, menuOpen, typeRef, i18n.global.t))
   return { events, typeRef, dragState }
 }
 

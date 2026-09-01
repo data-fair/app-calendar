@@ -1,18 +1,21 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useConfig } from '@/composables/config'
 
 defineProps({
   item: { type: Object, required: true }
 })
 
+const { t } = useI18n()
 const { linkField, attachmentField, dataset: mainDataset } = useConfig()
 
+const unitKeys = ['byte', 'kilobyte', 'megabyte', 'gigabyte']
+
 function displayBytes (bytes : number) {
-  const sizes = ['Octets', 'Ko', 'Mo', 'Go']
-  if (bytes === 0) return '0 Octet'
+  if (bytes === 0) return t('actions.zeroByte')
   const i = parseInt(String(Math.floor(Math.log(bytes) / Math.log(1000))))
-  if (i === 0) return `${bytes} ${sizes[i]}`
-  return `${(bytes / (1000 ** i)).toFixed(2)} ${sizes[i]}`
+  if (i === 0) return `${bytes} ${t(`actions.${unitKeys[i]}`)}`
+  return `${(bytes / (1000 ** i)).toFixed(2)} ${t(`actions.${unitKeys[i]}`)}`
 }
 
 </script>
@@ -28,7 +31,7 @@ function displayBytes (bytes : number) {
       class="px-6"
       color="primary"
     >
-      Page associée
+      {{ t('actions.relatedPage') }}
     </v-btn>
     <v-tooltip
       v-if="attachmentField"
@@ -39,12 +42,13 @@ function displayBytes (bytes : number) {
           :href="item[attachmentField.key].includes('http') ? item[attachmentField.key] : mainDataset?.href + '/attachments/' + item[attachmentField.key]"
           color="accent"
           icon
+          :aria-label="t('actions.downloadSize', { size: displayBytes(item['_file.content_length']) })"
           v-bind="props"
         >
           <v-icon>mdi-download</v-icon>
         </v-btn>
       </template>
-      <span>Télécharger le fichier de {{ displayBytes(item['_file.content_length']) }}</span>
+      <span>{{ t('actions.downloadSize', { size: displayBytes(item['_file.content_length']) }) }}</span>
     </v-tooltip>
     <v-spacer />
   </v-card-actions>

@@ -1,7 +1,7 @@
 import { ref, computed, watch } from 'vue'
 import { useTheme } from 'vuetify'
 import { useCalendarData } from './useCalendarData'
-import { useConfig } from './config'
+import { useConfig, type Translate } from './config'
 import { useLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
 import type { Theme } from '@/config'
 import type { Ref } from 'vue'
@@ -9,11 +9,12 @@ import type { Ref } from 'vue'
 export function useCalendarEvents (
   dragState: Ref<{ originalId: string } | null>,
   eventMenuOpen: Ref<boolean | undefined>,
-  type: Ref<'month' | 'week' | 'day'>
+  type: Ref<'month' | 'week' | 'day'>,
+  t: Translate
 ) {
   const theme = useTheme()
   const { dayjs } = useLocaleDayjs()
-  const { events, colorPalette } = useCalendarData()
+  const { events, colorPalette } = useCalendarData(t)
   const { color } = useConfig()
 
   function getColor (value: string) {

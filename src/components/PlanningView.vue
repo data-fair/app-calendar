@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
 import { usePlanningData } from '@/composables/usePlanningData'
 
@@ -12,8 +13,9 @@ const emit = defineEmits<{
   'title-change': [title: string]
 }>()
 
+const { t } = useI18n()
 const { dayjs } = useLocaleDayjs()
-const { planningDays, hasMore, isLoading, initialized, loadMore, planningTitle } = usePlanningData(props.getColor)
+const { planningDays, hasMore, isLoading, initialized, loadMore, planningTitle } = usePlanningData(props.getColor, t)
 
 const sentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
@@ -65,7 +67,10 @@ function onClickEvent (event: Record<string, unknown>, nativeEvent: MouseEvent) 
         v-for="event in day.events"
         :key="event.id"
         class="planning-event-row"
+        role="button"
+        tabindex="0"
         @click="onClickEvent(event as Record<string, unknown>, $event)"
+        @keydown.enter.prevent="onClickEvent(event as Record<string, unknown>, $event as unknown as MouseEvent)"
       >
         <span
           v-if="event.timeLabel"
@@ -79,7 +84,7 @@ function onClickEvent (event: Record<string, unknown>, nativeEvent: MouseEvent) 
         <span
           v-if="event.dayIndex"
           class="planning-event-counter"
-        >Jour {{ event.dayIndex }}/{{ event.totalDays }}</span>
+        >{{ t('calendar.dayCounter', { index: event.dayIndex, total: event.totalDays }) }}</span>
       </div>
     </template>
 
@@ -87,7 +92,7 @@ function onClickEvent (event: Record<string, unknown>, nativeEvent: MouseEvent) 
       v-if="initialized && planningDays.length === 0"
       class="planning-empty-message"
     >
-      Aucun événement à venir
+      {{ t('planning.noEvents') }}
     </div>
 
     <div
@@ -103,7 +108,7 @@ function onClickEvent (event: Record<string, unknown>, nativeEvent: MouseEvent) 
         v-else-if="!hasMore && planningDays.length > 0"
         class="planning-end-message"
       >
-        Aucun événement supplémentaire
+        {{ t('planning.noMoreEvents') }}
       </div>
     </div>
   </div>
@@ -133,6 +138,11 @@ function onClickEvent (event: Record<string, unknown>, nativeEvent: MouseEvent) 
 
 .planning-event-row:hover {
   background: rgba(var(--v-theme-on-surface), 0.04);
+}
+
+.planning-event-row:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: -2px;
 }
 
 .planning-event-time {

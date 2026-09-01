@@ -1,6 +1,6 @@
 import { ref, computed, watch } from 'vue'
 import { useLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
-import { useConfig } from './config'
+import { useConfig, type Translate } from './config'
 import { useUiNotif } from '@data-fair/lib-vue/ui-notif.js'
 import { ofetch } from 'ofetch'
 import { getConceptFilters } from '@data-fair/lib-vue/concept-filters.js'
@@ -28,7 +28,7 @@ export type PlanningDay = {
   events: PlanningEventItem[]
 }
 
-export function usePlanningData (getColor: (value: string) => unknown) {
+export function usePlanningData (getColor: (value: string) => unknown, t: Translate) {
   const { dayjs } = useLocaleDayjs()
   const {
     config,
@@ -109,7 +109,7 @@ export function usePlanningData (getColor: (value: string) => unknown) {
       hasMore.value = false
       nextUrl.value = null
       if (e?.response?.status !== 400) {
-        sendUiNotif({ type: 'error', msg: 'Erreur lors du chargement du planning', error: e })
+        sendUiNotif({ type: 'error', msg: t('planning.loadError'), error: e })
       }
     } finally {
       isLoading.value = false
@@ -196,7 +196,7 @@ export function usePlanningData (getColor: (value: string) => unknown) {
           ? (endIsExclusiveMidnight ? rawEndDate.subtract(1, 'day') : rawEndDate).startOf('day')
           : startDate.startOf('day')
         let cursor = startDate.startOf('day').isBefore(todayStart) ? todayStart : startDate.startOf('day')
-        const allDayLabel = isDateOnly ? '' : 'Toute la journée'
+        const allDayLabel = isDateOnly ? '' : t('planning.allDay')
         const totalDays = lastDay.diff(startDate.startOf('day'), 'day') + 1
         while (!cursor.isAfter(lastDay)) {
           const cursorDayIndex = cursor.diff(startDate.startOf('day'), 'day') + 1
@@ -237,8 +237,8 @@ export function usePlanningData (getColor: (value: string) => unknown) {
             const timeLabel = isFirst
               ? segStart.format('HH:mm')
               : isLast
-                ? `Jusqu'à ${segEnd.format('HH:mm')}`
-                : isFullDaySegment ? 'Toute la journée' : `${segStart.format('HH:mm')} - ${segEnd.format('HH:mm')}`
+                ? t('calendar.until', { time: segEnd.format('HH:mm') })
+                : isFullDaySegment ? t('planning.allDay') : `${segStart.format('HH:mm')} - ${segEnd.format('HH:mm')}`
             addToDay(dayMap, cursor.format('YYYY-MM-DD'), {
               ...base,
               id: `${base.id}-${cursor.format('YYYY-MM-DD')}`,

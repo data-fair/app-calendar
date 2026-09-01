@@ -1,13 +1,21 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useConfig } from '@/composables/config'
 import { formatField } from '@data-fair/lib-vue/format/field.js'
 import Actions from './Actions.vue'
 
-defineProps({
+const props = defineProps({
   item: { type: Object, required: true }
 })
 
 const { config, labelField, descriptionField, imageField, attachmentField, linkField, fields } = useConfig()
+
+// Alt de l'image : libellé de l'événement sans balises HTML ; chaîne vide
+// (image décorative) si aucun libellé exploitable.
+const imageAlt = computed(() => {
+  if (!labelField.value || !props.item[labelField.value]) return ''
+  return String(props.item[labelField.value]).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+})
 </script>
 
 <template>
@@ -15,6 +23,7 @@ const { config, labelField, descriptionField, imageField, attachmentField, linkF
     <v-img
       v-if="item[imageField]"
       :src="item._thumbnail || item[imageField]"
+      :alt="imageAlt"
       :aspect-ratio="config.aspectRatio || 3"
       :cover="config.imageDisplay !== 'contain'"
       :style="`width:${config.imageWidth || 100}%${config.imagePosition !== 'top' ? ';float:' + config.imagePosition :''}`"

@@ -121,14 +121,24 @@ export async function mockDataFairApi (page: Page, datasetId: string, mocks: Moc
 }
 
 // Mocks the /simple-directory endpoints used by createSession() in main.ts.
-// The session module calls /simple-directory/api/sites/_public to fetch the
-// site info (used by vuetifySessionOptions). The keepalive endpoint is only
-// hit when an id_token cookie is present, which is never the case in tests.
+// - _public.js : the classic script tag from index.html, which sets
+//   window.__PUBLIC_SITE_INFO (the modern, fetch-free session path).
+// - _public : the JSON endpoint used by the deprecated refreshSiteInfo()
+//   fallback, kept so the session still boots if the script path fails.
+// The keepalive endpoint is only hit when an id_token cookie is present,
+// which is never the case in tests.
 //
 // The site info shape is the minimum required by lib-vue's getSession() and
 // lib-vuetify's vuetifySessionOptions(): a plain object with an empty `theme`
 // so that session.site.value is set and colors fall back to the defaults.
 export async function mockSimpleDirectory (page: Page) {
+  await page.route('**/simple-directory/api/sites/_public.js', async (route: Route) => {
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/javascript',
+      body: 'window.__PUBLIC_SITE_INFO = ' + JSON.stringify({ theme: { colors: {} } })
+    })
+  })
   await page.route('**/simple-directory/api/sites/_public', async (route: Route) => {
     return route.fulfill({
       status: 200,

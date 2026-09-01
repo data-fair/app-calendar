@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { mdiDelete } from '@mdi/js'
 import { useConfig } from '@/composables/config'
 import { timestamp } from '@/composables/useCalendarData'
 import { useAsyncAction } from '@data-fair/lib-vue/async-action'
 import { ofetch } from 'ofetch'
 
+const { t } = useI18n()
 const { dataset: mainDataset } = useConfig()
 
 const deleteMenuOpen = ref(false)
@@ -27,7 +29,7 @@ const { execute: deleteEventAction, loading: deleteLoading } = useAsyncAction(
     emit('deleted')
     timestamp.value = new Date().getTime()
   },
-  { error: 'Erreur lors de la suppression' }
+  { error: t('events.deleteError') }
 )
 </script>
 
@@ -42,10 +44,11 @@ const { execute: deleteEventAction, loading: deleteLoading } = useAsyncAction(
     <template #activator="{ props }">
       <v-btn
         v-tooltip="{
-          text: 'Supprimer l\'événement',
+          text: t('events.delete'),
           location: 'right',
           openDelay: '500'
         }"
+        :aria-label="t('events.delete')"
         :icon="mdiDelete"
         color="error"
         v-bind="props"
@@ -56,14 +59,14 @@ const { execute: deleteEventAction, loading: deleteLoading } = useAsyncAction(
       data-iframe-height
     >
       <v-card-title primary-title>
-        Supprimer l'événement ?
+        {{ t('events.deleteTitle') }}
       </v-card-title>
       <v-card-text>
         <v-alert
           :model-value="true"
           type="error"
         >
-          Voulez vous vraiment supprimer {{ event?.openingHours ? 'l\'ensemble des créneaux liés à cet ' : 'l\'' }}événement ?
+          {{ event?.openingHours ? t('events.deleteConfirmOpeningHours') : t('events.deleteConfirm') }}
         </v-alert>
       </v-card-text>
       <v-card-actions>
@@ -72,14 +75,14 @@ const { execute: deleteEventAction, loading: deleteLoading } = useAsyncAction(
           variant="text"
           @click="deleteMenuOpen = false"
         >
-          Annuler
+          {{ t('events.cancel') }}
         </v-btn>
         <v-btn
           color="error"
           :loading="deleteLoading"
           @click="deleteEventAction()"
         >
-          Supprimer
+          {{ t('events.delete') }}
         </v-btn>
       </v-card-actions>
     </v-card>

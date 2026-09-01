@@ -1,4 +1,4 @@
-import { useConfig } from './config'
+import { useConfig, type Translate } from './config'
 import { getConceptFilters } from '@data-fair/lib-vue/concept-filters.js'
 import reactiveSearchParams from '@data-fair/lib-vue/reactive-search-params-global.js'
 import type { QueryObject } from 'ufo'
@@ -21,7 +21,7 @@ function normalizeFilters (filters: any[]) {
 
 export const timestamp = ref(new Date().getTime())
 
-export function useCalendarData () {
+export function useCalendarData (t: Translate) {
   const { config, color, dataset: mainDataset, startDateField, endDateField, dateField, labelField, openingHoursField, layout, startDateType, endDateType } = useConfig()
   const { dayjs } = getLocaleDayjs()
   const { sendUiNotif } = useUiNotif()
@@ -60,7 +60,7 @@ export function useCalendarData () {
     return palette
   })
   watch(categoriesError, (e) => {
-    if (e) sendUiNotif({ type: 'error', msg: 'Erreur lors du chargement des couleurs', error: e })
+    if (e) sendUiNotif({ type: 'error', msg: t('errors.colorsLoadError'), error: e })
   })
 
   const eventsQueryRaw = computed(() => {
@@ -98,7 +98,7 @@ export function useCalendarData () {
 
     if (!labelField.value) return []
 
-    const result = ([] as unknown[]).concat(...response.results.map(event => {
+    const result = ([] as Record<string, unknown>[]).concat(...response.results.map(event => {
       const baseEvent : { editable: boolean, id: string, originalId: string, title: string, colorFieldValue: string | false, openingHours?: string } = {
         editable: layout.value === 'admin',
         id: event._id as string,
@@ -183,7 +183,7 @@ export function useCalendarData () {
     return result
   })
   watch(eventsError, (e) => {
-    if (e) sendUiNotif({ type: 'error', msg: 'Erreur lors du chargement des événements', error: e })
+    if (e) sendUiNotif({ type: 'error', msg: t('errors.eventsLoadError'), error: e })
   })
 
   return { events, colorPalette }

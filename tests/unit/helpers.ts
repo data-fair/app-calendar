@@ -1,7 +1,9 @@
 import { createApp, ref } from 'vue'
 import { createVuetify } from 'vuetify'
+import { createI18n } from 'vue-i18n'
 import { createLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
 import { createUiNotif } from '@data-fair/lib-vue/ui-notif.js'
+import { messages } from '@/locales'
 import type { ConfigState } from '@/composables/config'
 import type { Config } from '@/config'
 import type { Dataset, Field } from '@data-fair/lib-common-types/application/index.js'
@@ -40,7 +42,7 @@ export function makeConfigState (
   const keyFor = (refersTo: string) => schema.find(f => f['x-refersTo'] === refersTo)?.key
   const formatFor = (refersTo: string) => schema.find(f => f['x-refersTo'] === refersTo)?.format
 
-  const configRef = ref({ ...config, datasets: [{ id: dataset.id, href: dataset.href }] })
+  const configRef = ref({ ...config, datasets: [dataset] } as unknown as Config)
 
   return {
     application: {} as never,
@@ -83,9 +85,24 @@ export function mountComposable<T> (state: ConfigState, setup: () => T): T {
   app.provide('data-fair-app-config', state)
   createLocaleDayjs('fr').install(app)
   createUiNotif().install(app)
+  app.use(createI18n({
+    legacy: false,
+    locale: 'fr',
+    fallbackLocale: 'en',
+    messages
+  }))
   app.use(createVuetify())
   const el = document.createElement('div')
   document.body.appendChild(el)
   app.mount(el)
   return result
+}
+
+export function createTestI18n () {
+  return createI18n({
+    legacy: false,
+    locale: 'fr',
+    fallbackLocale: 'en',
+    messages
+  })
 }

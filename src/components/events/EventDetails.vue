@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, defineAsyncComponent, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { mdiClose, mdiPencil } from '@mdi/js'
 import { useConfig } from '@/composables/config'
 import { timestamp } from '@/composables/useCalendarData.js'
@@ -10,6 +11,7 @@ import DeleteEvent from './DeleteEvent.vue'
 import { useDisplay } from 'vuetify'
 import { useLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
 
+const { t } = useI18n()
 const EventEdit = defineAsyncComponent(() =>
   import('./EventEdit.vue')
 )
@@ -64,7 +66,7 @@ const eventData = computed(() => {
   return results?.[results.length - 1] ?? null
 })
 watch(eventLineError, (e) => {
-  if (e) sendUiNotif({ type: 'error', msg: 'Erreur lors du chargement de l\'événement', error: e })
+  if (e) sendUiNotif({ type: 'error', msg: t('events.loadError'), error: e })
 })
 
 function onEditUpdated () {
@@ -139,10 +141,11 @@ function closeOrCancel () {
           <v-spacer />
           <v-btn
             v-tooltip="{
-              text: 'Modifier l\'événement',
+              text: t('events.edit'),
               location: 'right',
               openDelay: '500'
             }"
+            :aria-label="t('events.edit')"
             :icon="mdiPencil"
             color="primary"
             @click="mode = 'edit'"
@@ -153,6 +156,7 @@ function closeOrCancel () {
           />
           <v-btn
             :icon="mdiClose"
+            :aria-label="t('events.close')"
             @click="emit('close')"
           />
         </v-card-actions>
@@ -169,7 +173,7 @@ function closeOrCancel () {
           variant="tonal"
           class="mx-3 mt-2"
         >
-          La date de début n'est pas renseignée
+          {{ t('events.missingStart') }}
         </v-alert>
         <v-alert
           v-if="missingEnd"
@@ -178,7 +182,7 @@ function closeOrCancel () {
           variant="tonal"
           class="mx-3 mt-2"
         >
-          La date de fin n'est pas renseignée
+          {{ t('events.missingEnd') }}
         </v-alert>
         <event-view
           :item="eventData"
@@ -187,10 +191,11 @@ function closeOrCancel () {
       <suspense v-if="mode === 'edit'">
         <div>
           <v-card-actions class="py-0">
-            <span class="text-subtitle-1">{{ prop.event?.id ? 'Modifier un événement' : 'Ajouter un événement' }}</span>
+            <span class="text-subtitle-1">{{ prop.event?.id ? t('events.editTitle') : t('events.addTitle') }}</span>
             <v-spacer />
             <v-btn
               :icon="mdiClose"
+              :aria-label="t('events.close')"
               @click="closeOrCancel"
             />
           </v-card-actions>

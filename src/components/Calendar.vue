@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { mdiChevronLeft, mdiChevronRight } from '@mdi/js'
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import reactiveSearchParams from '@data-fair/lib-vue/reactive-search-params-global.js'
 import { useConfig } from '@/composables/config'
 import { useCalendarData } from '@/composables/useCalendarData'
@@ -12,9 +13,10 @@ import { useDateBounds } from '@/composables/useDateBounds'
 import EventDetails from './events/EventDetails.vue'
 import PlanningView from './PlanningView.vue'
 
+const { t, locale } = useI18n()
 const { dayjs } = useLocaleDayjs()
 const { config, layout, startDateField, endDateField, dateField, dataset } = useConfig()
-const { events } = useCalendarData()
+const { events } = useCalendarData(t)
 const { resolveMinDate, resolveMaxDate } = useDateBounds()
 
 // État partagé entre composables
@@ -96,7 +98,7 @@ watch([pickerMonth, pickerYear], () => {
 })
 
 const { allEventsRef, selectionEvents, allEventsComputed, splitMultiDayEvent, getColor } =
-  useCalendarEvents(dragState, eventMenuOpen, vuetifyType)
+  useCalendarEvents(dragState, eventMenuOpen, vuetifyType, t)
 
 const {
   hasDragged, pendingDrag, justDragged, isHoveringResizeZone, lastKnownHour, lastKnownMinute,
@@ -255,16 +257,33 @@ function onClickPlanningEvent (event: Record<string, unknown>, nativeEvent: Mous
 const nowTime = ref(dayjs().format('HH:mm'))
 let nowInterval: ReturnType<typeof setInterval> | null = null
 
+// Capture : la miniature doit montrer le calendrier rendu avec ses événements.
+// On déclenche dès que des événements sont affichés, avec un repli temporisé
+// (dataset vide, erreur de chargement) pour ne pas faire attendre le service.
+let captureTriggered = false
+let captureTimeout: ReturnType<typeof setTimeout> | null = null
+function triggerCaptureOnce () {
+  if (captureTriggered || !window.triggerCapture) return
+  captureTriggered = true
+  if (captureTimeout) clearTimeout(captureTimeout)
+  window.triggerCapture(false)
+}
+watch(events, (e) => {
+  if (e?.length) nextTick(() => triggerCaptureOnce())
+}, { immediate: true })
+
 onMounted(() => {
   if (type.value !== 'planning') calendar.value?.checkChange()
   window.addEventListener('mouseup', onGlobalMouseUp)
   window.addEventListener('mousemove', onGlobalMouseMove)
   nowInterval = setInterval(() => { nowTime.value = dayjs().format('HH:mm') }, 60000)
+  captureTimeout = setTimeout(triggerCaptureOnce, 2500)
 })
 onUnmounted(() => {
   window.removeEventListener('mouseup', onGlobalMouseUp)
   window.removeEventListener('mousemove', onGlobalMouseMove)
   if (nowInterval) clearInterval(nowInterval)
+  if (captureTimeout) clearTimeout(captureTimeout)
 })
 </script>
 
@@ -284,17 +303,19 @@ onUnmounted(() => {
         :disabled="editMode || type === 'planning'"
         @click="today"
       >
-        Aujourd'hui
+        {{ t('calendar.today') }}
       </v-btn>
 
       <v-btn
         :icon="mdiChevronLeft"
+        :aria-label="t('calendar.previous')"
         :disabled="editMode || type === 'planning'"
         @click="prev"
       />
 
       <v-btn
         :icon="mdiChevronRight"
+        :aria-label="t('calendar.next')"
         :disabled="editMode || type === 'planning'"
         @click="next"
       />
@@ -337,7 +358,7 @@ onUnmounted(() => {
           :class="{ 'view-type-active': type === 'month' }"
           @click="type = 'month'"
         >
-          Mois
+          {{ t('calendar.month') }}
         </v-btn>
         <v-btn
           variant="outlined"
@@ -345,7 +366,7 @@ onUnmounted(() => {
           :class="{ 'view-type-active': type === 'week' }"
           @click="type = 'week'"
         >
-          Semaine
+          {{ t('calendar.week') }}
         </v-btn>
         <v-btn
           variant="outlined"
@@ -353,7 +374,7 @@ onUnmounted(() => {
           :class="{ 'view-type-active': type === 'day' }"
           @click="type = 'day'"
         >
-          Jour
+          {{ t('calendar.day') }}
         </v-btn>
         <v-btn
           variant="outlined"
@@ -361,7 +382,7 @@ onUnmounted(() => {
           :class="{ 'view-type-active': type === 'planning' }"
           @click="type = 'planning'"
         >
-          Planning
+          {{ t('calendar.planning') }}
         </v-btn>
       </div>
     </v-toolbar>
@@ -379,7 +400,7 @@ onUnmounted(() => {
         v-model="currentDate"
         :events="allEventsComputed"
         :type="vuetifyType"
-        locale="fr"
+        :locale="locale"
         data-iframe-height
         event-color="color"
         @click:event="onClickEvent"
@@ -415,7 +436,7 @@ onUnmounted(() => {
             <template v-if="event.allDay">
               <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                 {{ event.name }}<template v-if="(event.dayIndex || event.totalDays) && type === 'day'">
-                  · Jour {{ getDayViewDayIndex(event) }}/{{ event.totalDays }}
+                  · {{ t('calendar.dayCounter', { index: getDayViewDayIndex(event), total: event.totalDays }) }}
                 </template>
               </div>
             </template>
@@ -445,11 +466,11 @@ onUnmounted(() => {
                 <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                   <strong>
                     <template v-if="event.isFirstSegment">{{ dayjs((event.isDragging ? event.segmentActualStart : event.originalStart) as string).format('HH:mm') }}</template>
-                    <template v-else-if="event.isLastSegment">Jusqu'à {{ dayjs(event.end as string).format('HH:mm') }}</template>
+                    <template v-else-if="event.isLastSegment">{{ t('calendar.until', { time: dayjs(event.end as string).format('HH:mm') }) }}</template>
                     <template v-else>{{ dayjs(event.start as string).format('HH:mm') }} - {{ dayjs(event.end as string).format('HH:mm') }}</template>
                   </strong>
                   <template v-if="event.dayIndex">
-                    · Jour {{ event.dayIndex }}/{{ event.totalDays }}
+                    · {{ t('calendar.dayCounter', { index: event.dayIndex, total: event.totalDays }) }}
                   </template>
                 </div>
               </template>

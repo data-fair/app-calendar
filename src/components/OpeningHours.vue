@@ -1,25 +1,27 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { getDailyOpeningHours, encodeOpeningHours } from '@wojtekmaj/opening-hours-utils'
 import type { WeekdayName, RecurringOpeningHours } from '@wojtekmaj/opening-hours-utils'
 
+const { t } = useI18n()
 const model = defineModel({ type: String, default: '' })
 
 const menuOpen = ref<boolean | undefined>(undefined)
 const dayEdit = ref<{ id: string, title: string } | null>(null)
 const rangeEdit = ref<number | null>(null)
-const startTime = ref(null)
-const endTime = ref(null)
+const startTime = ref<string | null>(null)
+const endTime = ref<string | null>(null)
 
-const days = [
-  { id: 'Mo', title: 'Lundi' },
-  { id: 'Tu', title: 'Mardi' },
-  { id: 'We', title: 'Mercredi' },
-  { id: 'Th', title: 'Jeudi' },
-  { id: 'Fr', title: 'Vendredi' },
-  { id: 'Sa', title: 'Samedi' },
-  { id: 'Su', title: 'Dimanche' }
-]
+const days = computed(() => [
+  { id: 'Mo', title: t('openingHours.days.monday') },
+  { id: 'Tu', title: t('openingHours.days.tuesday') },
+  { id: 'We', title: t('openingHours.days.wednesday') },
+  { id: 'Th', title: t('openingHours.days.thursday') },
+  { id: 'Fr', title: t('openingHours.days.friday') },
+  { id: 'Sa', title: t('openingHours.days.saturday') },
+  { id: 'Su', title: t('openingHours.days.sunday') }
+])
 
 const openingHours = computed(() => {
   return Object.assign({}, ...(getDailyOpeningHours(model.value) || []).map(d => ({ [d.day]: d.hours })))
@@ -40,9 +42,9 @@ function updateOpeningHours (mode: 'create' | 'update' | 'delete') {
     currentOH.push(currentDay)
   }
   if (mode === 'create') {
-    currentDay.hours.push({ from: startTime.value, to: endTime.value })
+    currentDay.hours.push({ from: startTime.value as `${number}:${number}`, to: endTime.value as `${number}:${number}` })
   } else if (mode === 'update') {
-    currentDay.hours[rangeEdit.value] = { from: startTime.value, to: endTime.value }
+    currentDay.hours[rangeEdit.value] = { from: startTime.value as `${number}:${number}`, to: endTime.value as `${number}:${number}` }
   } else if (mode === 'delete') {
     currentDay.hours.splice(rangeEdit.value, 1)
     if (!currentDay.hours.length) {
@@ -73,6 +75,25 @@ function updateOpeningHours (mode: 'create' | 'update' | 'delete') {
   menuOpen.value = false
 }
 
+function openDay (day: { id: string, title: string }) {
+  dayEdit.value = day
+  menuOpen.value = true
+}
+
+function openRange (day: { id: string, title: string }, index: number, range: { from: string, to?: string }) {
+  dayEdit.value = day
+  rangeEdit.value = index
+  startTime.value = range.from
+  endTime.value = range.to ?? null
+  menuOpen.value = true
+}
+
+function closeMenu () {
+  dayEdit.value = null
+  rangeEdit.value = null
+  menuOpen.value = false
+}
+
 </script>
 
 <template>
@@ -87,28 +108,39 @@ function updateOpeningHours (mode: 'create' | 'update' | 'delete') {
       {{ day.title }}
       <v-sheet
         :id="`menu-activator-${day.id}`"
+        class="opening-hours-cell"
+        role="button"
+        tabindex="0"
+        :aria-label="day.title"
         height="240"
         color="grey-lighten-3"
-        @click="dayEdit = day;menuOpen = true"
+        @click="openDay(day)"
+        @keydown.enter.prevent="openDay(day)"
+        @keydown.space.prevent="openDay(day)"
       />
       <v-sheet
         v-for="(range, i) in (openingHours[day.id] || [])"
         :id="`menu-activator-${day.id}-${i}`"
         :key="i"
+        class="opening-hours-cell d-flex flex-column"
+        role="button"
+        tabindex="0"
+        :aria-label="`${range.from} - ${range.to}`"
         position="absolute"
         :style="`width:13%;margin-left: 0.5%;margin-top: ${time2Int(range.from)/6-240}px`"
         :height="(time2Int(range.to)-time2Int(range.from))/6"
         color="primary"
-        class="d-flex flex-column"
-        @click="dayEdit = day;rangeEdit=i as number;startTime=range.from;endTime=range.to ?? null;menuOpen = true"
+        @click="openRange(day, i as number, range)"
+        @keydown.enter.prevent="openRange(day, i as number, range)"
+        @keydown.space.prevent="openRange(day, i as number, range)"
       >
-        <caption class="text-caption">
+        <span class="text-caption">
           {{ range.from }}
-        </caption>
+        </span>
         <v-spacer />
-        <caption class="text-caption">
+        <span class="text-caption">
           {{ range.to }}
-        </caption>
+        </span>
       </v-sheet>
     </div>
   </v-row>
@@ -124,13 +156,13 @@ function updateOpeningHours (mode: 'create' | 'update' | 'delete') {
       <v-card-text>
         <v-text-field
           v-model="startTime"
-          label="Horaire de début"
+          :label="t('openingHours.startTime')"
           type="time"
           density="compact"
         />
         <v-text-field
           v-model="endTime"
-          label="Horaire de fin"
+          :label="t('openingHours.endTime')"
           type="time"
           density="compact"
         />
@@ -138,24 +170,31 @@ function updateOpeningHours (mode: 'create' | 'update' | 'delete') {
       <v-card-actions>
         <v-spacer />
         <v-btn
-          @click="dayEdit = null;rangeEdit=null;menuOpen = false"
+          @click="closeMenu"
         >
-          Annuler
+          {{ t('openingHours.cancel') }}
         </v-btn>
         <v-btn
           v-if="rangeEdit != null"
           color="warning"
           @click="updateOpeningHours('delete')"
         >
-          Supprimer
+          {{ t('openingHours.delete') }}
         </v-btn>
         <v-btn
           color="primary"
           @click="updateOpeningHours(rangeEdit != null ? 'update' : 'create')"
         >
-          Valider
+          {{ t('openingHours.validate') }}
         </v-btn>
       </v-card-actions>
     </v-card>
   </v-menu>
 </template>
+
+<style scoped>
+.opening-hours-cell:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: -2px;
+}
+</style>

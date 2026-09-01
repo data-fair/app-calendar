@@ -4,10 +4,18 @@ import type { Config, ReglageDesCouleurs } from '@/config'
 import reactiveSearchParams from '@data-fair/lib-vue/reactive-search-params-global.js'
 import createDFrameAdapter from '@data-fair/frame/lib/vue-reactive/state-change-adapter.js'
 
+export type Translate = (key: string, named?: Record<string, unknown>) => string
+
+export type EditionConfig = {
+  formWidth?: number
+  minDate?: string
+  maxDate?: string
+}
+
 export interface ConfigState {
   application: Application
-  config: Ref<Config>
-  setConfig: (newConfig: Config) => void
+  config: Ref<Config & EditionConfig>
+  setConfig: (newConfig: Config & EditionConfig) => void
   notifyConfigChange: (field: string, value: unknown) => void
   dataset: Ref<Dataset | undefined>
   fields: Ref<Record<string, Field>>
@@ -39,9 +47,9 @@ const last = window.APPLICATION?.exposedUrl?.split('/').pop()
 const toks = last?.split('%3A')
 const accessKey = (toks?.length === 2) ? toks[0] : null
 
-export function createConfig () {
+export function createConfig (t: Translate) {
   const application = window.APPLICATION as Application & { href: string }
-  const config = ref<Config>((application?.configuration || {}) as Config)
+  const config = ref<Config & EditionConfig>((application?.configuration || {}) as Config & EditionConfig)
 
   const dataset = computed(() => config.value?.datasets?.[0] as Dataset | undefined)
 
@@ -87,10 +95,10 @@ export function createConfig () {
   const layout = computed(() => dataset.value?.isRest && isAdmin.value ? 'admin' : 'simple')
 
   const error = computed(() => {
-    if (!config.value) return 'Il n\'y a pas de configuration définie'
-    if (!dataset.value) return 'Veuillez sélectionner une source de données'
-    if (!labelField.value) return 'Veuillez sélectionner un champ de libellé'
-    if (!startDateField.value && !dateField.value) return 'Aucun champ de date trouvé dans le dataset'
+    if (!config.value) return t('errors.noConfig')
+    if (!dataset.value) return t('errors.noDataset')
+    if (!labelField.value) return t('errors.noLabelField')
+    if (!startDateField.value && !dateField.value) return t('errors.noDateField')
     return null
   })
 
@@ -100,10 +108,16 @@ export function createConfig () {
 
   function notifyConfigChange (field: string, value: unknown) {
     if (window.parent !== window) {
+      // L'origine du parent (backoffice data-fair) est déduite du referrer ;
+      // repli '*' si le referrer est masqué par une referrer-policy.
+      let targetOrigin = '*'
+      try {
+        if (document.referrer) targetOrigin = new URL(document.referrer).origin
+      } catch { targetOrigin = '*' }
       window.parent.postMessage({
         type: 'set-config',
         content: { field, value }
-      }, '*')
+      }, targetOrigin)
     }
   }
 

@@ -13,30 +13,27 @@ dist
 dist-ssr
 coverage
 *.local
-.env
-/cypress/videos/
-/cypress/screenshots/
 
-# Playwright test artifacts
+# État local de dev (générés par df-dev-env / df-dev-server, jamais commités)
+.env
+.dev-config.json
+.dev-attachments
+
+# Généré par df-build-types (re-exporté par src/config/index.ts)
+src/config/.type
+
+# Artefacts de test
 test-results/
 playwright-report/
 /blob-report/
+*.tsbuildinfo
+.playwright-mcp/
 
 # Editor directories and files
-.vscode/*
-.type
-!.vscode/extensions.json
+.vscode
 .idea
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-
-*.tsbuildinfo
-.vscode
-docs
-.dev-config.json
-.package.json
-*.test*
-test-results/

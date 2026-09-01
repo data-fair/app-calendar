@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "ignoreDeprecations": "6.0",
     "target": "ESNext",
     "useDefineForClassFields": true,
@@ -11,17 +10,17 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "esModuleInterop": true,
-    "lib": ["ESNext", "DOM"],
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
     "noEmit": true,
     "allowJs": true,
     "checkJs": true,
     "paths": {
       "@/*": [
-       "src/*"
+        "./src/*"
       ]
-     }
+    }
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue", "src/**/*.js"],
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue", "src/**/*.js", "tests/**/*.ts"],
   "exclude": ["node_modules", ".type", "dist", "tests-e2e"]
 }

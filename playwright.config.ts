@@ -1,6 +1,9 @@
 import { defineConfig, devices } from '@playwright/test'
 
-const VITE_URL = 'http://localhost:4100'
+// E2E_PORT vient du .env généré par df-dev-env (via dotenv -- dans les scripts
+// npm) ; le fallback 4100 ne sert qu'à un lancement direct de playwright.
+const PORT = Number(process.env.E2E_PORT ?? 4100)
+const BASE_URL = `http://localhost:${PORT}`
 
 export default defineConfig({
   testDir: './tests-e2e',
@@ -15,7 +18,7 @@ export default defineConfig({
   reporter: process.env.CI ? [['github'], ['list']] : 'list',
 
   use: {
-    baseURL: VITE_URL,
+    baseURL: BASE_URL,
     headless: true,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -35,8 +38,11 @@ export default defineConfig({
   // - Calendar configuration is injected via postMessage('set-config') in helpers/inject-config.ts
   // Only Vite is needed to serve the app HTML/JS bundle.
   webServer: {
-    command: 'npm run test:webserver',
-    url: `${VITE_URL}/app/`,
+    command: 'npm run dev-app',
+    url: `${BASE_URL}/app/`,
+    // APP_PORT (lu par loadEnv) aligne serveur et HMR sur le port E2E ;
+    // PUBLIC_URL force la base /app/ quel que soit le shell.
+    env: { ...process.env, APP_PORT: String(PORT), PUBLIC_URL: '/app/' },
     reuseExistingServer: !process.env.CI,
     timeout: 60_000
   }

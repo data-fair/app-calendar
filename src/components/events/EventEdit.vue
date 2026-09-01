@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Vjsf from '@koumoul/vjsf'
 import VjsfMarkdown from '@koumoul/vjsf-markdown'
 import { v2compat } from '@koumoul/vjsf/compat/v2'
@@ -11,6 +12,7 @@ import { useConfig } from '@/composables/config'
 import { useLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
 import OpeningHoursNode from './OpeningHoursNode.vue'
 
+const { t, locale } = useI18n()
 const { dataset: mainDataset, startDateField, endDateField, dateField, startDateType, endDateType } = useConfig()
 const { dayjs } = useLocaleDayjs()
 const { sendUiNotif } = useUiNotif()
@@ -91,7 +93,7 @@ watch(baseSchemaData, (raw) => {
 }, { immediate: true })
 
 watch(schemaError, (e) => {
-  if (e) sendUiNotif({ type: 'error', msg: 'Erreur lors du chargement du formulaire' })
+  if (e) sendUiNotif({ type: 'error', msg: t('events.formLoadError') })
 })
 
 function toISOAware (value: unknown, fieldType?: string): string | null {
@@ -128,7 +130,7 @@ const options = computed(() => ({
   plugins: [VjsfMarkdown],
   density: 'compact',
   titleDepth: 3,
-  locale: 'fr',
+  locale: locale.value,
   removeAdditional: true,
   initialValidation: 'always' as const,
   nodeComponents: {
@@ -161,10 +163,10 @@ const { execute: saveEvent, loading: submitting } = useAsyncAction(
       : `${mainDataset.value.href}/lines`
     const method = lineId ? 'PUT' : 'POST'
     await ofetch(url, { method, body: formData })
-    sendUiNotif({ type: 'success', msg: lineId ? 'Événement modifié' : 'Événement créé' })
+    sendUiNotif({ type: 'success', msg: lineId ? t('events.updated') : t('events.created') })
     emit('updated')
   },
-  { error: 'Erreur lors de la sauvegarde de l\'événement' }
+  { error: t('events.saveError') }
 )
 
 function cancel () {
@@ -190,7 +192,7 @@ function cancel () {
           :disabled="submitting"
           @click="cancel"
         >
-          Annuler
+          {{ t('events.cancel') }}
         </v-btn>
         <v-btn
           color="primary"
@@ -199,7 +201,7 @@ function cancel () {
           :disabled="!valid || submitting"
           @click="saveEvent()"
         >
-          Valider
+          {{ t('events.save') }}
         </v-btn>
       </v-card-actions>
     </template>
