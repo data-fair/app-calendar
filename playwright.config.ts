@@ -7,6 +7,10 @@ const BASE_URL = `http://localhost:${PORT}`
 
 export default defineConfig({
   testDir: './tests-e2e',
+  // Crawl des modules source après le démarrage du Vite webServer : déclenche
+  // la découverte des deps avant le premier test (sinon Vite re-optimise et
+  // recharge la page en plein test, perdant la config injectée par postMessage).
+  globalSetup: './tests-e2e/global-setup.ts',
   timeout: 30_000,
   expect: { timeout: 10_000 },
   fullyParallel: true,

@@ -43,7 +43,15 @@ export default defineConfig(({ mode }) => {
       extensions: ['.js', '.json', '.jsx', '.mjs', '.ts', '.tsx', '.vue']
     },
     optimizeDeps: {
-      include: ['ajv-formats', 'ajv-errors', 'ajv/dist/2019.js', 'ajv/dist/standalone/index.js', 'ajv-i18n', 'debug', 'debug/src/browser.js', 'fast-deep-equal']
+      // Les deps des composants asynchrones (EventEdit → Vjsf) ne sont découvertes
+      // qu'à la première demande : en e2e, 4 workers déclenchent une
+      // re-optimisation en plein test (reloads pleins, requêtes en échec).
+      // Les lister ici force leur pré-bundling au démarrage du serveur.
+      include: [
+        'ajv-formats', 'ajv-errors', 'ajv/dist/2019.js', 'ajv/dist/standalone/index.js', 'ajv-i18n',
+        'debug', 'debug/src/browser.js', 'fast-deep-equal',
+        '@koumoul/vjsf', '@koumoul/vjsf/compat/v2', '@koumoul/vjsf-markdown', 'ofetch',
+      ]
     },
     server: {
       port,

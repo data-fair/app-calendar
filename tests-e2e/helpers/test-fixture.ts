@@ -21,18 +21,24 @@ export interface AppPageFixture {
  * Minimal stand-in for what df-dev-server normally injects via the
  * %APPLICATION% placeholder in index.html. Tests then override the
  * configuration via postMessage('set-config') — see helpers/inject-config.ts.
+ *
+ * Les URLs pointent l'origine du serveur e2e (E2E_PORT, généré par
+ * df-dev-env) : App.vue poste ses erreurs de config sur href + '/error' ;
+ * un port codé en dur d'une autre époque produisait des ERR_CONNECTION_REFUSED.
  */
+const stubOrigin = `http://localhost:${process.env.E2E_PORT ?? 4100}`
+
 export const stubApplication = {
   id: 'dev-application',
   slug: 'app-calendar',
   title: 'Dev calendar',
   owner: { type: 'user', id: 'dev', name: 'Dev' },
   configuration: {},
-  exposedUrl: 'http://localhost:4100/app',
-  href: 'http://localhost:4100/config',
-  apiUrl: 'http://localhost:4100/api/v1',
-  wsUrl: 'ws://localhost:4100/ws',
-  baseApp: { id: 'app-calendar', url: 'http://localhost:4100/app', meta: {} },
+  exposedUrl: `${stubOrigin}/app`,
+  href: `${stubOrigin}/config`,
+  apiUrl: `${stubOrigin}/api/v1`,
+  wsUrl: `ws://localhost:${process.env.E2E_PORT ?? 4100}/ws`,
+  baseApp: { id: 'app-calendar', url: `${stubOrigin}/app`, meta: {} },
 }
 
 /**

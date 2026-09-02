@@ -20,10 +20,17 @@ test('mousedown + mousemove + mouseup : ouvre la modale d\'édition (forceEdit)'
     test.skip()
     return
   }
-  // Mousedown au centre → mousemove de 80px → mouseup
+  // Mousedown au centre (zone « move », hors zones de resize de 8px) puis
+  // mousemove de 80px horizontal + 20px vertical. La composante verticale est
+  // indispensable : hasDragged n'est posé que si la minute mappée change
+  // (useDragResize.applyDrag) — un déplacement purement horizontal reste dans
+  // la même colonne jour (≈172px de large) et ne déclenche jamais finalizeDrag.
+  // On termine dans l'événement (~72px de haut, l'aperçu suit le drag) pour que
+  // le click résiduel du mouseup soit avalé par justDragged (onClickEvent) et
+  // n'ouvre pas le menu de création via onClickDate.
   await appPage.mouse.move(box.x + box.width / 2, box.y + 20)
   await appPage.mouse.down()
-  await appPage.mouse.move(box.x + box.width / 2 + 80, box.y + 20, { steps: 8 })
+  await appPage.mouse.move(box.x + box.width / 2 + 80, box.y + 40, { steps: 8 })
   await appPage.mouse.up()
 
   // finalizeDrag doit ouvrir la modale d'édition (forceEdit=true)
