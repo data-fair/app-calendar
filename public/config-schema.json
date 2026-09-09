@@ -46,7 +46,7 @@
               },
               "layout": {
                 "getItems": {
-                  "url": "api/v1/datasets?status=finalized&q={q}&select=title,isRest,schema,timePeriod,attachmentsAsImage,userPermissions&${context.datasetFilter}&short-concept=date,startDate,endDate&size=50&sort=createdAt:-1",
+                  "url": "api/v1/datasets?status=finalized&q={q}&select=title,isRest,schema,timePeriod,attachmentsAsImage,userPermissions&${context.datasetFilter}&short-concept=date,startDate,endDate&size=100",
                   "itemsResults": "data.results",
                   "itemTitle": "item.title",
                   "itemKey": "item.href"
