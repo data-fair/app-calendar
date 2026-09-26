@@ -459,7 +459,7 @@
                                   "getItems": {
                                     "url": "${rootData.datasets[0].href}/values_agg?field=${rootData.color.field}&size=0&agg_size=15",
                                     "itemKey": "item.value",
-                                    "itemTitle": "item.value",
+                                    "itemTitle": "rootData.datasets?.[0]?.schema?.find(f => f.key === rootData.color?.field)?.['x-labels']?.[item.value] || item.value",
                                     "itemsResults": "data.aggs.map(a => ({ value: a.value }))"
                                   }
                                 }
