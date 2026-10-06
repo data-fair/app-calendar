@@ -32,7 +32,7 @@
     "@data-fair/frame": "^0.18.5",
     "@data-fair/lib-utils": "^1.14.0",
     "@data-fair/lib-vue": "^1.27.2",
-    "@data-fair/lib-vuetify": "^2.3.0",
+    "@data-fair/lib-vuetify": "^2.5.3",
     "@koumoul/vjsf": "^4.3.1",
     "@koumoul/vjsf-markdown": "^0.5.1",
     "@vueuse/core": "^14.4.0",
