@@ -1,7 +1,6 @@
 import { useConfig, type Translate } from './config'
 import { getConceptFilters } from '@data-fair/lib-vue/concept-filters.js'
 import reactiveSearchParams from '@data-fair/lib-vue/reactive-search-params-global.js'
-import type { QueryObject } from 'ufo'
 import { useFetch } from '@data-fair/lib-vue/fetch'
 import { ref, computed, watch } from 'vue'
 import { useDebounce } from '@vueuse/core'
@@ -82,7 +81,7 @@ export function useCalendarData (t: Translate) {
     else if (startDateField.value) params.select += ',' + startDateField.value
     else if (dateField.value) params.select += ',' + dateField.value
     if (openingHoursField.value) params.select += ',' + openingHoursField.value
-    return params as QueryObject
+    return params
   })
 
   const eventsQuery = useDebounce(eventsQueryRaw, 300)
