@@ -6,6 +6,9 @@ import createDFrameAdapter from '@data-fair/frame/lib/vue-reactive/state-change-
 
 export type Translate = (key: string, named?: Record<string, unknown>) => string
 
+// the « Édition » section is a root if/then of config-schema.json (a conditional allOf
+// entry renders an empty panel when the dataset is not editable), and df-build-types
+// does not type a then: its fields are declared here
 export type EditionConfig = {
   formWidth?: number
   minDate?: string

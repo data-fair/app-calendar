@@ -1,5 +1,8 @@
 {
   "type": "object",
+  "x-exports": [
+    "types"
+  ],
   "required": [
     "datasets"
   ],
@@ -12,7 +15,7 @@
           "items": [
             {
               "title": "Jeu de données",
-              "description": "Ce jeu doit contenir au moins un champ avec le concept de date",
+              "description": "Ce jeu doit contenir au moins un champ avec le concept Date ou Date de début",
               "type": "object",
               "additionalProperties": false,
               "properties": {
@@ -20,6 +23,9 @@
                   "type": "string"
                 },
                 "id": {
+                  "type": "string"
+                },
+                "slug": {
                   "type": "string"
                 },
                 "title": {
@@ -46,7 +52,8 @@
               },
               "layout": {
                 "getItems": {
-                  "url": "api/v1/datasets?status=finalized&q={q}&select=title,isRest,schema,timePeriod,attachmentsAsImage,userPermissions&${context.datasetFilter}&short-concept=date,startDate,endDate&size=100",
+                  "url": "api/v1/datasets?status=finalized&select=title,isRest,schema,timePeriod,attachmentsAsImage,userPermissions&${context.datasetFilter}&short-concept=date,startDate&size=100",
+                  "qSearchParam": "q",
                   "itemsResults": "data.results",
                   "itemTitle": "item.title",
                   "itemKey": "item.href"
@@ -86,8 +93,9 @@
                     "type": "string",
                     "title": "Colonne de filtre",
                     "layout": {
+                      "comp": "autocomplete",
                       "getItems": {
-                        "url": "${rootData.datasets[0].href}/schema?calculated=false",
+                        "url": "${rootData.datasets?.[0]?.href || ''}/schema?calculated=false",
                         "itemKey": "data[\"key\"]",
                         "itemTitle": "data[\"label\"]"
                       }
@@ -100,8 +108,10 @@
                       "type": "string"
                     },
                     "layout": {
+                      "if": "parent.data.field",
                       "getItems": {
-                        "url": "${rootData.datasets[0].href}/values-labels/${parent.data.field}?q={q}&q_mode=complete&size=100&stringify=true",
+                        "url": "${rootData.datasets?.[0]?.href || ''}/values-labels/${parent.data.field}?q_mode=complete&size=100&stringify=true",
+                        "qSearchParam": "q",
                         "itemKey": "data[\"value\"]",
                         "itemTitle": "data[\"label\"]"
                       }
@@ -124,8 +134,9 @@
                     "type": "string",
                     "title": "Colonne de filtre",
                     "layout": {
+                      "comp": "autocomplete",
                       "getItems": {
-                        "url": "${rootData.datasets[0].href}/schema?calculated=false",
+                        "url": "${rootData.datasets?.[0]?.href || ''}/schema?calculated=false",
                         "itemKey": "data[\"key\"]",
                         "itemTitle": "data[\"label\"]"
                       }
@@ -135,8 +146,9 @@
                     "type": "string",
                     "title": "Valeur min",
                     "layout": {
+                      "if": "parent.data.field",
                       "getItems": {
-                        "url": "${rootData.datasets[0].href}/values-labels/${parent.data.field}?sort=asc&${parent.data.field}_gte={q}&size=100&stringify=true",
+                        "url": "${rootData.datasets?.[0]?.href || ''}/values-labels/${parent.data.field}?sort=asc&${parent.data.field}_gte={q}&size=100&stringify=true",
                         "itemKey": "data[\"value\"]",
                         "itemTitle": "data[\"label\"]"
                       }
@@ -146,8 +158,9 @@
                     "type": "string",
                     "title": "Valeur max",
                     "layout": {
+                      "if": "parent.data.field",
                       "getItems": {
-                        "url": "${rootData.datasets[0].href}/values-labels/${parent.data.field}?sort=desc&${parent.data.field}_lte={q}&size=100&stringify=true",
+                        "url": "${rootData.datasets?.[0]?.href || ''}/values-labels/${parent.data.field}?sort=desc&${parent.data.field}_lte={q}&size=100&stringify=true",
                         "itemKey": "data[\"value\"]",
                         "itemTitle": "data[\"label\"]"
                       }
@@ -171,8 +184,9 @@
                     "type": "string",
                     "title": "Colonne de filtre",
                     "layout": {
+                      "comp": "autocomplete",
                       "getItems": {
-                        "url": "${rootData.datasets[0].href}/schema?calculated=false",
+                        "url": "${rootData.datasets?.[0]?.href || ''}/schema?calculated=false",
                         "itemKey": "data[\"key\"]",
                         "itemTitle": "data[\"label\"]"
                       }
@@ -185,8 +199,10 @@
                       "type": "string"
                     },
                     "layout": {
+                      "if": "parent.data.field",
                       "getItems": {
-                        "url": "${rootData.datasets[0].href}/values-labels/${parent.data.field}?q={q}&q_mode=complete&size=100&stringify=true",
+                        "url": "${rootData.datasets?.[0]?.href || ''}/values-labels/${parent.data.field}?q_mode=complete&size=100&stringify=true",
+                        "qSearchParam": "q",
                         "itemKey": "data[\"value\"]",
                         "itemTitle": "data[\"label\"]"
                       }
@@ -210,8 +226,9 @@
                     "type": "string",
                     "title": "Colonne de filtre",
                     "layout": {
+                      "comp": "autocomplete",
                       "getItems": {
-                        "url": "${rootData.datasets[0].href}/schema?calculated=false",
+                        "url": "${rootData.datasets?.[0]?.href || ''}/schema?calculated=false",
                         "itemKey": "data[\"key\"]",
                         "itemTitle": "data[\"label\"]"
                       }
@@ -238,8 +255,9 @@
                     "type": "string",
                     "title": "Colonne de filtre",
                     "layout": {
+                      "comp": "autocomplete",
                       "getItems": {
-                        "url": "${rootData.datasets[0].href}/schema?calculated=false",
+                        "url": "${rootData.datasets?.[0]?.href || ''}/schema?calculated=false",
                         "itemKey": "data[\"key\"]",
                         "itemTitle": "data[\"label\"]"
                       }
@@ -262,8 +280,9 @@
                     "type": "string",
                     "title": "Colonne de filtre",
                     "layout": {
+                      "comp": "autocomplete",
                       "getItems": {
-                        "url": "${rootData.datasets[0].href}/schema?calculated=false",
+                        "url": "${rootData.datasets?.[0]?.href || ''}/schema?calculated=false",
                         "itemKey": "data[\"key\"]",
                         "itemTitle": "data[\"label\"]"
                       }
@@ -287,14 +306,12 @@
           "properties": {
             "key": {
               "type": "string"
-            },
-            "format": {
-              "type": "string"
             }
           },
           "layout": {
+            "comp": "autocomplete",
             "getItems": {
-              "url": "${rootData.datasets[0].href}/schema?calculated=false",
+              "url": "${rootData.datasets?.[0]?.href || ''}/schema?calculated=false",
               "itemKey": "data[\"key\"]",
               "itemTitle": "data[\"label\"]"
             }
@@ -302,8 +319,14 @@
         },
         "openOnCurrentDay": {
           "type": "boolean",
-          "title": "Afficher initial à la date du jour",
-          "default": false
+          "title": "Ouvrir sur la date du jour",
+          "default": false,
+          "layout": {
+            "cols": {
+              "xs": 12,
+              "sm": 6
+            }
+          }
         },
         "initialView": {
           "title": "Vue initiale",
@@ -326,7 +349,13 @@
               "title": "Planning"
             }
           ],
-          "default": "month"
+          "default": "month",
+          "layout": {
+            "cols": {
+              "xs": 12,
+              "sm": 6
+            }
+          }
         },
         "color": {
           "type": "object",
@@ -356,8 +385,9 @@
                   "title": "Champ de catégorie",
                   "description": "Choisissez le champ permettant de distinguer les catégories d'événements suivant des couleurs distinctes.",
                   "layout": {
+                    "comp": "autocomplete",
                     "getItems": {
-                      "url": "${rootData.datasets[0].href}/schema?calculated=false&maxCardinality=12",
+                      "url": "${rootData.datasets?.[0]?.href || ''}/schema?calculated=false&maxCardinality=12",
                       "itemKey": "data[\"key\"]",
                       "itemTitle": "data[\"label\"]"
                     }
@@ -421,12 +451,24 @@
                               "title": "Pastel 2"
                             }
                           ],
-                          "default": "Accent"
+                          "default": "Accent",
+                          "layout": {
+                            "cols": {
+                              "xs": 12,
+                              "sm": 6
+                            }
+                          }
                         },
                         "offset": {
                           "type": "integer",
                           "title": "Décalage",
-                          "default": 0
+                          "default": 0,
+                          "layout": {
+                            "cols": {
+                              "xs": 12,
+                              "sm": 6
+                            }
+                          }
                         }
                       }
                     },
@@ -444,6 +486,9 @@
                         "categories": {
                           "title": "Couleurs",
                           "type": "array",
+                          "layout": {
+                            "if": "rootData.color?.field"
+                          },
                           "items": {
                             "type": "object",
                             "required": [
@@ -457,7 +502,7 @@
                                 "layout": {
                                   "comp": "select",
                                   "getItems": {
-                                    "url": "${rootData.datasets[0].href}/values_agg?field=${rootData.color.field}&size=0&agg_size=15",
+                                    "url": "${rootData.datasets?.[0]?.href || ''}/values_agg?field=${rootData.color?.field}&size=0&agg_size=15",
                                     "itemKey": "item.value",
                                     "itemTitle": "rootData.datasets?.[0]?.schema?.find(f => f.key === rootData.color?.field)?.['x-labels']?.[item.value] || item.value",
                                     "itemsResults": "data.aggs.map(a => ({ value: a.value }))"
@@ -465,10 +510,7 @@
                                 }
                               },
                               "color": {
-                                "type": "string",
-                                "title": "Couleur",
-                                "default": "#828282",
-                                "layout": "color-picker"
+                                "$ref": "#/$defs/hexColor"
                               }
                             }
                           }
@@ -514,6 +556,7 @@
                         "strValue": {
                           "title": "Couleur",
                           "type": "string",
+                          "default": "primary",
                           "oneOf": [
                             {
                               "const": "primary",
@@ -539,10 +582,7 @@
                           "const": "custom"
                         },
                         "hexValue": {
-                          "type": "string",
-                          "title": "Couleur",
-                          "default": "#828282",
-                          "layout": "color-picker"
+                          "$ref": "#/$defs/hexColor"
                         }
                       }
                     }
@@ -575,8 +615,9 @@
             }
           },
           "layout": {
+            "comp": "autocomplete",
             "getItems": {
-              "url": "${rootData.datasets[0].href}/schema?calculated=false",
+              "url": "${rootData.datasets?.[0]?.href || ''}/schema?calculated=false",
               "itemKey": "data[\"key\"]",
               "itemTitle": "data[\"label\"]"
             }
@@ -589,12 +630,13 @@
             "type": "string"
           },
           "layout": {
+            "comp": "autocomplete",
             "props": {
               "chips": true,
               "closableChips": true
             },
             "getItems": {
-              "url": "${rootData.datasets[0].href}/schema?calculated=false",
+              "url": "${rootData.datasets?.[0]?.href || ''}/schema?calculated=false",
               "itemKey": "data[\"key\"]",
               "itemTitle": "data[\"label\"]"
             }
@@ -614,7 +656,6 @@
               "before": "Largeur de l'image en % de la fiche"
             },
             "props": {
-              "showTicks": "always",
               "thumbLabel": true
             }
           }
@@ -656,7 +697,13 @@
               "title": "À droite"
             }
           ],
-          "default": "top"
+          "default": "top",
+          "layout": {
+            "cols": {
+              "xs": 12,
+              "sm": 6
+            }
+          }
         },
         "imageDisplay": {
           "title": "Rendu de l'image",
@@ -671,7 +718,13 @@
               "title": "Redimensionner"
             }
           ],
-          "default": "cover"
+          "default": "cover",
+          "layout": {
+            "cols": {
+              "xs": 12,
+              "sm": 6
+            }
+          }
         }
       }
     }
@@ -696,7 +749,8 @@
     }
   },
   "then": {
-    "title": "Edition",
+    "title": "Édition",
+    "description": "Réglages de l'édition des événements, pour un jeu de données éditable",
     "properties": {
       "formWidth": {
         "title": "Largeur du formulaire",
@@ -743,7 +797,13 @@
             "title": "Un mois après la date du jour"
           }
         ],
-        "default": "none"
+        "default": "none",
+        "layout": {
+          "cols": {
+            "xs": 12,
+            "sm": 6
+          }
+        }
       },
       "maxDate": {
         "title": "Valeur maximale pour la date de fin",
@@ -767,17 +827,22 @@
             "title": "Un an après la date du jour"
           }
         ],
-        "default": "none"
+        "default": "none",
+        "layout": {
+          "cols": {
+            "xs": 12,
+            "sm": 6
+          }
+        }
       }
     }
   },
-  "definitions": {
+  "$defs": {
     "hexColor": {
       "type": "string",
       "title": "Couleur",
       "default": "#828282",
       "layout": "color-picker"
     }
-  },
-  "$id": "config-resolved"
+  }
 }
