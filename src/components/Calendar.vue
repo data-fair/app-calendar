@@ -514,7 +514,6 @@ onUnmounted(() => {
 .v-calendar-weekly__day-label { cursor: default; padding-bottom: 8px; }
 .v-calendar-daily_head-day-label { cursor: default; }
 .v-calendar-daily_head-weekday { cursor: default; }
-.v-calendar-weekly__week:last-child { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
 .v-theme--dark .v-calendar-weekly__day.v-outside { background-color: rgb(var(--v-theme-background)); }
 .v-theme--dark .v-calendar-weekly__head-weekday.v-outside { background-color: rgb(var(--v-theme-background)); }
 .v-calendar-weekly__day.v-present { background-color: rgba(var(--v-theme-primary), 0.1); }
