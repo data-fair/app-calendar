@@ -14,15 +14,14 @@ const props = defineProps({
   }
 })
 
-const { inputProps, localData } = useNode(
+// the editor only takes a v-model: vjsf's inputProps (label, hint, onBlur…) have no target
+// in its multi-root template and only produced Vue warnings
+const { localData } = useNode(
   toRef(props, 'modelValue') as any,
   props.statefulLayout as any
 )
 </script>
 
 <template>
-  <opening-hours-editor
-    v-model="localData"
-    v-bind="inputProps"
-  />
+  <opening-hours-editor v-model="localData" />
 </template>

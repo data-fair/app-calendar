@@ -162,7 +162,7 @@ function closeOrCancel () {
         </v-card-actions>
         <v-card-title
           v-else
-          class="text-subtitle-1"
+          class="text-title-medium"
         >
           {{ formatedDate }}
         </v-card-title>
@@ -191,7 +191,7 @@ function closeOrCancel () {
       <suspense v-if="mode === 'edit'">
         <div>
           <v-card-actions class="py-0">
-            <span class="text-subtitle-1">{{ prop.event?.id ? t('events.editTitle') : t('events.addTitle') }}</span>
+            <span class="text-title-medium">{{ prop.event?.id ? t('events.editTitle') : t('events.addTitle') }}</span>
             <v-spacer />
             <v-btn
               :icon="mdiClose"

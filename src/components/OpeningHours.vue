@@ -97,7 +97,6 @@ function closeMenu () {
 </script>
 
 <template>
-  <!-- Horaires hebdomadaires : {{ model }} -->
   <v-row style="min-width:490px">
     <div
       v-for="day in days"
@@ -134,11 +133,11 @@ function closeMenu () {
         @keydown.enter.prevent="openRange(day, i as number, range)"
         @keydown.space.prevent="openRange(day, i as number, range)"
       >
-        <span class="text-caption">
+        <span class="text-body-small">
           {{ range.from }}
         </span>
         <v-spacer />
-        <span class="text-caption">
+        <span class="text-body-small">
           {{ range.to }}
         </span>
       </v-sheet>

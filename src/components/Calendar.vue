@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { mdiChevronLeft, mdiChevronRight } from '@mdi/js'
-import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted, capitalize } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useDisplay } from 'vuetify'
 import reactiveSearchParams from '@data-fair/lib-vue/reactive-search-params-global.js'
 import { useConfig } from '@/composables/config'
 import { useCalendarData } from '@/composables/useCalendarData'
@@ -15,6 +16,7 @@ import PlanningView from './PlanningView.vue'
 
 const { t, locale } = useI18n()
 const { dayjs } = useLocaleDayjs()
+const { xs } = useDisplay()
 const { config, layout, startDateField, endDateField, dateField, dataset } = useConfig()
 const { events } = useCalendarData(t)
 const { resolveMinDate, resolveMaxDate } = useDateBounds()
@@ -38,7 +40,7 @@ const hasUrlNavState = !!(reactiveSearchParams.date || (reactiveSearchParams.sta
 
 const currentDate = ref(
   (config.value.openOnCurrentDay && !hasUrlNavState)
-    ? ''
+    ? dayjs().format('YYYY-MM-DD')
     : (reactiveSearchParams.date as string | undefined) ||
       (midDate ? midDate.toISOString().split('T')[0] : null) ||
         ((dataset.value?.timePeriod as { startDate?: string } | undefined)?.startDate
@@ -64,7 +66,8 @@ const vuetifyType = computed(() => type.value === 'planning' ? 'month' : type.va
 
 // Écriture dans l'URL
 watch(type, (newType) => { reactiveSearchParams.view = newType })
-watch(currentDate, (newDate) => { reactiveSearchParams.date = newDate })
+// immediate: the initial date is in the URL too, so a reload never falls back to the middle of start/end
+watch(currentDate, (newDate) => { if (newDate) reactiveSearchParams.date = newDate }, { immediate: true })
 
 // Flag pour distinguer nos propres écritures sur start/end de celles du parent (iframe)
 let calendarIsUpdatingRange = false
@@ -238,14 +241,15 @@ function onClickMore (_nativeEvent: Event, { date }: { date: string }) {
 
 function prev () { calendar.value?.prev() }
 function next () { calendar.value?.next() }
-function today () { currentDate.value = '' }
+// an explicit date, not '': the URL then keeps the date and no fallback rebuilds it from start/end
+function today () { currentDate.value = dayjs().format('YYYY-MM-DD') }
 
 function getDayViewDayIndex (event: Record<string, unknown>): number {
   const date = currentDate.value || dayjs().format('YYYY-MM-DD')
   return dayjs(date).diff(dayjs(event.originalStart as string).startOf('day'), 'day') + 1
 }
 
-function onClickPlanningEvent (event: Record<string, unknown>, nativeEvent: MouseEvent) {
+function onClickPlanningEvent (event: Record<string, unknown>, nativeEvent: MouseEvent | KeyboardEvent) {
   selectedEvent.value = event
   eventMenuActivator.value = nativeEvent.target as HTMLElement
   eventMenuOpen.value = false
@@ -289,7 +293,7 @@ onUnmounted(() => {
 
 <template>
   <v-sheet
-    style="display: flex; flex-direction: column; height: 100vh; overflow: hidden"
+    class="d-flex flex-column h-100"
     :class="{
       'calendar-dragging': dragState?.mode === 'move',
       'calendar-resizing': dragState?.mode === 'resize-start' || dragState?.mode === 'resize-end',
@@ -297,195 +301,192 @@ onUnmounted(() => {
       'calendar-selecting': isSelecting || isPointSelect,
     }"
   >
-    <v-toolbar flat>
-      <v-btn
-        variant="outlined"
-        :disabled="editMode || type === 'planning'"
-        @click="today"
-      >
-        {{ t('calendar.today') }}
-      </v-btn>
-
-      <v-btn
-        :icon="mdiChevronLeft"
-        :aria-label="t('calendar.previous')"
-        :disabled="editMode || type === 'planning'"
-        @click="prev"
-      />
-
-      <v-btn
-        :icon="mdiChevronRight"
-        :aria-label="t('calendar.next')"
-        :disabled="editMode || type === 'planning'"
-        @click="next"
-      />
-
-      <v-menu
-        v-if="type !== 'planning'"
-        v-model="datePickerOpen"
-        :close-on-content-click="false"
-      >
-        <template #activator="{ props: menuProps }">
+    <div class="d-flex flex-wrap align-center ga-2 pa-2">
+      <template v-if="type !== 'planning'">
+        <v-btn
+          variant="outlined"
+          :disabled="editMode"
+          @click="today"
+        >
+          {{ t('calendar.today') }}
+        </v-btn>
+        <div class="d-flex">
           <v-btn
-            v-bind="menuProps"
-            variant="text"
-            class="text-none px-5"
-            style="font-size: 1.25rem; font-weight: 500; letter-spacing: 0;"
+            :icon="mdiChevronLeft"
+            density="comfortable"
+            :aria-label="t('calendar.previous')"
             :disabled="editMode"
-          >
-            {{ calendar?.title }}
-          </v-btn>
-        </template>
-        <v-date-picker
-          v-model:month="pickerMonth"
-          v-model:year="pickerYear"
-          :model-value="currentDate || dayjs().format('YYYY-MM-DD')"
-          color="primary"
-          show-adjacent-months
-          @update:model-value="(date) => { currentDate = date as string; datePickerOpen = false }"
-        />
-      </v-menu>
-      <v-toolbar-title v-else>
-        {{ planningTitle }}
-      </v-toolbar-title>
+            variant="text"
+            @click="prev"
+          />
+          <v-btn
+            :icon="mdiChevronRight"
+            density="comfortable"
+            :aria-label="t('calendar.next')"
+            :disabled="editMode"
+            variant="text"
+            @click="next"
+          />
+        </div>
+        <v-menu
+          v-model="datePickerOpen"
+          :close-on-content-click="false"
+        >
+          <template #activator="{ props: menuProps }">
+            <v-btn
+              v-bind="menuProps"
+              variant="text"
+              class="text-none px-2"
+              :disabled="editMode"
+            >
+              <span class="text-title-large">{{ capitalize(calendar?.title ?? '') }}</span>
+            </v-btn>
+          </template>
+          <v-date-picker
+            v-model:month="pickerMonth"
+            v-model:year="pickerYear"
+            :model-value="currentDate || dayjs().format('YYYY-MM-DD')"
+            color="primary"
+            show-adjacent-months
+            @update:model-value="(date) => { currentDate = dayjs(date).format('YYYY-MM-DD'); datePickerOpen = false }"
+          />
+        </v-menu>
+      </template>
+      <span
+        v-else
+        class="text-title-large px-2"
+      >
+        {{ capitalize(planningTitle) }}
+      </span>
 
       <v-spacer />
 
-      <div class="d-flex mr-2 view-type-toggle">
+      <v-btn-toggle
+        v-model="type"
+        :disabled="editMode"
+        density="compact"
+        border
+        divided
+        mandatory
+      >
         <v-btn
-          variant="outlined"
-          :disabled="editMode"
-          :class="{ 'view-type-active': type === 'month' }"
-          @click="type = 'month'"
+          v-for="view in (['month', 'week', 'day', 'planning'] as const)"
+          :key="view"
+          :value="view"
+          :active="false"
+          :aria-pressed="type === view"
+          :color="type === view ? 'primary' : undefined"
+          :variant="type === view ? 'flat' : 'text'"
         >
-          {{ t('calendar.month') }}
+          {{ t('calendar.' + view) }}
         </v-btn>
-        <v-btn
-          variant="outlined"
-          :disabled="editMode"
-          :class="{ 'view-type-active': type === 'week' }"
-          @click="type = 'week'"
-        >
-          {{ t('calendar.week') }}
-        </v-btn>
-        <v-btn
-          variant="outlined"
-          :disabled="editMode"
-          :class="{ 'view-type-active': type === 'day' }"
-          @click="type = 'day'"
-        >
-          {{ t('calendar.day') }}
-        </v-btn>
-        <v-btn
-          variant="outlined"
-          :disabled="editMode"
-          :class="{ 'view-type-active': type === 'planning' }"
-          @click="type = 'planning'"
-        >
-          {{ t('calendar.planning') }}
-        </v-btn>
-      </div>
-    </v-toolbar>
-    <div style="flex: 1 1 auto; min-height: 0; overflow: hidden">
+      </v-btn-toggle>
+    </div>
+    <div class="calendar-body flex-grow-1 overflow-hidden">
       <planning-view
         v-if="type === 'planning'"
         :get-color="getColor"
-        style="height: 100%"
         @click-event="onClickPlanningEvent"
         @title-change="planningTitle = $event"
       />
-      <v-calendar
+      <!-- month grid: the 32px day label Vuetify intends ($calendar-weekly-day-label-size), the room
+           left by the default 40px button kept as a gap above the events -->
+      <v-defaults-provider
         v-else
-        ref="calendar"
-        v-model="currentDate"
-        :events="allEventsComputed"
-        :type="vuetifyType"
-        :locale="locale"
-        data-iframe-height
-        event-color="color"
-        @click:event="onClickEvent"
-        @change="onCalendarChange"
-        @click:more="onClickMore"
-        @click:date="onClickDate"
-        @mousemove:event="onMouseMoveEvent"
-        @mouseleave:event="onMouseLeaveEvent"
-        @mousedown:event="onMouseDownEvent"
-        @mousedown:time="onMouseDownTime"
-        @mousemove:time="onMouseMoveTime"
-        @mouseup:time="onGlobalMouseUp"
+        :defaults="{ VCalendarWeekly: { VIconBtn: { size: 32 } } }"
       >
-        <template #day-body="scope">
-          <div
-            v-if="scope.present && (type === 'week' || type === 'day')"
-            class="v-current-time"
-            :style="{ top: scope.timeToY(nowTime) + 'px' }"
-          />
-        </template>
-        <template #event="{ event }">
-          <div
-            :data-event-id="event.originalId ?? event.id"
-            :style="{
-              position: 'relative',
-              overflow: 'hidden',
-              padding: '0 4px',
-              fontSize: '12px',
-              height: '100%',
-              pointerEvents: event.isDragging ? 'none' : undefined,
-            }"
-          >
-            <template v-if="event.allDay">
-              <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                {{ event.name }}<template v-if="(event.dayIndex || event.totalDays) && type === 'day'">
-                  · {{ t('calendar.dayCounter', { index: getDayViewDayIndex(event), total: event.totalDays }) }}
-                </template>
-              </div>
-            </template>
-            <template v-else-if="event.isPunctual">
-              <template v-if="type === 'month'">
-                <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">
-                  <strong>{{ dayjs((event.isDragging ? event.start : event.originalStart) as string).format('HH:mm') }}</strong> {{ event.name }}
-                </span>
-              </template>
-              <template v-else>
+        <v-calendar
+          ref="calendar"
+          v-model="currentDate"
+          :events="allEventsComputed"
+          :type="vuetifyType"
+          :locale="locale"
+          event-color="color"
+          @click:event="onClickEvent"
+          @change="onCalendarChange"
+          @click:more="onClickMore"
+          @click:date="onClickDate"
+          @mousemove:event="onMouseMoveEvent"
+          @mouseleave:event="onMouseLeaveEvent"
+          @mousedown:event="onMouseDownEvent"
+          @mousedown:time="onMouseDownTime"
+          @mousemove:time="onMouseMoveTime"
+          @mouseup:time="onGlobalMouseUp"
+        >
+          <template #day-body="scope">
+            <div
+              v-if="scope.present && (type === 'week' || type === 'day')"
+              class="v-current-time"
+              :style="{ top: scope.timeToY(nowTime) + 'px' }"
+            />
+          </template>
+          <template #event="{ event }">
+            <div
+              :data-event-id="event.originalId ?? event.id"
+              :style="{
+                position: 'relative',
+                overflow: 'hidden',
+                padding: '0 4px',
+                fontSize: '12px',
+                height: '100%',
+                pointerEvents: event.isDragging ? 'none' : undefined,
+              }"
+            >
+              <template v-if="event.allDay">
                 <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                  {{ event.name }}
-                </div>
-                <div><strong>{{ dayjs((event.isDragging ? event.start : event.originalStart) as string).format('HH:mm') }}</strong></div>
-              </template>
-            </template>
-            <template v-else>
-              <template v-if="type === 'month'">
-                <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">
-                  <strong>{{ dayjs(event.start as string).format('HH:mm') }}<template v-if="event.end && dayjs(event.end as string).format('HH:mm') !== dayjs(event.start as string).format('HH:mm')"> - {{ dayjs(event.end as string).format('HH:mm') }}</template></strong> {{ event.name }}
-                </span>
-              </template>
-              <template v-else>
-                <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                  {{ event.name }}
-                </div>
-                <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                  <strong>
-                    <template v-if="event.isFirstSegment">{{ dayjs((event.isDragging ? event.segmentActualStart : event.originalStart) as string).format('HH:mm') }}</template>
-                    <template v-else-if="event.isLastSegment">{{ t('calendar.until', { time: dayjs(event.end as string).format('HH:mm') }) }}</template>
-                    <template v-else>{{ dayjs(event.start as string).format('HH:mm') }} - {{ dayjs(event.end as string).format('HH:mm') }}</template>
-                  </strong>
-                  <template v-if="event.dayIndex">
-                    · {{ t('calendar.dayCounter', { index: event.dayIndex, total: event.totalDays }) }}
+                  {{ event.name }}<template v-if="(event.dayIndex || event.totalDays) && type === 'day'">
+                    · {{ t('calendar.dayCounter', { index: getDayViewDayIndex(event), total: event.totalDays }) }}
                   </template>
                 </div>
               </template>
-            </template>
-            <div
-              v-if="event.editable && !event.allDay && !event.isPunctual && event.isLastSegment !== false"
-              class="resize-handle"
-              style="position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 2px; align-items: center;"
-            >
-              <div style="width: 16px; height: 2px; background: rgba(255,255,255,0.7); border-radius: 1px;" />
-              <div style="width: 16px; height: 2px; background: rgba(255,255,255,0.7); border-radius: 1px;" />
+              <template v-else-if="event.isPunctual">
+                <template v-if="type === 'month'">
+                  <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">
+                    <strong v-if="!xs">{{ dayjs((event.isDragging ? event.start : event.originalStart) as string).format('HH:mm') }}</strong> {{ event.name }}
+                  </span>
+                </template>
+                <template v-else>
+                  <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    {{ event.name }}
+                  </div>
+                  <div><strong>{{ dayjs((event.isDragging ? event.start : event.originalStart) as string).format('HH:mm') }}</strong></div>
+                </template>
+              </template>
+              <template v-else>
+                <template v-if="type === 'month'">
+                  <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">
+                    <!-- narrow month cells: the name says more than a truncated time range -->
+                    <strong v-if="!xs">{{ dayjs(event.start as string).format('HH:mm') }}<template v-if="event.end && dayjs(event.end as string).format('HH:mm') !== dayjs(event.start as string).format('HH:mm')"> - {{ dayjs(event.end as string).format('HH:mm') }}</template></strong> {{ event.name }}
+                  </span>
+                </template>
+                <template v-else>
+                  <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    {{ event.name }}
+                  </div>
+                  <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    <strong>
+                      <template v-if="event.isFirstSegment">{{ dayjs((event.isDragging ? event.segmentActualStart : event.originalStart) as string).format('HH:mm') }}</template>
+                      <template v-else-if="event.isLastSegment">{{ t('calendar.until', { time: dayjs(event.end as string).format('HH:mm') }) }}</template>
+                      <template v-else>{{ dayjs(event.start as string).format('HH:mm') }} - {{ dayjs(event.end as string).format('HH:mm') }}</template>
+                    </strong>
+                    <template v-if="event.dayIndex">
+                      · {{ t('calendar.dayCounter', { index: event.dayIndex, total: event.totalDays }) }}
+                    </template>
+                  </div>
+                </template>
+              </template>
+              <div
+                v-if="event.editable && !event.allDay && !event.isPunctual && event.isLastSegment !== false"
+                class="resize-handle"
+                style="position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 2px; align-items: center;"
+              >
+                <div style="width: 16px; height: 2px; background: rgba(255,255,255,0.7); border-radius: 1px;" />
+                <div style="width: 16px; height: 2px; background: rgba(255,255,255,0.7); border-radius: 1px;" />
+              </div>
             </div>
-          </div>
-        </template>
-      </v-calendar>
+          </template>
+        </v-calendar>
+      </v-defaults-provider>
     </div>
   </v-sheet>
   <v-menu
@@ -507,7 +508,10 @@ onUnmounted(() => {
 
 <style>
 .v-calendar-weekly__day.v-outside .v-calendar-weekly__day-label button { opacity: 0.4; }
-.v-calendar-weekly__day-label { cursor: default; }
+/* vuetify paints "N more" opaque and above the cell: it hid the cell's left border and
+   drew a surface-light band on outside days. Let the cell background show through. */
+.v-calendar-weekly .v-event-more { background-color: transparent; }
+.v-calendar-weekly__day-label { cursor: default; padding-bottom: 8px; }
 .v-calendar-daily_head-day-label { cursor: default; }
 .v-calendar-daily_head-weekday { cursor: default; }
 .v-calendar-weekly__week:last-child { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
@@ -516,11 +520,7 @@ onUnmounted(() => {
 .v-calendar-weekly__day.v-present { background-color: rgba(var(--v-theme-primary), 0.1); }
 .v-calendar-daily_head-day.v-present { background-color: rgba(var(--v-theme-primary), 0.1); }
 .v-calendar-daily__day.v-present { background-color: rgba(var(--v-theme-primary), 0.1); }
-.view-type-toggle > .v-btn { border-radius: 0 !important; }
-.view-type-toggle > .v-btn + .v-btn { margin-left: -1px; }
-.view-type-toggle > .v-btn:first-child { border-radius: 4px 0 0 4px !important; }
-.view-type-toggle > .v-btn:last-child { border-radius: 0 4px 4px 0 !important; }
-.view-type-active { background-color: rgb(var(--v-theme-primary)) !important; color: rgb(var(--v-theme-on-primary)) !important; border-color: rgb(var(--v-theme-primary)) !important; position: relative; z-index: 1; }
+.calendar-body { min-height: 0; }
 .calendar-dragging, .calendar-resizing, .calendar-selecting { user-select: none; }
 .v-calendar .v-event-timed { min-height: 40px; }
 .calendar-dragging .v-calendar, .calendar-dragging .v-calendar * { cursor: grabbing !important; }

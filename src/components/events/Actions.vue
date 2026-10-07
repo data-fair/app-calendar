@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { mdiDownload } from '@mdi/js'
 import { useI18n } from 'vue-i18n'
 import { useConfig } from '@/composables/config'
 
@@ -24,7 +25,7 @@ function displayBytes (bytes : number) {
     <v-spacer />
     <v-btn
       v-if="linkField && item[linkField]"
-      :href="(!item[linkField].includes('http') ? 'http://' : '') + item[linkField]"
+      :href="(!item[linkField!].includes('http') ? 'http://' : '') + item[linkField!]"
       variant="text"
       size="small"
       target="_blank"
@@ -41,12 +42,10 @@ function displayBytes (bytes : number) {
         <v-btn
           :href="item[attachmentField.key].includes('http') ? item[attachmentField.key] : mainDataset?.href + '/attachments/' + item[attachmentField.key]"
           color="accent"
-          icon
+          :icon="mdiDownload"
           :aria-label="t('actions.downloadSize', { size: displayBytes(item['_file.content_length']) })"
           v-bind="props"
-        >
-          <v-icon>mdi-download</v-icon>
-        </v-btn>
+        />
       </template>
       <span>{{ t('actions.downloadSize', { size: displayBytes(item['_file.content_length']) }) }}</span>
     </v-tooltip>
