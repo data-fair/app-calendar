@@ -2,7 +2,7 @@ import { useConfig, type Translate } from './config'
 import { getConceptFilters } from '@data-fair/lib-vue/concept-filters.js'
 import reactiveSearchParams from '@data-fair/lib-vue/reactive-search-params-global.js'
 import { useFetch } from '@data-fair/lib-vue/fetch'
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, toRaw } from 'vue'
 import { useDebounce } from '@vueuse/core'
 import chroma from 'chroma-js'
 import { useUiNotif } from '@data-fair/lib-vue/ui-notif.js'
@@ -86,7 +86,7 @@ export function useCalendarData (t: Translate) {
 
   const eventsQuery = useDebounce(eventsQueryRaw, 300)
 
-  const { data: eventsData, error: eventsError } = useFetch(
+  const { data: eventsData, error: eventsError, loading } = useFetch(
     // no range yet (planning view opened first): nothing to fetch, and the opening hours
     // expansion below needs start/end
     computed(() => mainDataset.value?.href && reactiveSearchParams.start && reactiveSearchParams.end ? `${mainDataset.value.href}/lines` : null),
@@ -152,5 +152,8 @@ export function useCalendarData (t: Translate) {
     if (e) sendUiNotif({ type: 'error', msg: t('errors.eventsLoadError'), error: e })
   })
 
-  return { events, colorPalette }
+  // also loading while the debounced query catches up, the previous period stays shown meanwhile
+  const loadingEvents = computed(() => loading.value || toRaw(eventsQuery.value) !== eventsQueryRaw.value)
+
+  return { events, colorPalette, loading: loadingEvents }
 }

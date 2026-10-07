@@ -14,7 +14,7 @@ export function useCalendarEvents (
 ) {
   const theme = useTheme()
   const { dayjs } = useLocaleDayjs()
-  const { events, colorPalette } = useCalendarData(t)
+  const { events, colorPalette, loading } = useCalendarData(t)
   const { color } = useConfig()
 
   function getColor (value: string) {
@@ -223,5 +223,5 @@ export function useCalendarEvents (
     { immediate: true }
   )
 
-  return { allEventsRef, selectionEvents, allEventsComputed, splitMultiDayEvent, getColor, buildEvents }
+  return { events, loading, allEventsRef, selectionEvents, allEventsComputed, splitMultiDayEvent, getColor, buildEvents }
 }

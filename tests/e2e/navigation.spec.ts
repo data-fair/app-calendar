@@ -15,6 +15,19 @@ test('month: next, previous and today', async ({ page }) => {
   await expect(page.getByText('Visite du musée')).toBeVisible()
 })
 
+// regression: two calendar data instances sent every /lines request twice, with no loading feedback
+test('a period change loads its events once, under a loading bar', async ({ page }) => {
+  await openApp(page)
+  await expect(page.getByText('Visite du musée')).toBeVisible()
+  const requests: string[] = []
+  page.on('request', request => { if (new URL(request.url()).pathname.endsWith('/lines')) requests.push(request.url()) })
+  await page.getByRole('button', { name: 'Suivant' }).click()
+  await expect(page.getByRole('progressbar')).toBeVisible()
+  await expect(page.getByRole('progressbar')).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Novembre 2026' })).toBeVisible()
+  expect(requests).toHaveLength(1)
+})
+
 test('switching to week keeps the displayed date, today returns to the current week', async ({ page }) => {
   await openApp(page)
   await page.getByRole('button', { name: 'Suivant' }).click()

@@ -5,7 +5,6 @@ import { useI18n } from 'vue-i18n'
 import { useDisplay } from 'vuetify'
 import reactiveSearchParams from '@data-fair/lib-vue/reactive-search-params-global.js'
 import { useConfig } from '@/composables/config'
-import { useCalendarData } from '@/composables/useCalendarData'
 import { useLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
 import { useCalendarEvents } from '@/composables/useCalendarEvents'
 import { useDragResize, type DragState } from '@/composables/useDragResize'
@@ -18,7 +17,6 @@ const { t, locale } = useI18n()
 const { dayjs } = useLocaleDayjs()
 const { xs } = useDisplay()
 const { config, layout, startDateField, endDateField, dateField, dataset } = useConfig()
-const { events } = useCalendarData(t)
 const { resolveMinDate, resolveMaxDate } = useDateBounds()
 
 // État partagé entre composables
@@ -100,7 +98,8 @@ watch([pickerMonth, pickerYear], () => {
   }
 })
 
-const { allEventsRef, selectionEvents, allEventsComputed, splitMultiDayEvent, getColor } =
+// single calendar data instance: a second one doubled every /lines request
+const { events, loading, allEventsRef, selectionEvents, allEventsComputed, splitMultiDayEvent, getColor } =
   useCalendarEvents(dragState, eventMenuOpen, vuetifyType, t)
 
 const {
@@ -301,7 +300,7 @@ onUnmounted(() => {
       'calendar-selecting': isSelecting || isPointSelect,
     }"
   >
-    <div class="d-flex flex-wrap align-center ga-2 pa-2">
+    <div class="d-flex flex-wrap align-center ga-2 pa-2 position-relative">
       <template v-if="type !== 'planning'">
         <v-btn
           variant="outlined"
@@ -381,6 +380,14 @@ onUnmounted(() => {
           {{ t('calendar.' + view) }}
         </v-btn>
       </v-btn-toggle>
+      <!-- absolute on the header bottom edge: no layout shift while the events of a period load -->
+      <v-progress-linear
+        :active="loading && type !== 'planning'"
+        absolute
+        location="bottom"
+        indeterminate
+        color="primary"
+      />
     </div>
     <div class="calendar-body flex-grow-1 overflow-hidden">
       <planning-view
@@ -507,7 +514,6 @@ onUnmounted(() => {
 </template>
 
 <style>
-.v-calendar-weekly__day.v-outside .v-calendar-weekly__day-label button { opacity: 0.4; }
 /* vuetify paints "N more" opaque and above the cell: it hid the cell's left border and
    drew a surface-light band on outside days. Let the cell background show through. */
 .v-calendar-weekly .v-event-more { background-color: transparent; }
