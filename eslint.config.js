@@ -33,5 +33,5 @@ export default [
       'no-unused-vars': 'off'
     }
   },
-  { ignores: ['dist/', 'node_modules/', 'src/config/.type/', 'tests-e2e/**', 'test-results/', 'playwright-report/'] }
+  { ignores: ['dist/', 'node_modules/', 'src/config/.type/', 'tests/output/', 'test-results/', 'playwright-report/'] }
 ]

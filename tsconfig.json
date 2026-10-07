@@ -22,5 +22,5 @@
     }
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue", "src/**/*.js", "tests/**/*.ts"],
-  "exclude": ["node_modules", ".type", "dist", "tests-e2e"]
+  "exclude": ["node_modules", ".type", "dist", "tests/output"]
 }

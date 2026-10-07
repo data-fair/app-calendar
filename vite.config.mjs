@@ -58,14 +58,14 @@ export default defineConfig(({ mode }) => {
       strictPort: !!env.APP_PORT,
       // hmr suit le port du serveur : un websocket resté sur un autre port fait
       // tenir deux ports à l'application et annule le port généré.
-      hmr: { port, protocol: 'ws' }
-    },
-    // Préchauffe le graphe de modules au démarrage : sans lui le serveur ne
-    // transforme les modules qu'à la première requête et la suite e2e court
-    // contre un démarrage à froid (échecs trompeurs type "Failed to fetch
-    // dynamically imported module").
-    warmup: {
-      clientFiles: ['./src/main.ts', './src/**/*.vue']
+      hmr: { port, protocol: 'ws' },
+      // Préchauffe le graphe de modules au démarrage : sans lui le serveur ne
+      // transforme les modules qu'à la première requête et la suite e2e court
+      // contre un démarrage à froid (échecs trompeurs type "Failed to fetch
+      // dynamically imported module").
+      warmup: {
+        clientFiles: ['./src/main.ts', './src/**/*.vue']
+      }
     }
   }
 })

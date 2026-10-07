@@ -24,6 +24,7 @@ src/config/.type
 
 # Artefacts de test
 test-results/
+tests/output
 playwright-report/
 /blob-report/
 *.tsbuildinfo

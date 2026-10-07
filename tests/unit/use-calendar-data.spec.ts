@@ -134,3 +134,51 @@ describe('useCalendarData.events', () => {
     expect(cal.events.value).toEqual([])
   })
 })
+
+describe('useCalendarData requests', () => {
+  const schema = [
+    field('title', 'text', LABEL_REFERS_TO),
+    field('start', 'date-time', START_REFERS_TO),
+    field('end', 'date-time', END_REFERS_TO)
+  ]
+
+  function setupWithConfig (config: Record<string, unknown>, response: (url: string) => unknown) {
+    searchParams.start = RANGE_START
+    searchParams.end = RANGE_END
+    ofetchMock.mockReset()
+    ofetchMock.mockImplementation(async (url: string) => response(url))
+    const state = makeConfigState(makeDataset(schema), config as never)
+    return mountComposable(state, () => useCalendarData(i18n.global.t))
+  }
+  const linesUrls = () => ofetchMock.mock.calls.map(([url]) => decodeURIComponent(url as string)).filter(url => url.includes('/lines'))
+
+  it('convertit les filtres statiques en paramètres REST de /lines', async () => {
+    setupWithConfig({ staticFilters: [{ type: 'in', field: 'dep', values: ['75', '92'] }] }, () => ({ results: [] }))
+    await flushPromises()
+
+    expect(linesUrls().length).toBeGreaterThan(0)
+    expect(linesUrls().every(url => url.includes('dep_in=75,92') && !url.includes('qs='))).toBe(true)
+  })
+
+  it('construit la palette multicolor depuis les valeurs du champ', async () => {
+    const cal = setupWithConfig({
+      color: { type: 'multicolor', field: 'agg', colors: { type: 'palette', name: 'Spectral', offset: 0 } }
+    }, (url) => url.includes('/values/agg') ? ['1', '2'] : { results: [] })
+    await flushPromises()
+
+    expect(ofetchMock.mock.calls.some(([url]) => (url as string).includes('/values/agg?size=100'))).toBe(true)
+    const palette = cal.colorPalette.value!
+    expect(Object.keys(palette)).toEqual(['1', '2'])
+    expect(palette['1']).toMatch(/^#[0-9a-f]{6}$/)
+    expect(palette['1']).not.toBe(palette['2'])
+  })
+
+  it('utilise les couleurs des catégories personnalisées', async () => {
+    const cal = setupWithConfig({
+      color: { type: 'multicolor', field: 'grav', colors: { type: 'custom', categories: [{ value: '1', color: '#4caf50' }, { value: '2', color: '#f44336' }] } }
+    }, () => ({ results: [] }))
+    await flushPromises()
+
+    expect(cal.colorPalette.value).toEqual({ 1: '#4caf50', 2: '#f44336' })
+  })
+})
