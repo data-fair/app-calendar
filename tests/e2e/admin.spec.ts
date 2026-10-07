@@ -6,9 +6,12 @@ const openAdmin = (page: Page) => openApp(page, { dataset: datasets.jepAdmin, co
 const editTitle = (page: Page) => page.getByText('Modifier un événement')
 
 test('create an event from a day of the week', async ({ page }) => {
+  // first spec of the run: the dev server compiles the vjsf form graph on this first opening,
+  // ~13 s from a cold server and more when quality runs it right after a build (~6 s warm)
+  test.slow()
   await openAdmin(page)
   await page.getByRole('grid').getByRole('button', { name: '8', exact: true }).click()
-  await expect(page.getByText('Ajouter un événement')).toBeVisible()
+  await expect(page.getByText('Ajouter un événement')).toBeVisible({ timeout: 30_000 })
   const created = page.waitForRequest(req => req.method() === 'POST' && req.url().endsWith('/datasets/jep-admin/lines'))
   await page.getByRole('button', { name: 'Valider', exact: true }).click()
   await created
