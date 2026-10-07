@@ -16,7 +16,6 @@ import { messages } from '@/locales'
 import '@data-fair/frame/lib/d-frame'
 import reactiveSearchParams from '@data-fair/lib-vue/reactive-search-params-global.js'
 
-window.iFrameResizer = { heightCalculationMethod: 'taggedElement' }
 window.vIframeOptions = { reactiveParams: reactiveSearchParams }
 
 async function init () {

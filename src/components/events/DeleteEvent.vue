@@ -54,10 +54,7 @@ const { execute: deleteEventAction, loading: deleteLoading } = useAsyncAction(
         v-bind="props"
       />
     </template>
-    <v-card
-      border
-      data-iframe-height
-    >
+    <v-card border>
       <v-card-title primary-title>
         {{ t('events.deleteTitle') }}
       </v-card-title>

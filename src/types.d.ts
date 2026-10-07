@@ -7,7 +7,6 @@ declare global {
     APPLICATION: Application & { href: string }
     // posé par _public.js, lu par la session à la place du fetch déprécié
     __PUBLIC_SITE_INFO?: FullSiteInfo
-    iFrameResizer: { heightCalculationMethod: string }
     vIframeOptions: { reactiveParams: Record<string, unknown> }
     // installé par le service de capture data-fair (puppeteer)
     triggerCapture?: (animationSupported?: boolean) => Promise<boolean>
