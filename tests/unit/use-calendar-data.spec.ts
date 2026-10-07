@@ -15,10 +15,9 @@ const i18n = createTestI18n()
 const RANGE_START = '2026-08-24T00:00:00.000Z'
 const RANGE_END = '2026-08-28T00:00:00.000Z'
 
-function setup (schema: ReturnType<typeof field>[], lines: Record<string, unknown>[], opts: { view?: string } = {}) {
+function setup (schema: ReturnType<typeof field>[], lines: Record<string, unknown>[]) {
   searchParams.start = RANGE_START
   searchParams.end = RANGE_END
-  if (opts.view) searchParams.view = opts.view
   ofetchMock.mockResolvedValue({ results: lines })
   const dataset = makeDataset(schema)
   const state = makeConfigState(dataset)
@@ -94,7 +93,7 @@ describe('useCalendarData.events', () => {
         end: '2026-08-28T00:00:00.000Z',
         openingHours: 'Mo-Fr 09:00-17:00'
       }
-    ], { view: 'dayGridWeek' })
+    ])
     await flushPromises()
 
     expect(cal.events.value.length).toBeGreaterThanOrEqual(5)
@@ -106,30 +105,6 @@ describe('useCalendarData.events', () => {
     expect(dayjs(monday.start as string).format('HH:mm')).toBe('09:00')
     expect(dayjs(monday.end as string).format('HH:mm')).toBe('17:00')
     expect(monday.allDay).toBe(false)
-  })
-
-  it('déploie les horaires d\'ouverture sur un seul événement en vue mois', async () => {
-    const schema = [
-      field('title', 'text', LABEL_REFERS_TO),
-      field('start', 'date-time', START_REFERS_TO),
-      field('end', 'date-time', END_REFERS_TO),
-      field('openingHours', 'text', OPENING_HOURS_REFERS_TO)
-    ]
-    const cal = setup(schema, [
-      {
-        _id: '1',
-        title: 'Atelier',
-        start: '2026-08-24T00:00:00.000Z',
-        end: '2026-08-28T00:00:00.000Z',
-        openingHours: 'Mo-Fr 09:00-17:00'
-      }
-    ], { view: 'dayGridMonth' })
-    await flushPromises()
-
-    expect(cal.events.value).toHaveLength(5)
-    const first = cal.events.value[0]
-    expect(dayjs(first.start as string).format('HH:mm')).toBe('09:00')
-    expect(dayjs(first.end as string).format('HH:mm')).toBe('17:00')
   })
 
   it('laisse passer les dates invalides dans le mapping (filtrées par buildEvents)', async () => {

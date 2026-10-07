@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import dayjs from 'dayjs'
 import 'dayjs/locale/fr'
-import { makeConfigState, makeDataset, field, createTestI18n, LABEL_REFERS_TO, mountComposable, START_REFERS_TO, END_REFERS_TO, DATE_REFERS_TO } from './helpers'
+import { makeConfigState, makeDataset, field, createTestI18n, LABEL_REFERS_TO, mountComposable, START_REFERS_TO, END_REFERS_TO, DATE_REFERS_TO, OPENING_HOURS_REFERS_TO } from './helpers'
 import { usePlanningData } from '@/composables/usePlanningData'
 
 dayjs.locale('fr')
@@ -147,6 +147,19 @@ describe('usePlanningData.planningDays', () => {
     expect(planning.planningDays.value[0].events[0].allDay).toBe(true)
   })
 
+  it('trie par instant de début quand les dates mélangent UTC et décalage local', async () => {
+    const { planning } = setup(dateTimeSchema, [
+      // 08:30 locale écrite en UTC, 08:15 locale écrite avec son décalage : à l'est de
+      // Greenwich, l'ordre des chaînes est l'inverse de l'ordre des instants
+      { _id: 'late', title: 'Fêtes', start: dayjs(`${d(T1)}T08:30:00`).toISOString(), end: dayjs(`${d(T1)}T23:00:00`).toISOString() },
+      { _id: 'early', title: 'Intervention', start: dayjs(`${d(T1)}T08:15:00`).format(), end: dayjs(`${d(T1)}T09:45:00`).format() }
+    ])
+    await planning.loadMore()
+    await flushPromises()
+
+    expect(planning.planningDays.value[0].events.map(e => e.id)).toEqual(['early', 'late'])
+  })
+
   it('trie les événements : all-day d\'abord puis par date de début', async () => {
     const { planning } = setup(dateTimeSchema, [
       { _id: '2', title: 'Réunion', start: `${d(T1)}T09:00:00`, end: `${d(T1)}T10:00:00` },
@@ -176,6 +189,47 @@ describe('usePlanningData.planningDays', () => {
     expect(planning.planningDays.value.map(day => day.date)).toEqual([d(T0), d(T1)])
   })
 
+  it('n\'affiche pas les jours au-delà du dernier début chargé tant qu\'il reste des pages', async () => {
+    // page triée par date de début : un événement long (récurrent) ouvert jusqu'à T0+60
+    // ne doit pas faire défiler le planning au-delà de ce qui est chargé, sinon les
+    // événements ponctuels des pages suivantes n'apparaissent jamais
+    const { planning } = setup(dateTimeSchema, [])
+    ofetchMock.mockResolvedValueOnce({
+      results: [
+        { _id: 'long', title: 'Saison', start: `${d(T0)}T14:00:00`, end: `${d(T0.add(60, 'day'))}T18:00:00` },
+        { _id: 'a', title: 'Atelier', start: `${d(T2)}T10:00:00`, end: `${d(T2)}T11:00:00` }
+      ],
+      next: '/api/v1/datasets/dataset-test/lines?page=2'
+    }).mockResolvedValueOnce({
+      results: [{ _id: 'c', title: 'Concert', start: `${d(T0.add(40, 'day'))}T09:00:00`, end: `${d(T0.add(40, 'day'))}T22:00:00` }],
+      next: null
+    })
+    await planning.loadMore()
+    await flushPromises()
+    expect(planning.planningDays.value.map(day => day.date)).toEqual([d(T0), d(T1)])
+
+    await planning.loadMore()
+    await flushPromises()
+    const concertDay = planning.planningDays.value.find(day => day.date === d(T0.add(40, 'day')))
+    expect(concertDay?.events.map(e => e.name)).toEqual(['Saison', 'Concert'])
+    expect(planning.planningDays.value.at(-1)?.date).toBe(d(T0.add(60, 'day')))
+  })
+
+  it('déploie un événement récurrent selon ses horaires d\'ouverture', async () => {
+    const schema = [...dateTimeSchema, field('horaire', 'text', OPENING_HOURS_REFERS_TO)]
+    const monday = T0.add((8 - T0.day()) % 7, 'day')
+    const { planning } = setup(schema, [
+      { _id: 'r', title: 'Bridge', start: `${d(monday)}T00:00:00`, end: `${d(monday.add(13, 'day'))}T23:00:00`, horaire: 'Mo 14:00-18:00; Fr 14:00-16:00' }
+    ])
+    await planning.loadMore()
+    await flushPromises()
+
+    const days = planning.planningDays.value
+    expect(days.map(day => day.date)).toEqual([monday, monday.add(4, 'day'), monday.add(7, 'day'), monday.add(11, 'day')].map(d))
+    expect(days.map(day => day.events[0].timeLabel)).toEqual(['14:00 - 18:00', '14:00 - 16:00', '14:00 - 18:00', '14:00 - 16:00'])
+    expect(days[0].events[0].dayIndex).toBeUndefined()
+  })
+
   it('en cas d\'erreur serveur, hasMore passe à false et initialized à true', async () => {
     const { planning } = setup(dateOnlySchema, [])
     ofetchMock.mockRejectedValue({ response: { status: 500 }, message: 'boom' })
@@ -189,6 +243,19 @@ describe('usePlanningData.planningDays', () => {
 })
 
 describe('usePlanningData.planningTitle', () => {
+  it('garde l\'année du premier mois quand la période change d\'année', async () => {
+    const first = dayjs('2030-10-07')
+    const last = dayjs('2031-03-02')
+    const { planning } = setup(dateOnlySchema, [
+      { _id: '1', title: 'A', start: d(first), end: d(first) },
+      { _id: '2', title: 'B', start: d(last), end: d(last) }
+    ])
+    await planning.loadMore()
+    await flushPromises()
+
+    expect(planning.planningTitle.value).toBe('octobre 2030 – mars 2031')
+  })
+
   it('renvoie le titre du planning pour un jour isolé', async () => {
     const { planning } = setup(dateOnlySchema, [
       { _id: '1', title: 'Solo', start: d(T0), end: d(T0) }

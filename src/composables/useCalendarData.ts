@@ -7,7 +7,7 @@ import { ref, computed, watch } from 'vue'
 import { useDebounce } from '@vueuse/core'
 import chroma from 'chroma-js'
 import { useUiNotif } from '@data-fair/lib-vue/ui-notif.js'
-import { getDailyOpeningHours } from '@wojtekmaj/opening-hours-utils'
+import { parseOpeningHours } from '@/utils/opening-hours'
 import { getLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
 import { filters2params } from '@data-fair/lib-utils/filters'
 
@@ -88,7 +88,9 @@ export function useCalendarData (t: Translate) {
   const eventsQuery = useDebounce(eventsQueryRaw, 300)
 
   const { data: eventsData, error: eventsError } = useFetch(
-    computed(() => mainDataset.value?.href ? `${mainDataset.value.href}/lines` : null),
+    // no range yet (planning view opened first): nothing to fetch, and the opening hours
+    // expansion below needs start/end
+    computed(() => mainDataset.value?.href && reactiveSearchParams.start && reactiveSearchParams.end ? `${mainDataset.value.href}/lines` : null),
     { query: eventsQuery }
   )
 
@@ -109,25 +111,7 @@ export function useCalendarData (t: Translate) {
 
       if (openingHoursField.value && event[openingHoursField.value]) {
         baseEvent.openingHours = event[openingHoursField.value] as string
-        let openingHours: Record<string, { from: number[], to: number[] }[]> = {}
-        try {
-          const dailyHours = getDailyOpeningHours(event[openingHoursField.value] as string)
-          if (dailyHours) {
-            openingHours = Object.assign({}, ...dailyHours.map(oh => ({
-              [{
-                Mo: 'lun',
-                Tu: 'mar',
-                We: 'mer',
-                Th: 'jeu',
-                Fr: 'ven',
-                Sa: 'sam',
-                Su: 'dim'
-              }[oh.day]]: oh.hours.map(h => ({ from: h.from.split(':'), to: (h.to ?? '').split(':') }))
-            })))
-          }
-        } catch (err) {
-          // horaires d'ouverture invalides : l'événement est ignoré pour la vue planning
-        }
+        const openingHours = parseOpeningHours(baseEvent.openingHours)
 
         if (!startDateField.value || !endDateField.value) return []
         let start = dayjs(reactiveSearchParams.start.localeCompare(event[startDateField.value] as string) > 0 ? reactiveSearchParams.start : event[startDateField.value] as string)
@@ -136,33 +120,16 @@ export function useCalendarData (t: Translate) {
         const evts = []
 
         while (!start.isAfter(end)) {
-          // format('dd') dépend de la locale (2 lettres en fr : 'je'), alors que
-          // les clés d'`openingHours` sont les abréviations 3 lettres fr ('jeu').
-          // Utiliser day() (0-6, indépendant de la locale) pour l'indexation.
-          const hours = openingHours[['dim', 'lun', 'mar', 'mer', 'jeu', 'ven', 'sam'][start.day()]]
-          if (hours?.length) {
-            if (reactiveSearchParams.view === 'dayGridMonth') {
-              evts.push({
-                ...baseEvent,
-                id: start.toISOString() + baseEvent.id,
-                start: start.hour(hours[0].from[0]).minute(hours[0].from[1]).toISOString(),
-                end: start.hour(hours[hours.length - 1].to[0]).minute(hours[hours.length - 1].to[1]).toISOString(),
-                allDay: false
-              })
-              start = start.add(1, 'day').hour(0).minute(0)
-            } else {
-              hours.forEach(hour => {
-                evts.push({
-                  ...baseEvent,
-                  id: start.hour(hour.from[0]).minute(hour.from[1]).toISOString() + baseEvent.id,
-                  start: start.hour(hour.from[0]).minute(hour.from[1]).toISOString(),
-                  end: start.hour(hour.to[0]).minute(hour.to[1]).toISOString(),
-                  allDay: false
-                })
-              })
-              start = start.add(1, 'day').hour(0).minute(0)
-            }
-          } else start = start.add(1, 'day')
+          for (const hour of openingHours[start.day()] ?? []) {
+            evts.push({
+              ...baseEvent,
+              id: start.hour(hour.from[0]).minute(hour.from[1]).toISOString() + baseEvent.id,
+              start: start.hour(hour.from[0]).minute(hour.from[1]).toISOString(),
+              end: start.hour(hour.to[0]).minute(hour.to[1]).toISOString(),
+              allDay: false
+            })
+          }
+          start = start.add(1, 'day').startOf('day')
         }
         return evts
       } else {

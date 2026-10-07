@@ -6,6 +6,7 @@ import { ofetch } from 'ofetch'
 import { getConceptFilters } from '@data-fair/lib-vue/concept-filters.js'
 import reactiveSearchParams from '@data-fair/lib-vue/reactive-search-params-global.js'
 import { filters2params } from '@data-fair/lib-utils/filters'
+import { parseOpeningHours } from '@/utils/opening-hours'
 
 const PAGE_SIZE = 20
 
@@ -40,6 +41,7 @@ export function usePlanningData (getColor: (value: string) => unknown, t: Transl
     startDateType,
     endDateType,
     dateType,
+    openingHoursField,
     color: colorConfig,
     layout,
   } = useConfig()
@@ -61,6 +63,7 @@ export function usePlanningData (getColor: (value: string) => unknown, t: Transl
       startDateField.value && endDateField.value ? endDateField.value : null,
       !startDateField.value ? dateField.value : null,
       colorConfig.value?.type === 'multicolor' && colorConfig.value.field ? colorConfig.value.field : null,
+      openingHoursField.value,
     ].filter(Boolean).join(',')
 
     const sortField = startDateField.value || dateField.value
@@ -127,6 +130,24 @@ export function usePlanningData (getColor: (value: string) => unknown, t: Transl
 
   const planningDays = computed((): PlanningDay[] => {
     const dayMap = new Map<string, PlanningEventItem[]>()
+    const todayStart = dayjs().startOf('day')
+
+    // Lines come sorted by start date: while pages remain, the next ones can still
+    // hold events starting on the last loaded start day or later. Days from there
+    // on are not shown yet, otherwise a long (recurring) event fills them and the
+    // infinite scroll sentinel is never reached.
+    const lastLine = rawResults.value.at(-1)
+    const lastStart = hasMore.value && lastLine && (startDateField.value || dateField.value)
+      ? dayjs(lastLine[(startDateField.value || dateField.value)!] as string)
+      : null
+    const horizon = lastStart?.isValid() ? lastStart.startOf('day') : null
+    const beforeHorizon = (date: ReturnType<typeof dayjs>) => !horizon || date.isBefore(horizon, 'day')
+    const addToDay = (date: ReturnType<typeof dayjs>, item: PlanningEventItem) => {
+      if (!beforeHorizon(date)) return
+      const key = date.format('YYYY-MM-DD')
+      if (!dayMap.has(key)) dayMap.set(key, [])
+      dayMap.get(key)!.push(item)
+    }
 
     rawResults.value.forEach(e => {
       const startStr = (
@@ -179,7 +200,27 @@ export function usePlanningData (getColor: (value: string) => unknown, t: Transl
         editable: layout.value === 'admin',
       }
 
-      const todayStart = dayjs().startOf('day')
+      const openingHours = openingHoursField.value && e[openingHoursField.value]
+        ? parseOpeningHours(e[openingHoursField.value] as string)
+        : null
+      if (openingHours) {
+        // recurring event: one row per slot on the matching days of the week
+        let cursor = startDate.startOf('day').isBefore(todayStart) ? todayStart : startDate.startOf('day')
+        while (!cursor.isAfter(rawEndDate) && beforeHorizon(cursor)) {
+          for (const slot of openingHours[cursor.day()] ?? []) {
+            const from = cursor.hour(slot.from[0]).minute(slot.from[1])
+            addToDay(cursor, {
+              ...base,
+              id: `${base.id}-${from.format('YYYY-MM-DDTHH:mm')}`,
+              allDay: false,
+              originalStart: from.format(),
+              timeLabel: `${from.format('HH:mm')} - ${cursor.hour(slot.to[0]).minute(slot.to[1]).format('HH:mm')}`,
+            })
+          }
+          cursor = cursor.add(1, 'day')
+        }
+        return
+      }
 
       if (isAllDay) {
         // Convention d'exclusivité de la fin :
@@ -198,9 +239,9 @@ export function usePlanningData (getColor: (value: string) => unknown, t: Transl
         let cursor = startDate.startOf('day').isBefore(todayStart) ? todayStart : startDate.startOf('day')
         const allDayLabel = isDateOnly ? '' : t('planning.allDay')
         const totalDays = lastDay.diff(startDate.startOf('day'), 'day') + 1
-        while (!cursor.isAfter(lastDay)) {
+        while (!cursor.isAfter(lastDay) && beforeHorizon(cursor)) {
           const cursorDayIndex = cursor.diff(startDate.startOf('day'), 'day') + 1
-          addToDay(dayMap, cursor.format('YYYY-MM-DD'), {
+          addToDay(cursor, {
             ...base,
             timeLabel: allDayLabel,
             ...(totalDays > 1 ? { dayIndex: cursorDayIndex, totalDays } : {}),
@@ -209,7 +250,7 @@ export function usePlanningData (getColor: (value: string) => unknown, t: Transl
         }
       } else if (isPunctual) {
         if (!startDate.isBefore(todayStart)) {
-          addToDay(dayMap, startDate.format('YYYY-MM-DD'), {
+          addToDay(startDate, {
             ...base,
             timeLabel: startDate.format('HH:mm'),
           })
@@ -218,7 +259,7 @@ export function usePlanningData (getColor: (value: string) => unknown, t: Transl
         const isMultiDay = !startDate.isSame(rawEndDate, 'day')
         if (!isMultiDay) {
           if (!startDate.isBefore(todayStart)) {
-            addToDay(dayMap, startDate.format('YYYY-MM-DD'), {
+            addToDay(startDate, {
               ...base,
               timeLabel: `${startDate.format('HH:mm')} - ${rawEndDate.format('HH:mm')}`,
             })
@@ -227,7 +268,7 @@ export function usePlanningData (getColor: (value: string) => unknown, t: Transl
           const lastDay = rawEndDate.startOf('day')
           let cursor = startDate.startOf('day').isBefore(todayStart) ? todayStart : startDate.startOf('day')
           const totalDays = lastDay.diff(startDate.startOf('day'), 'day') + 1
-          while (!cursor.isAfter(lastDay)) {
+          while (!cursor.isAfter(lastDay) && beforeHorizon(cursor)) {
             const isFirst = cursor.isSame(startDate, 'day')
             const isLast = cursor.isSame(lastDay, 'day')
             const segStart = isFirst ? startDate : cursor.startOf('day')
@@ -239,7 +280,7 @@ export function usePlanningData (getColor: (value: string) => unknown, t: Transl
               : isLast
                 ? t('calendar.until', { time: segEnd.format('HH:mm') })
                 : isFullDaySegment ? t('planning.allDay') : `${segStart.format('HH:mm')} - ${segEnd.format('HH:mm')}`
-            addToDay(dayMap, cursor.format('YYYY-MM-DD'), {
+            addToDay(cursor, {
               ...base,
               id: `${base.id}-${cursor.format('YYYY-MM-DD')}`,
               timeLabel,
@@ -259,7 +300,8 @@ export function usePlanningData (getColor: (value: string) => unknown, t: Transl
         events: events.sort((a, b) => {
           if (a.allDay && !b.allDay) return -1
           if (!a.allDay && b.allDay) return 1
-          return a.originalStart.localeCompare(b.originalStart)
+          // compare instants: the strings mix UTC (Z) and local offsets
+          return dayjs(a.originalStart).valueOf() - dayjs(b.originalStart).valueOf()
         }),
       }))
   })
@@ -275,9 +317,7 @@ export function usePlanningData (getColor: (value: string) => unknown, t: Transl
       if (first.year() === last.year()) return String(first.year())
       return `${first.year()} – ${last.year()}`
     } else if (diffDays > 31) {
-      const fmt = (d: ReturnType<typeof dayjs>) =>
-        d.format(d.year() === first.year() ? 'MMMM' : 'MMMM YYYY')
-      return `${fmt(first)} – ${last.format('MMMM YYYY')}`
+      return `${first.format(first.year() === last.year() ? 'MMMM' : 'MMMM YYYY')} – ${last.format('MMMM YYYY')}`
     } else {
       if (first.isSame(last, 'day')) return first.format('D MMMM YYYY')
       if (first.isSame(last, 'month')) return `${first.format('D')} – ${last.format('D MMMM YYYY')}`
@@ -285,27 +325,21 @@ export function usePlanningData (getColor: (value: string) => unknown, t: Transl
     }
   })
 
-  // Réinitialise et recharge quand le dataset, les champs, les filtres statiques ou les concept filters changent
+  // Réinitialise quand le dataset, les champs, les filtres statiques ou les concept filters changent
   const querySignature = computed(() => [
     dataset.value?.href,
     labelField.value,
     startDateField.value,
     endDateField.value,
     dateField.value,
+    openingHoursField.value,
     colorConfig.value?.type === 'multicolor' ? (colorConfig.value as any).field : null,
     JSON.stringify(config.value.staticFilters ?? []),
     JSON.stringify(getConceptFilters(reactiveSearchParams, dataset.value?.id)),
   ].join('|'))
 
-  watch(querySignature, () => {
-    reset()
-    loadMore()
-  })
+  // the view keys its v-infinite-scroll on querySignature: the remount reloads the first page
+  watch(querySignature, reset)
 
-  return { planningDays, hasMore, isLoading, initialized, loadMore, reset, planningTitle }
-}
-
-function addToDay (map: Map<string, PlanningEventItem[]>, date: string, item: PlanningEventItem) {
-  if (!map.has(date)) map.set(date, [])
-  map.get(date)!.push(item)
+  return { planningDays, hasMore, isLoading, initialized, loadMore, reset, planningTitle, querySignature }
 }
