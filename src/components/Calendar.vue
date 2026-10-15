@@ -233,6 +233,17 @@ function onCalendarChange ({ start, end }: { start: { date: string }, end: { dat
   visibleDates.value = dates
 }
 
+// week/day views open on the first timed event of the period, not on a blank midnight
+watch([loading, visibleDates, vuetifyType], () => {
+  if (loading.value || vuetifyType.value === 'month') return
+  const timed = allEventsComputed.value
+    .filter(e => e.timed && visibleDates.value.includes((e.start as string).slice(0, 10)))
+  // events over several days start or end at midnight on some day: they only count when alone
+  const sameDay = timed.filter(e => !e.totalDays && (e.start as string).slice(0, 10) === (e.end as string).slice(0, 10))
+  const times = (sameDay.length ? sameDay : timed).map(e => (e.start as string).slice(11, 13) + ':00')
+  if (times.length) nextTick(() => calendar.value?.scrollToTime(times.sort()[0]))
+})
+
 function onClickMore (_nativeEvent: Event, { date }: { date: string }) {
   currentDate.value = date
   type.value = 'day'
