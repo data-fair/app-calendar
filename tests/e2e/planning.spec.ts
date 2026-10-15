@@ -1,5 +1,5 @@
 // Planning view: upcoming events grouped by day, loaded page by page on scroll.
-import { test, expect, openApp, setupMocks, buildApplication, gotoApp, datasets, jepConfig, type Line } from './fixtures'
+import { test, expect, openApp, datasets, jepConfig, type Line } from './fixtures'
 
 const planningConfig = (ds: typeof datasets.jep, labelKey = 'title_fr') =>
   ({ ...jepConfig, initialView: 'planning', labelField: { key: labelKey, label: 'Titre' }, datasets: [ds] })
@@ -67,10 +67,10 @@ test('empty dataset', async ({ page }) => {
 // date range and crashed on the opening hours of a recurring line (start undefined)
 test('a recurring event does not crash the planning', async ({ page }) => {
   const ds = datasets.opening
-  await setupMocks(page, buildApplication(planningConfig(ds, 'title')))
-  await page.route(`**${ds.href}/lines?**`, route => route.fulfill({
-    json: { total: 1, results: [{ _id: 'rec', title: 'Permanence', start: '2025-01-06T14:00:00+01:00', end: '2027-08-30T18:00:00+02:00', hours: 'Mo 14:00-18:00' }] }
-  }))
-  await gotoApp(page)
+  await openApp(page, {
+    dataset: ds,
+    config: planningConfig(ds, 'title'),
+    lines: [{ _id: 'rec', title: 'Permanence', start: '2025-01-06T14:00:00+01:00', end: '2027-08-30T18:00:00+02:00', hours: 'Mo 14:00-18:00' }]
+  })
   await expect(page.getByText('Lundi 12 octobre 2026')).toBeVisible()
 })
