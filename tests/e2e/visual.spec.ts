@@ -6,6 +6,8 @@ const views = { month: 'dayGridMonth', week: 'timeGridWeek', planning: 'planning
 async function openView (page: Page, initialView: string) {
   await openApp(page, { config: { ...jepConfig, initialView, datasets: [datasets.jep] } })
   await expect(page.getByText('Visite du musée')).toBeVisible()
+  // the week view scrolls to its first event once the period is loaded
+  await expect(page.getByRole('progressbar')).toBeHidden()
   await page.evaluate(() => document.fonts.ready)
 }
 
