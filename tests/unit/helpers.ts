@@ -4,7 +4,7 @@ import { createI18n } from 'vue-i18n'
 import { createLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
 import { createUiNotif } from '@data-fair/lib-vue/ui-notif.js'
 import { messages } from '@/locales'
-import type { ConfigState } from '@/composables/config'
+import type { ConfigState, EditionConfig } from '@/composables/config'
 import type { Config } from '@/config'
 import type { Dataset, Field } from '@data-fair/lib-common-types/application/index.js'
 
@@ -43,6 +43,8 @@ export function makeConfigState (
   const formatFor = (refersTo: string) => schema.find(f => f['x-refersTo'] === refersTo)?.format
 
   const configRef = ref({ ...config, datasets: [dataset] } as unknown as Config)
+  const edition = config as Config & EditionConfig
+  const exceptionsKey = edition.manageRecurrenceExceptions ? edition.recurrenceExceptionsField?.key : undefined
 
   return {
     application: {} as never,
@@ -50,7 +52,7 @@ export function makeConfigState (
     setConfig: (newConfig: Config) => { configRef.value = newConfig },
     notifyConfigChange: () => undefined,
     dataset: ref(dataset),
-    fields: ref({}),
+    fields: ref(Object.fromEntries(schema.filter(f => f.key).map(f => [f.key!, f]))),
     datasetUrl: ref(dataset.href),
     finalizedAt: ref(dataset.finalizedAt),
     labelField: ref(config.labelField?.key || keyFor(LABEL_REFERS_TO)),
@@ -61,6 +63,7 @@ export function makeConfigState (
     dateField: ref(keyFor(DATE_REFERS_TO)),
     dateType: ref(formatFor(DATE_REFERS_TO)),
     openingHoursField: ref(keyFor(OPENING_HOURS_REFERS_TO)),
+    exceptionsField: ref(exceptionsKey && schema.some(f => f.key === exceptionsKey) ? exceptionsKey : undefined),
     attachmentField: ref(false),
     imageField: ref(undefined),
     linkField: ref(undefined),

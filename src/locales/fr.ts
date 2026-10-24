@@ -53,7 +53,18 @@ export default {
     deleteTitle: 'Supprimer l\'événement ?',
     deleteConfirm: 'Voulez vous vraiment supprimer l\'événement ?',
     deleteConfirmOpeningHours: 'Voulez vous vraiment supprimer l\'ensemble des créneaux liés à cet événement ?',
-    deleteError: 'Erreur lors de la suppression'
+    deleteError: 'Erreur lors de la suppression',
+    scopeLabel: 'Appliquer à',
+    scopeOccurrence: 'Cette occurrence',
+    scopeSeries: 'Toute la série',
+    deleteOccurrenceTitle: 'Supprimer cette occurrence ?',
+    deleteSeriesTitle: 'Supprimer toute la série ?',
+    deleteConfirmOccurrence: 'Cette occurrence sera retirée de la série. Les autres occurrences sont conservées.',
+    deleteConfirmSeries: 'Cette action supprimera toutes les occurrences de la série.',
+    exceptionsTitle: 'Exceptions de la série',
+    exceptionCancelled: 'Annulée',
+    exceptionModified: 'Déplacée ou modifiée',
+    restore: 'Rétablir'
   },
   actions: {
     relatedPage: 'Page associée',

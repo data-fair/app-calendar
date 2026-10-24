@@ -771,6 +771,31 @@
         "maximum": 10,
         "default": 5
       },
+      "manageRecurrenceExceptions": {
+        "title": "Gérer les exceptions de récurrence",
+        "description": "Permet de modifier ou supprimer une seule occurrence d'une série. Nécessite une colonne de type tableau JSON dans le jeu de données.",
+        "type": "boolean",
+        "default": false
+      },
+      "recurrenceExceptionsField": {
+        "title": "Colonne des exceptions",
+        "description": "Colonne de type tableau JSON (ou texte JSON) où l'application stocke les occurrences annulées ou modifiées.",
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          }
+        },
+        "layout": {
+          "if": "rootData.manageRecurrenceExceptions",
+          "comp": "autocomplete",
+          "getItems": {
+            "url": "${rootData.datasets?.[0]?.href || ''}/schema?calculated=false",
+            "itemKey": "data[\"key\"]",
+            "itemTitle": "data[\"label\"]"
+          }
+        }
+      },
       "minDate": {
         "title": "Valeur minimale pour la date de début",
         "description": "Bloque le déplacement, le redimensionnement et la création d'événements avant cette date. La contrainte n'est pas appliquée dans le formulaire de modification (limitation de l'iframe data-fair).",

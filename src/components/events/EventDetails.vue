@@ -10,6 +10,7 @@ import EventView from './EventView.vue'
 import DeleteEvent from './DeleteEvent.vue'
 import { useDisplay } from 'vuetify'
 import { useLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
+import { findException, parseExceptions } from '@/utils/recurrence'
 
 const { t } = useI18n()
 const EventEdit = defineAsyncComponent(() =>
@@ -17,7 +18,7 @@ const EventEdit = defineAsyncComponent(() =>
 )
 
 const { width, height } = useDisplay()
-const { config, dataset: mainDataset, layout, startDateField, endDateField, startDateType, endDateType } = useConfig()
+const { config, dataset: mainDataset, layout, startDateField, endDateField, startDateType, endDateType, exceptionsField } = useConfig()
 const { dayjs } = useLocaleDayjs()
 const { sendUiNotif } = useUiNotif()
 const emit = defineEmits<{
@@ -59,12 +60,26 @@ const { data: eventLineData, error: eventLineError } = useFetch(
   }
 )
 
-const eventData = computed(() => {
+const rawEventData = computed(() => {
   if (!prop.event) return null
   if (!prop.event.id) return { ...prop.event }
   const results = (eventLineData.value as any)?.results
   return results?.[results.length - 1] ?? null
 })
+
+const recurrenceException = computed(() => {
+  if (!exceptionsField.value || !prop.event?.recurrenceStart || !rawEventData.value) return undefined
+  return findException(parseExceptions(rawEventData.value[exceptionsField.value]), String(prop.event.recurrenceStart))
+})
+
+const eventData = computed(() => {
+  const raw = rawEventData.value
+  if (!raw) return null
+  if (recurrenceException.value?.values) return { ...raw, ...recurrenceException.value.values }
+  return raw
+})
+
+const editItem = computed(() => rawEventData.value ?? eventData.value)
 watch(eventLineError, (e) => {
   if (e) sendUiNotif({ type: 'error', msg: t('events.loadError'), error: e })
 })
@@ -109,6 +124,8 @@ const formatedDate = computed(() => {
 
 function cancel () {
   mode.value = 'read'
+  // une exception peut avoir été rétablie sans valider le formulaire : relire la ligne
+  timestamp.value = new Date().getTime()
   if (!prop.event?.id) emit('updated')
 }
 
@@ -152,6 +169,7 @@ function closeOrCancel () {
           />
           <delete-event
             :event="event"
+            :item="rawEventData"
             @deleted="emit('updated')"
           />
           <v-btn
@@ -200,7 +218,7 @@ function closeOrCancel () {
             />
           </v-card-actions>
           <event-edit
-            :item="eventData"
+            :item="editItem!"
             :pending-event="prop.event"
             @updated="onEditUpdated"
             @cancel="cancel"

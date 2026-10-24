@@ -118,19 +118,6 @@ function onMouseDownTime (nativeEvent: Event, { date, time }: { date: string, ti
 
   if (pendingDrag.value) {
     const pointer = dayjs(`${date} ${time}`)
-    const rawEvt = (events.value as Record<string, unknown>[]).find(
-      e => (e.originalId ?? e.id) === pendingDrag.value!.originalId
-    )
-    if (!rawEvt) { pendingDrag.value = null; return }
-
-    const targetEvent = {
-      ...rawEvt,
-      name: rawEvt.title,
-      color: getColor(rawEvt.colorFieldValue as string),
-      isDragging: false,
-      isPunctual: pendingDrag.value.isPunctual,
-    }
-
     if (eventMenuOpen.value) { eventMenuOpen.value = false; editMode.value = false }
 
     dragState.value = {
@@ -139,7 +126,8 @@ function onMouseDownTime (nativeEvent: Event, { date, time }: { date: string, ti
       startPointer: pointer,
       originalStart: pendingDrag.value.originalStart,
       originalEnd: pendingDrag.value.originalEnd,
-      targetEvent,
+      // the exact occurrence under the pointer, not another occurrence of the same series
+      targetEvent: { ...pendingDrag.value.event, isDragging: false },
     }
     pendingDrag.value = null
     hasDragged.value = false
@@ -441,6 +429,7 @@ onUnmounted(() => {
           <template #event="{ event }">
             <div
               :data-event-id="event.originalId ?? event.id"
+              :data-event-key="`${event.originalId ?? event.id}-${event.recurrenceStart ?? event.originalStart ?? event.id}`"
               :style="{
                 position: 'relative',
                 overflow: 'hidden',

@@ -5,12 +5,47 @@ import { field, makeDataset, LABEL_REFERS_TO, START_REFERS_TO, createTestI18n } 
 
 const i18n = createTestI18n()
 
-function configError (configuration: Record<string, unknown>) {
+function configState (configuration: Record<string, unknown>) {
   window.APPLICATION = { configuration } as never
   const app = createApp({})
   app.use(createConfig((key, named) => i18n.global.t(key, named ?? {})))
-  return (app._context.provides['data-fair-app-config'] as ConfigState).error.value
+  return app._context.provides['data-fair-app-config'] as ConfigState
 }
+
+function configError (configuration: Record<string, unknown>) {
+  return configState(configuration).error.value
+}
+
+describe('createConfig.exceptionsField', () => {
+  function exceptionsKey (configuration: Record<string, unknown>) {
+    return configState(configuration).exceptionsField.value
+  }
+
+  const schema = [
+    field('title', 'text', LABEL_REFERS_TO),
+    field('start', 'date-time', START_REFERS_TO),
+    field('exceptions', 'array')
+  ]
+
+  it('reste désactivé par défaut et n\'active la colonne que si elle existe', () => {
+    expect(exceptionsKey({ datasets: [makeDataset(schema)] })).toBeUndefined()
+    expect(exceptionsKey({
+      manageRecurrenceExceptions: false,
+      recurrenceExceptionsField: { key: 'exceptions' },
+      datasets: [makeDataset(schema)]
+    })).toBeUndefined()
+    expect(exceptionsKey({
+      manageRecurrenceExceptions: true,
+      recurrenceExceptionsField: { key: 'exceptions' },
+      datasets: [makeDataset(schema)]
+    })).toBe('exceptions')
+    expect(exceptionsKey({
+      manageRecurrenceExceptions: true,
+      recurrenceExceptionsField: { key: 'unknown' },
+      datasets: [makeDataset(schema)]
+    })).toBeUndefined()
+  })
+})
 
 describe('createConfig.error', () => {
   it('signale le premier élément manquant de la configuration', () => {

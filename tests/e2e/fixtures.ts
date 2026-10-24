@@ -130,6 +130,7 @@ const openingSchema = [
   { key: 'start', type: 'string', format: 'date-time', title: 'Début', 'x-refersTo': START },
   { key: 'end', type: 'string', format: 'date-time', title: 'Fin', 'x-refersTo': END },
   { key: 'hours', type: 'string', title: 'Horaires', 'x-refersTo': 'https://schema.org/openingHours' },
+  { key: 'exceptions', type: 'array', title: 'Exceptions' },
   { key: '_id', type: 'string', title: 'Identifiant' }
 ]
 
@@ -150,6 +151,11 @@ export const jepConfig = {
   additionalFields: ['location_city']
 }
 export const openingConfig = { ...jepConfig, labelField: { key: 'title', label: 'Titre' }, additionalFields: [] }
+export const recurrenceConfig = {
+  ...openingConfig,
+  manageRecurrenceExceptions: true,
+  recurrenceExceptionsField: { key: 'exceptions' },
+}
 
 const jep = (id: string, title: string, start: string, end: string, city: string): Line =>
   ({ _id: id, title_fr: title, firstdate_begin: start, lastdate_end: end, location_city: city })

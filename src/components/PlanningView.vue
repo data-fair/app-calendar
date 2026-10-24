@@ -32,6 +32,9 @@ function onClickEvent (event: Record<string, unknown>, nativeEvent: MouseEvent |
     originalId: event.originalId,
     start: event.originalStart,
     end: event.originalEnd,
+    openingHours: event.openingHours,
+    recurrenceStart: event.recurrenceStart,
+    recurrenceEnd: event.recurrenceEnd,
   }, nativeEvent)
 }
 </script>

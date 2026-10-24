@@ -7,6 +7,8 @@ import { getConceptFilters } from '@data-fair/lib-vue/concept-filters.js'
 import reactiveSearchParams from '@data-fair/lib-vue/reactive-search-params-global.js'
 import { filters2params } from '@data-fair/lib-utils/filters'
 import { parseOpeningHours } from '@/utils/opening-hours'
+import { occurrenceKey, parseExceptions, findException } from '@/utils/recurrence'
+import { timestamp } from './useCalendarData'
 
 const PAGE_SIZE = 20
 
@@ -20,6 +22,9 @@ export type PlanningEventItem = {
   originalStart: string
   originalEnd: string | undefined
   editable: boolean
+  openingHours?: string
+  recurrenceStart?: string
+  recurrenceEnd?: string
   dayIndex?: number
   totalDays?: number
 }
@@ -42,6 +47,7 @@ export function usePlanningData (getColor: (value: string) => unknown, t: Transl
     endDateType,
     dateType,
     openingHoursField,
+    exceptionsField,
     color: colorConfig,
     layout,
   } = useConfig()
@@ -64,6 +70,7 @@ export function usePlanningData (getColor: (value: string) => unknown, t: Transl
       !startDateField.value ? dateField.value : null,
       colorConfig.value?.type === 'multicolor' && colorConfig.value.field ? colorConfig.value.field : null,
       openingHoursField.value,
+      exceptionsField.value,
     ].filter(Boolean).join(',')
 
     const sortField = startDateField.value || dateField.value
@@ -198,6 +205,7 @@ export function usePlanningData (getColor: (value: string) => unknown, t: Transl
         originalStart: startStr,
         originalEnd: endStr,
         editable: layout.value === 'admin',
+        openingHours: openingHoursField.value ? e[openingHoursField.value] as string | undefined : undefined,
       }
 
       const openingHours = openingHoursField.value && e[openingHoursField.value]
@@ -205,19 +213,72 @@ export function usePlanningData (getColor: (value: string) => unknown, t: Transl
         : null
       if (openingHours) {
         // recurring event: one row per slot on the matching days of the week
+        const exceptions = exceptionsField.value ? parseExceptions(e[exceptionsField.value]) : []
+        const colorField = colorConfig.value?.type === 'multicolor' ? colorConfig.value.field : undefined
+        const startKey = startDateField.value || dateField.value
+        const endKey = endDateField.value
+        const generated = new Set<string>()
         let cursor = startDate.startOf('day').isBefore(todayStart) ? todayStart : startDate.startOf('day')
         while (!cursor.isAfter(rawEndDate) && beforeHorizon(cursor)) {
           for (const slot of openingHours[cursor.day()] ?? []) {
             const from = cursor.hour(slot.from[0]).minute(slot.from[1])
-            addToDay(cursor, {
+            const to = cursor.hour(slot.to[0]).minute(slot.to[1])
+            const key = occurrenceKey(from)
+            const exception = findException(exceptions, key)
+            if (exception?.cancelled) continue
+            const values = exception?.values ?? {}
+            const effStart = dayjs((startKey ? values[startKey] as string | undefined : undefined) ?? from.format())
+            const effEnd = dayjs((endKey ? values[endKey] as string | undefined : undefined) ?? to.format())
+            const effColorValue = colorField && values[colorField] !== undefined
+              ? values[colorField] as string
+              : colorFieldValue
+            generated.add(key)
+            addToDay(effStart, {
               ...base,
-              id: `${base.id}-${from.format('YYYY-MM-DDTHH:mm')}`,
+              id: `${base.id}-${key}`,
+              name: (labelField.value && values[labelField.value] != null ? values[labelField.value] : name) as string,
+              eventColor: getColor(effColorValue),
               allDay: false,
-              originalStart: from.format(),
-              timeLabel: `${from.format('HH:mm')} - ${cursor.hour(slot.to[0]).minute(slot.to[1]).format('HH:mm')}`,
+              originalStart: effStart.format(),
+              originalEnd: effEnd.format(),
+              recurrenceStart: key,
+              recurrenceEnd: occurrenceKey(to),
+              timeLabel: `${effStart.format('HH:mm')} - ${effEnd.format('HH:mm')}`,
             })
           }
           cursor = cursor.add(1, 'day')
+        }
+
+        // an occurrence moved into the future from before today is not generated above
+        for (const exception of exceptions) {
+          if (exception.cancelled || !exception.values || generated.has(exception.occurrence)) continue
+          const movedStartStr = startKey ? exception.values[startKey] as string | undefined : undefined
+          if (!movedStartStr) continue
+          const movedStart = dayjs(movedStartStr)
+          if (!movedStart.isValid() || movedStart.isBefore(todayStart)) continue
+
+          const original = dayjs(exception.occurrence)
+          const slot = (openingHours[original.day()] ?? []).find(
+            s => s.from[0] === original.hour() && s.from[1] === original.minute()
+          )
+          const movedEndStr = endKey ? exception.values[endKey] as string | undefined : undefined
+          const movedEnd = movedEndStr ? dayjs(movedEndStr) : (slot ? original.hour(slot.to[0]).minute(slot.to[1]) : movedStart)
+          const values = exception.values
+          const effColorValue = colorField && values[colorField] !== undefined
+            ? values[colorField] as string
+            : colorFieldValue
+          addToDay(movedStart, {
+            ...base,
+            id: `${base.id}-${exception.occurrence}`,
+            name: (labelField.value && values[labelField.value] != null ? values[labelField.value] : name) as string,
+            eventColor: getColor(effColorValue),
+            allDay: false,
+            originalStart: movedStart.format(),
+            originalEnd: movedEnd.format(),
+            recurrenceStart: exception.occurrence,
+            recurrenceEnd: slot ? occurrenceKey(original.hour(slot.to[0]).minute(slot.to[1])) : undefined,
+            timeLabel: `${movedStart.format('HH:mm')} - ${movedEnd.format('HH:mm')}`,
+          })
         }
         return
       }
@@ -333,6 +394,8 @@ export function usePlanningData (getColor: (value: string) => unknown, t: Transl
     endDateField.value,
     dateField.value,
     openingHoursField.value,
+    exceptionsField.value,
+    timestamp.value,
     colorConfig.value?.type === 'multicolor' ? (colorConfig.value as any).field : null,
     JSON.stringify(config.value.staticFilters ?? []),
     JSON.stringify(getConceptFilters(reactiveSearchParams, dataset.value?.id)),

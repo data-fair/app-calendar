@@ -21,9 +21,9 @@ const T2 = T0.add(2, 'day')
 const T3 = T0.add(3, 'day')
 const d = (x: ReturnType<typeof dayjs>) => x.format('YYYY-MM-DD')
 
-function setup (schema: ReturnType<typeof field>[], lines: Record<string, unknown>[]) {
+function setup (schema: ReturnType<typeof field>[], lines: Record<string, unknown>[], config: Record<string, unknown> = {}) {
   const dataset = makeDataset(schema)
-  const state = makeConfigState(dataset)
+  const state = makeConfigState(dataset, config as never)
   const planning = mountComposable(state, () => usePlanningData((v: string) => `color-${v}`, i18n.global.t))
   ofetchMock.mockResolvedValue({ results: lines, next: null })
   return { planning, state }
@@ -228,6 +228,57 @@ describe('usePlanningData.planningDays', () => {
     expect(days.map(day => day.date)).toEqual([monday, monday.add(4, 'day'), monday.add(7, 'day'), monday.add(11, 'day')].map(d))
     expect(days.map(day => day.events[0].timeLabel)).toEqual(['14:00 - 18:00', '14:00 - 16:00', '14:00 - 18:00', '14:00 - 16:00'])
     expect(days[0].events[0].dayIndex).toBeUndefined()
+  })
+
+  it('applique les exceptions de série : annulée ou déplacée sur un autre jour', async () => {
+    const schema = [...dateTimeSchema, field('horaire', 'text', OPENING_HOURS_REFERS_TO), field('exceptions', 'array')]
+    const monday = T0.add((8 - T0.day()) % 7, 'day')
+    const { planning } = setup(schema, [{
+      _id: 'r',
+      title: 'Bridge',
+      start: `${d(monday)}T00:00:00`,
+      end: `${d(monday.add(13, 'day'))}T23:00:00`,
+      horaire: 'Mo 14:00-18:00',
+      exceptions: [
+        { occurrence: `${d(monday)}T14:00`, cancelled: true },
+        { occurrence: `${d(monday.add(7, 'day'))}T14:00`, values: { start: `${d(monday.add(8, 'day'))}T10:00:00`, end: `${d(monday.add(8, 'day'))}T12:00:00`, title: 'Bridge décalé' } }
+      ]
+    }], { manageRecurrenceExceptions: true, recurrenceExceptionsField: { key: 'exceptions' } })
+    await planning.loadMore()
+    await flushPromises()
+
+    const days = planning.planningDays.value
+    expect(days.map(day => day.date)).toEqual([d(monday.add(8, 'day'))])
+    const moved = days[0].events[0]
+    expect(moved.name).toBe('Bridge décalé')
+    expect(moved.timeLabel).toBe('10:00 - 12:00')
+    expect(moved.recurrenceStart).toBe(`${d(monday.add(7, 'day'))}T14:00`)
+    expect(moved.recurrenceEnd).toBe(`${d(monday.add(7, 'day'))}T18:00`)
+  })
+
+  it('remonte dans le planning une occurrence passée déplacée vers le futur', async () => {
+    const schema = [...dateTimeSchema, field('horaire', 'text', OPENING_HOURS_REFERS_TO), field('exceptions', 'array')]
+    const monday = T0.add((8 - T0.day()) % 7, 'day')
+    const pastOccurrence = monday.subtract(7, 'day')
+    const movedDay = monday.add(8, 'day')
+    const { planning } = setup(schema, [{
+      _id: 'r',
+      title: 'Bridge',
+      start: `${d(pastOccurrence.subtract(7, 'day'))}T00:00:00`,
+      end: `${d(monday.add(13, 'day'))}T23:00:00`,
+      horaire: 'Mo 14:00-18:00',
+      exceptions: [{
+        occurrence: `${d(pastOccurrence)}T14:00`,
+        values: { start: `${d(movedDay)}T10:00:00`, end: `${d(movedDay)}T12:00:00`, title: 'Bridge remonté' }
+      }]
+    }], { manageRecurrenceExceptions: true, recurrenceExceptionsField: { key: 'exceptions' } })
+    await planning.loadMore()
+    await flushPromises()
+
+    const day = planning.planningDays.value.find(planningDay => planningDay.date === d(movedDay))
+    expect(day?.events.map(e => e.name)).toEqual(['Bridge remonté'])
+    expect(day?.events[0].timeLabel).toBe('10:00 - 12:00')
+    expect(day?.events[0].recurrenceStart).toBe(`${d(pastOccurrence)}T14:00`)
   })
 
   it('en cas d\'erreur serveur, hasMore passe à false et initialized à true', async () => {

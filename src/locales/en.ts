@@ -53,7 +53,18 @@ export default {
     deleteTitle: 'Delete the event?',
     deleteConfirm: 'Do you really want to delete the event?',
     deleteConfirmOpeningHours: 'Do you really want to delete all the time slots of this event?',
-    deleteError: 'Failed to delete'
+    deleteError: 'Failed to delete',
+    scopeLabel: 'Apply to',
+    scopeOccurrence: 'This occurrence',
+    scopeSeries: 'The whole series',
+    deleteOccurrenceTitle: 'Delete this occurrence?',
+    deleteSeriesTitle: 'Delete the whole series?',
+    deleteConfirmOccurrence: 'This occurrence will be removed from the series. The other occurrences are kept.',
+    deleteConfirmSeries: 'This will delete every occurrence of the series.',
+    exceptionsTitle: 'Series exceptions',
+    exceptionCancelled: 'Cancelled',
+    exceptionModified: 'Moved or modified',
+    restore: 'Restore'
   },
   actions: {
     relatedPage: 'Related page',

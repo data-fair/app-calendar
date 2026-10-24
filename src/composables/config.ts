@@ -13,6 +13,8 @@ export type EditionConfig = {
   formWidth?: number
   minDate?: string
   maxDate?: string
+  manageRecurrenceExceptions?: boolean
+  recurrenceExceptionsField?: { key?: string }
 }
 
 export interface ConfigState {
@@ -32,6 +34,7 @@ export interface ConfigState {
   dateField: Ref<string | undefined>
   dateType: Ref<string | undefined>
   openingHoursField: Ref<string | undefined>
+  exceptionsField: Ref<string | undefined>
   attachmentField: Ref<Field | false | undefined>
   imageField: Ref<string | undefined>
   linkField: Ref<string | undefined>
@@ -80,6 +83,12 @@ export function createConfig (t: Translate) {
   const dateField = computed(() => schema.value.find(f => f['x-refersTo'] === 'http://schema.org/Date')?.key)
   const dateType = computed(() => schema.value.find(f => f['x-refersTo'] === 'http://schema.org/Date')?.format)
   const openingHoursField = computed(() => schema.value.find(f => f['x-refersTo'] === 'https://schema.org/openingHours')?.key)
+  const exceptionsField = computed(() => {
+    if (!config.value.manageRecurrenceExceptions) return undefined
+    const key = config.value.recurrenceExceptionsField?.key
+    if (!key) return undefined
+    return schema.value.some(f => f.key === key && !f['x-calculated']) ? key : undefined
+  })
   const attachmentField = computed(() => (!dataset.value?.attachmentsAsImage && schema.value.find(f => f['x-refersTo'] === 'http://schema.org/DigitalDocument')) || undefined)
   const imageField = computed(() => schema.value.find(f => f['x-refersTo'] === 'http://schema.org/image')?.key)
   const linkField = computed(() => schema.value.find(f => f['x-refersTo'] === 'https://schema.org/WebPage')?.key)
@@ -158,6 +167,7 @@ export function createConfig (t: Translate) {
         dateField,
         dateType,
         openingHoursField,
+        exceptionsField,
         attachmentField,
         imageField,
         linkField,

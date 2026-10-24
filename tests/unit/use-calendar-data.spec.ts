@@ -15,12 +15,12 @@ const i18n = createTestI18n()
 const RANGE_START = '2026-08-24T00:00:00.000Z'
 const RANGE_END = '2026-08-28T00:00:00.000Z'
 
-function setup (schema: ReturnType<typeof field>[], lines: Record<string, unknown>[]) {
+function setup (schema: ReturnType<typeof field>[], lines: Record<string, unknown>[], config: Record<string, unknown> = {}) {
   searchParams.start = RANGE_START
   searchParams.end = RANGE_END
   ofetchMock.mockResolvedValue({ results: lines })
   const dataset = makeDataset(schema)
-  const state = makeConfigState(dataset)
+  const state = makeConfigState(dataset, config as never)
   return mountComposable(state, () => useCalendarData(i18n.global.t))
 }
 
@@ -105,6 +105,103 @@ describe('useCalendarData.events', () => {
     expect(dayjs(monday.start as string).format('HH:mm')).toBe('09:00')
     expect(dayjs(monday.end as string).format('HH:mm')).toBe('17:00')
     expect(monday.allDay).toBe(false)
+  })
+
+  it('applique les exceptions de série : occurrence annulée ou déplacée', async () => {
+    const schema = [
+      field('title', 'text', LABEL_REFERS_TO),
+      field('start', 'date-time', START_REFERS_TO),
+      field('end', 'date-time', END_REFERS_TO),
+      field('openingHours', 'text', OPENING_HOURS_REFERS_TO),
+      field('exceptions', 'array')
+    ]
+    const cal = setup(schema, [{
+      _id: '1',
+      title: 'Atelier',
+      start: '2026-08-24T00:00:00.000Z',
+      end: '2026-08-28T00:00:00.000Z',
+      openingHours: 'Mo-Fr 09:00-17:00',
+      exceptions: [
+        { occurrence: '2026-08-25T09:00', cancelled: true },
+        {
+          occurrence: '2026-08-26T09:00',
+          values: {
+            start: '2026-08-27T10:00:00+02:00',
+            end: '2026-08-27T12:00:00+02:00',
+            title: 'Atelier décalé'
+          }
+        }
+      ]
+    }], { manageRecurrenceExceptions: true, recurrenceExceptionsField: { key: 'exceptions' } })
+    await flushPromises()
+
+    expect(cal.events.value).toHaveLength(4)
+    expect(cal.events.value.some(e => e.recurrenceStart === '2026-08-25T09:00')).toBe(false)
+
+    const moved = cal.events.value.find(e => e.recurrenceStart === '2026-08-26T09:00')!
+    expect(moved.title).toBe('Atelier décalé')
+    expect(dayjs(moved.start as string).format('YYYY-MM-DD HH:mm')).toBe('2026-08-27 10:00')
+    expect(dayjs(moved.end as string).format('YYYY-MM-DD HH:mm')).toBe('2026-08-27 12:00')
+    expect(moved.recurrenceEnd).toBe('2026-08-26T17:00')
+
+    // the series still produces its own Thursday occurrence
+    const thursday = cal.events.value.find(e => e.recurrenceStart === '2026-08-27T09:00')!
+    expect(thursday.title).toBe('Atelier')
+    expect(dayjs(thursday.start as string).format('HH:mm')).toBe('09:00')
+  })
+
+  it('ramène dans la période une occurrence déplacée depuis une autre période', async () => {
+    const schema = [
+      field('title', 'text', LABEL_REFERS_TO),
+      field('start', 'date-time', START_REFERS_TO),
+      field('end', 'date-time', END_REFERS_TO),
+      field('openingHours', 'text', OPENING_HOURS_REFERS_TO),
+      field('exceptions', 'array')
+    ]
+    const cal = setup(schema, [{
+      _id: '1',
+      title: 'Atelier',
+      start: '2026-08-24T00:00:00.000Z',
+      end: '2026-09-04T00:00:00.000Z',
+      openingHours: 'Mo-Fr 09:00-17:00',
+      exceptions: [{
+        occurrence: '2026-08-31T09:00',
+        values: {
+          start: '2026-08-27T10:00:00+02:00',
+          end: '2026-08-27T12:00:00+02:00',
+          title: 'Ramené dans la semaine'
+        }
+      }]
+    }], { manageRecurrenceExceptions: true, recurrenceExceptionsField: { key: 'exceptions' } })
+    await flushPromises()
+
+    const moved = cal.events.value.find(e => e.recurrenceStart === '2026-08-31T09:00')!
+    expect(moved.title).toBe('Ramené dans la semaine')
+    expect(dayjs(moved.start as string).format('YYYY-MM-DD HH:mm')).toBe('2026-08-27 10:00')
+    // the normal occurrences of the period are still there
+    expect(cal.events.value.filter(e => e.recurrenceStart === '2026-08-27T09:00')).toHaveLength(1)
+  })
+
+  it('ignore les exceptions quand le paramétrage est désactivé', async () => {
+    const schema = [
+      field('title', 'text', LABEL_REFERS_TO),
+      field('start', 'date-time', START_REFERS_TO),
+      field('end', 'date-time', END_REFERS_TO),
+      field('openingHours', 'text', OPENING_HOURS_REFERS_TO),
+      field('exceptions', 'array')
+    ]
+    const cal = setup(schema, [{
+      _id: '1',
+      title: 'Atelier',
+      start: '2026-08-24T00:00:00.000Z',
+      end: '2026-08-28T00:00:00.000Z',
+      openingHours: 'Mo-Fr 09:00-17:00',
+      exceptions: [{ occurrence: '2026-08-25T09:00', cancelled: true }]
+    }], { manageRecurrenceExceptions: false, recurrenceExceptionsField: { key: 'exceptions' } })
+    await flushPromises()
+
+    expect(cal.events.value).toHaveLength(5)
+    expect(cal.events.value.some(e => e.recurrenceStart === '2026-08-25T09:00')).toBe(true)
   })
 
   it('laisse passer les dates invalides dans le mapping (filtrées par buildEvents)', async () => {

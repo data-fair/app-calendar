@@ -46,6 +46,7 @@ export function useDragResize (
     originalStart: any
     originalEnd: any
     isPunctual: boolean
+    event: Record<string, unknown>
   } | null>(null)
   const isHoveringResizeZone = ref(false)
   const lastKnownHour = ref<number>(0)
@@ -173,7 +174,7 @@ export function useDragResize (
       }
     }
 
-    pendingDrag.value = { originalId, mode, originalStart, originalEnd, isPunctual: !!event.isPunctual }
+    pendingDrag.value = { originalId, mode, originalStart, originalEnd, isPunctual: !!event.isPunctual, event }
   }
 
   function onMouseMoveEvent (nativeEvent: Event, { event }: { event: Record<string, unknown> }) {
@@ -215,6 +216,9 @@ export function useDragResize (
       start: newStart,
       end: newEnd,
       forceEdit: true,
+      recurrenceStart: drag.targetEvent.recurrenceStart,
+      recurrenceEnd: drag.targetEvent.recurrenceEnd,
+      openingHours: drag.targetEvent.openingHours,
     }
     if (startDateField.value && endDateField.value) {
       event[startDateField.value] = newStart
@@ -227,7 +231,8 @@ export function useDragResize (
 
     selectedEvent.value = event
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      const innerEl = document.querySelector(`[data-event-id="${drag.originalId}"]`) as HTMLElement | null
+      const eventKey = `${drag.originalId}-${drag.targetEvent.recurrenceStart ?? drag.targetEvent.originalStart ?? drag.targetEvent.id}`
+      const innerEl = document.querySelector(`[data-event-key="${eventKey}"]`) as HTMLElement | null
       if (innerEl) eventMenuActivator.value = (innerEl.closest('.v-event-timed') ?? innerEl) as HTMLElement
       eventMenuOpen.value = true
     }))
