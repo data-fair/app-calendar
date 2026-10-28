@@ -42,7 +42,7 @@ interface VJSFProperty {
   description?: string
   type?: string | string[]
   readOnly?: boolean
-  'x-extension'?: boolean
+  'x-extension'?: string
   'x-concept'?: { id?: string; title?: string; primary?: boolean }
   'x-refersTo'?: string | null
   'x-calculated'?: boolean
@@ -102,7 +102,8 @@ function buildSchema (raw: VJSFSchema) {
   }
 
   for (const [key, prop] of Object.entries(properties)) {
-    if (hiddenKey(key) || prop['x-calculated']) {
+    // calculated and extension columns are computed by data-fair, a line body cannot carry them
+    if (hiddenKey(key) || prop['x-calculated'] || prop['x-extension']) {
       delete properties[key]
       continue
     }
@@ -282,13 +283,15 @@ const { execute: saveEvent, loading: submitting } = useAsyncAction(
 
     const formData = new FormData()
     const body: Record<string, unknown> = {}
+    const schemaKeys = new Set(Object.keys(schema.value?.properties ?? {}))
     for (const [key, value] of Object.entries(data.value)) {
       if (value === null || value === undefined) continue
       if (key === '__file' && value instanceof File) {
         formData.append('attachment', value)
         continue
       }
-      if (key.startsWith('_')) continue
+      // data starts from the whole line: keep only the form's columns
+      if (!schemaKeys.has(key)) continue
       body[key] = value
     }
     if (lineId && exceptionsField.value) {
@@ -332,7 +335,10 @@ function cancel () {
 </script>
 
 <template>
-  <div style="max-height: 600px; overflow-y: auto;">
+  <div
+    class="px-2"
+    style="max-height: 600px; overflow-y: auto;"
+  >
     <template v-if="schema">
       <v-radio-group
         v-if="canManageExceptions"

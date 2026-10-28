@@ -1,5 +1,5 @@
 // Admin layout (REST dataset + line permissions): create, edit, delete, drag.
-import { test, expect, openApp, datasets, jepConfig, openingConfig, type Page } from './fixtures'
+import { test, expect, openApp, datasets, jepConfig, jepLines, openingConfig, type Page } from './fixtures'
 
 const weekConfig = { ...jepConfig, initialView: 'timeGridWeek', datasets: [datasets.jepAdmin] }
 const openAdmin = (page: Page) => openApp(page, { dataset: datasets.jepAdmin, config: weekConfig })
@@ -40,6 +40,21 @@ test('delete an event after confirmation', async ({ page }) => {
   // the confirmation button of the menu, after the activator of the same name
   await page.getByRole('button', { name: 'Supprimer l\'événement' }).last().click()
   await deleted
+})
+
+test('extension columns are neither shown nor sent on save', async ({ page }) => {
+  // data-fair computes extension columns and refuses them in a line body (additionalProperties)
+  const ds = { ...datasets.jepAdmin, schema: [...datasets.jepAdmin.schema, { key: 'code_postal', type: 'string', title: 'Code postal', 'x-extension': 'dataset:assoc/masterData_bulkSearch_assoc' }] }
+  await openApp(page, { dataset: ds, config: { ...weekConfig, datasets: [ds] }, lines: jepLines.map(l => ({ ...l, code_postal: '86000' })) })
+  await page.getByText('Visite du musée').click()
+  await page.getByRole('button', { name: 'Modifier l\'événement' }).click()
+  await expect(editTitle(page)).toBeVisible()
+  await expect(page.getByLabel('Code postal')).toHaveCount(0)
+  const saved = page.waitForRequest(req => req.method() === 'PUT' && req.url().endsWith('/datasets/jep-admin/lines/jep-2'))
+  await page.getByRole('button', { name: 'Valider', exact: true }).click()
+  const body = (await saved).postData() ?? ''
+  expect(body).toContain('Visite du musée')
+  expect(body).not.toContain('code_postal')
 })
 
 test('dragging an event opens it in edit mode', async ({ page }) => {
