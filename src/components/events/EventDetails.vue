@@ -208,7 +208,7 @@ function closeOrCancel () {
       </template>
       <suspense v-if="mode === 'edit'">
         <div>
-          <v-card-actions class="py-0">
+          <v-card-actions>
             <span class="text-title-medium">{{ prop.event?.id ? t('events.editTitle') : t('events.addTitle') }}</span>
             <v-spacer />
             <v-btn
