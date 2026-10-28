@@ -42,21 +42,6 @@ test('delete an event after confirmation', async ({ page }) => {
   await deleted
 })
 
-test('extension columns are neither shown nor sent on save', async ({ page }) => {
-  // data-fair computes extension columns and refuses them in a line body (additionalProperties)
-  const ds = { ...datasets.jepAdmin, schema: [...datasets.jepAdmin.schema, { key: 'code_postal', type: 'string', title: 'Code postal', 'x-extension': 'dataset:assoc/masterData_bulkSearch_assoc' }] }
-  await openApp(page, { dataset: ds, config: { ...weekConfig, datasets: [ds] }, lines: jepLines.map(l => ({ ...l, code_postal: '86000' })) })
-  await page.getByText('Visite du musée').click()
-  await page.getByRole('button', { name: 'Modifier l\'événement' }).click()
-  await expect(editTitle(page)).toBeVisible()
-  await expect(page.getByLabel('Code postal')).toHaveCount(0)
-  const saved = page.waitForRequest(req => req.method() === 'PUT' && req.url().endsWith('/datasets/jep-admin/lines/jep-2'))
-  await page.getByRole('button', { name: 'Valider', exact: true }).click()
-  const body = (await saved).postData() ?? ''
-  expect(body).toContain('Visite du musée')
-  expect(body).not.toContain('code_postal')
-})
-
 test('dragging an event opens it in edit mode', async ({ page }) => {
   await openAdmin(page)
   const box = (await page.getByText('Visite du musée').boundingBox())!
@@ -84,5 +69,42 @@ test.describe('opening hours', () => {
     await expect(editTitle(page)).toBeVisible()
     await expect(page.getByText('Lundi')).toBeVisible()
     await expect(page.getByText('Dimanche')).toBeVisible()
+  })
+})
+
+test.describe('extension fields', () => {
+  // an extension column is computed by the platform from the other fields (a join here)
+  const ds = {
+    ...datasets.jepAdmin,
+    schema: [...datasets.jepAdmin.schema!, { key: 'code_postal', type: 'string', title: 'Code postal', 'x-extension': 'ext-1' }]
+  }
+  const codePostalByCity: Record<string, string> = { Paris: '75000', Lyon: '69000' }
+  const lines = jepLines.map(line => line._id === 'jep-2' ? { ...line, code_postal: '75000' } : line)
+
+  test('are read-only, refreshed from the other fields and never saved', async ({ page }) => {
+    await openApp(page, { dataset: ds, config: { ...weekConfig, datasets: [ds] }, lines })
+    // registered after openApp on purpose: the last matching route wins
+    await page.route('**/datasets/jep-admin/_simulate-extension', async (route) => {
+      const body = route.request().postDataJSON() as Record<string, unknown>
+      await route.fulfill({ json: { ...body, code_postal: codePostalByCity[String(body.location_city)] ?? '00000' } })
+    })
+    await page.getByText('Visite du musée').click()
+    await page.getByRole('button', { name: 'Modifier l\'événement' }).click()
+    await expect(editTitle(page)).toBeVisible()
+
+    const codePostal = page.getByRole('textbox', { name: 'Code postal' })
+    await expect(codePostal).toBeDisabled()
+    // simulated from the line as soon as the form opens
+    await expect(codePostal).toHaveValue('75000')
+
+    await page.getByRole('textbox', { name: 'Commune' }).fill('Lyon')
+    await expect(codePostal).toHaveValue('69000')
+
+    await page.getByRole('textbox', { name: 'Titre' }).fill('Visite guidée')
+    const saved = page.waitForRequest(req => req.method() === 'PUT' && req.url().endsWith('/lines/jep-2'))
+    await page.getByRole('button', { name: 'Valider', exact: true }).click()
+    const body = (await saved).postData() ?? ''
+    expect(body).toContain('"title_fr":"Visite guidée"')
+    expect(body).not.toContain('code_postal')
   })
 })

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Vjsf from '@koumoul/vjsf'
 import VjsfMarkdown from '@koumoul/vjsf-markdown'
@@ -70,6 +70,7 @@ const valid = ref(false)
 const schema = ref<VJSFSchema | null>(null)
 const schemaKey = ref(0)
 const rawSchema = ref<VJSFSchema | null>(null)
+const extensionKeys = ref<string[]>([])
 const scope = ref<'occurrence' | 'series'>('series')
 const currentExceptions = ref<OccurrenceException[]>([])
 
@@ -101,11 +102,15 @@ function buildSchema (raw: VJSFSchema) {
     if (!prop.title) prop.title = key
   }
 
+  const foundExtensionKeys: string[] = []
   for (const [key, prop] of Object.entries(properties)) {
-    // calculated and extension columns are computed by data-fair, a line body cannot carry them
-    if (hiddenKey(key) || prop['x-calculated'] || prop['x-extension']) {
+    if (hiddenKey(key) || prop['x-calculated']) {
       delete properties[key]
       continue
+    }
+    if (prop['x-extension']) {
+      // colonnes calculées par la plateforme (lecture seule côté API), affichées mais jamais renvoyées en écriture
+      foundExtensionKeys.push(key)
     }
     if (prop['x-concept']?.id === 'attachment') {
       prop['x-originalKey'] = key
@@ -117,6 +122,7 @@ function buildSchema (raw: VJSFSchema) {
 
   if (local.required) local.required = local.required.filter(key => !hiddenKey(key))
   local.properties = properties
+  extensionKeys.value = foundExtensionKeys
   schema.value = local
   schemaKey.value++
 }
@@ -234,6 +240,48 @@ watch(() => props.item, () => {
   initData()
 }, { immediate: true })
 
+// les extensions dérivent des autres champs : on les recalcule comme le formulaire data-fair,
+// sans quoi leurs valeurs affichées restent celles de la ligne stockée pendant l'édition
+const extensionInput = computed(() => {
+  const input: Record<string, unknown> = {}
+  for (const key of Object.keys(schema.value?.properties ?? {})) {
+    if (extensionKeys.value.includes(key)) continue
+    const value = data.value?.[key]
+    if (value === null || value === undefined) continue
+    input[key] = value
+  }
+  return JSON.stringify(input)
+})
+
+let simulateTimer: ReturnType<typeof setTimeout> | undefined
+
+async function simulateExtensions (input: string) {
+  const datasetHref = mainDataset.value?.href
+  if (!datasetHref) return
+  try {
+    const values = await ofetch<Record<string, unknown>>(`${datasetHref}/_simulate-extension`, {
+      method: 'POST',
+      body: JSON.parse(input)
+    })
+    const next = { ...data.value }
+    for (const key of extensionKeys.value) {
+      if (values[key] === undefined) delete next[key]
+      else next[key] = values[key]
+    }
+    data.value = next
+  } catch {
+    // simulation indisponible (permission, réseau, service distant) : on garde les valeurs stockées
+  }
+}
+
+watch(extensionInput, (input) => {
+  if (!extensionKeys.value.length) return
+  clearTimeout(simulateTimer)
+  simulateTimer = setTimeout(() => simulateExtensions(input), 400)
+})
+
+onUnmounted(() => clearTimeout(simulateTimer))
+
 const options = computed(() => ({
   plugins: [VjsfMarkdown],
   density: 'compact',
@@ -259,7 +307,7 @@ const { execute: saveEvent, loading: submitting } = useAsyncAction(
     const lineId = props.item._id as string | undefined
 
     if (scope.value === 'occurrence' && canManageExceptions.value && lineId && exceptionsField.value && recurrenceStart.value) {
-      const keys = Object.keys(schema.value?.properties ?? {})
+      const keys = Object.keys(schema.value?.properties ?? {}).filter(key => !extensionKeys.value.includes(key))
       const values = changedValues(data.value, occurrenceBaseline(), keys)
       const existing = findException(currentExceptions.value, recurrenceStart.value)
       let entries: OccurrenceException[]
@@ -290,8 +338,8 @@ const { execute: saveEvent, loading: submitting } = useAsyncAction(
         formData.append('attachment', value)
         continue
       }
-      // data starts from the whole line: keep only the form's columns
-      if (!schemaKeys.has(key)) continue
+      // data starts from the whole line: keep only the form's columns, never the extension ones
+      if (!schemaKeys.has(key) || extensionKeys.value.includes(key)) continue
       body[key] = value
     }
     if (lineId && exceptionsField.value) {

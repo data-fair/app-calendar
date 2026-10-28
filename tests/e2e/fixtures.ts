@@ -191,7 +191,8 @@ export async function mockDataset (page: Page, ds: Dataset, lines: LinesMock = [
       return route.fulfill({ json: { total: pages.flat().length, results: pages[index] ?? [], next } })
     }
     if (url.pathname.endsWith('/safe-schema')) {
-      const properties = Object.fromEntries(ds.schema.filter(f => f.key !== '_id').map(({ key, ...f }) => [key, f]))
+      // comme l'API data-fair : les colonnes calculées et d'extension sont en lecture seule
+      const properties = Object.fromEntries(ds.schema.filter(f => f.key !== '_id').map(({ key, ...f }) => [key, { ...f, ...(f['x-extension'] || f['x-calculated'] ? { readOnly: true } : {}) }]))
       return route.fulfill({ contentType: 'application/schema+json', body: JSON.stringify({ type: 'object', properties }) })
     }
     return route.fulfill({ status: 404, json: {} })
