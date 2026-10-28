@@ -43,7 +43,9 @@ export default defineConfig({
     // APP_PORT (lu par loadEnv) aligne serveur et HMR sur le port E2E ;
     // PUBLIC_URL force la base /app/ quel que soit le shell.
     env: { ...process.env, APP_PORT: String(PORT), PUBLIC_URL: '/app/' },
-    reuseExistingServer: !process.env.CI,
+    // E2E_PORT is dedicated to the suite: a server already listening there can only be a
+    // leftover (e.g. an interrupted run), and reusing it turns its death into a mute timeout
+    reuseExistingServer: false,
     timeout: 60_000
   }
 })
