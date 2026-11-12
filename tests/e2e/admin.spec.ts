@@ -108,3 +108,47 @@ test.describe('extension fields', () => {
     expect(body).not.toContain('code_postal')
   })
 })
+
+test.describe('phone width', () => {
+  test.use({ viewport: { width: 375, height: 740 } })
+  // the vjsf form graph may still be compiling on a cold dev server
+  test.slow()
+
+  const expectInViewport = async (page: Page) => {
+    const card = (await page.locator('.v-overlay__content').filter({ has: editTitle(page) }).boundingBox())!
+    expect(card.x).toBeGreaterThanOrEqual(0)
+    expect(card.x + card.width).toBeLessThanOrEqual(375)
+    for (const name of ['Fermer', 'Annuler', 'Valider']) {
+      const button = page.getByRole('button', { name, exact: true })
+      await button.scrollIntoViewIfNeeded()
+      const box = (await button.boundingBox())!
+      expect(box.x).toBeGreaterThanOrEqual(card.x)
+      expect(box.x + box.width).toBeLessThanOrEqual(card.x + card.width)
+    }
+  }
+
+  test('the edit card fits in the screen', async ({ page }) => {
+    await openApp(page, { dataset: datasets.jepAdmin, config: { ...jepConfig, initialView: 'timeGridWeek', datasets: [datasets.jepAdmin] } })
+    await page.getByText('Visite du musée').first().click()
+    await page.getByRole('button', { name: 'Modifier l\'événement' }).click()
+    await expect(editTitle(page)).toBeVisible({ timeout: 30_000 })
+    await expectInViewport(page)
+  })
+
+  test('the opening hours editor fits in the screen', async ({ page }) => {
+    const ds = datasets.openingAdmin
+    await openApp(page, {
+      dataset: ds,
+      config: { ...openingConfig, initialView: 'timeGridWeek', datasets: [ds] },
+      lines: [{ _id: 'oh-1', title: 'Atelier horaires', start: '2026-10-05T09:00:00+02:00', end: '2026-10-30T17:00:00+01:00', hours: 'Mo 09:00-17:00' }]
+    })
+    await page.getByText('Atelier horaires').first().click()
+    await page.getByRole('button', { name: 'Modifier l\'événement' }).click()
+    await expect(editTitle(page)).toBeVisible({ timeout: 30_000 })
+    await expectInViewport(page)
+    // the seven days stay on one row
+    const monday = (await page.getByText('Lundi').boundingBox())!
+    const sunday = (await page.getByText('Dimanche').boundingBox())!
+    expect(sunday.y).toBe(monday.y)
+  })
+})

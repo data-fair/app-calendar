@@ -145,7 +145,7 @@ function closeOrCancel () {
 <template>
   <v-card
     :max-width="mode === 'read' ? 800 : width*(config.formWidth ?? 5)/10"
-    :min-width="mode === 'edit' ? 400 : 300"
+    :min-width="Math.min(mode === 'edit' ? 400 : 300, width - 24)"
     :max-height="height*0.8"
   >
     <template v-if="eventData">

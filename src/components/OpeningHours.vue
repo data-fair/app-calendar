@@ -97,52 +97,53 @@ function closeMenu () {
 </script>
 
 <template>
-  <v-row style="min-width:490px">
-    <div
-      v-for="day in days"
-      :key="day.id"
-      style="width:14%;padding-left: 1px;padding-right: 1px;"
-      class="text-center"
-    >
-      {{ day.title }}
-      <v-sheet
-        :id="`menu-activator-${day.id}`"
-        class="opening-hours-cell"
-        role="button"
-        tabindex="0"
-        :aria-label="day.title"
-        height="240"
-        color="grey-lighten-3"
-        @click="openDay(day)"
-        @keydown.enter.prevent="openDay(day)"
-        @keydown.space.prevent="openDay(day)"
-      />
-      <v-sheet
-        v-for="(range, i) in (openingHours[day.id] || [])"
-        :id="`menu-activator-${day.id}-${i}`"
-        :key="i"
-        class="opening-hours-cell d-flex flex-column"
-        role="button"
-        tabindex="0"
-        :aria-label="`${range.from} - ${range.to}`"
-        position="absolute"
-        :style="`width:13%;margin-left: 0.5%;margin-top: ${time2Int(range.from)/6-240}px`"
-        :height="(time2Int(range.to)-time2Int(range.from))/6"
-        color="primary"
-        @click="openRange(day, i as number, range)"
-        @keydown.enter.prevent="openRange(day, i as number, range)"
-        @keydown.space.prevent="openRange(day, i as number, range)"
+  <div class="opening-hours-scroll">
+    <div class="opening-hours-week d-flex">
+      <div
+        v-for="day in days"
+        :key="day.id"
+        style="width:14%;padding-left: 1px;padding-right: 1px;"
+        class="text-center"
       >
-        <span class="text-body-small">
-          {{ range.from }}
-        </span>
-        <v-spacer />
-        <span class="text-body-small">
-          {{ range.to }}
-        </span>
-      </v-sheet>
+        {{ day.title }}
+        <v-sheet
+          :id="`menu-activator-${day.id}`"
+          class="opening-hours-cell opening-hours-day"
+          role="button"
+          tabindex="0"
+          :aria-label="day.title"
+          height="240"
+          @click="openDay(day)"
+          @keydown.enter.prevent="openDay(day)"
+          @keydown.space.prevent="openDay(day)"
+        />
+        <v-sheet
+          v-for="(range, i) in (openingHours[day.id] || [])"
+          :id="`menu-activator-${day.id}-${i}`"
+          :key="i"
+          class="opening-hours-cell d-flex flex-column"
+          role="button"
+          tabindex="0"
+          :aria-label="`${range.from} - ${range.to}`"
+          position="absolute"
+          :style="`width:13%;margin-left: 0.5%;margin-top: ${time2Int(range.from)/6-240}px`"
+          :height="(time2Int(range.to)-time2Int(range.from))/6"
+          color="primary"
+          @click="openRange(day, i as number, range)"
+          @keydown.enter.prevent="openRange(day, i as number, range)"
+          @keydown.space.prevent="openRange(day, i as number, range)"
+        >
+          <span class="text-body-small">
+            {{ range.from }}
+          </span>
+          <v-spacer />
+          <span class="text-body-small">
+            {{ range.to }}
+          </span>
+        </v-sheet>
+      </div>
     </div>
-  </v-row>
+  </div>
   <v-menu
     v-model="menuOpen"
     persistent
@@ -192,6 +193,17 @@ function closeMenu () {
 </template>
 
 <style scoped>
+/* the week keeps readable columns: it scrolls horizontally in a narrow card */
+.opening-hours-scroll {
+  overflow-x: auto;
+}
+.opening-hours-week {
+  position: relative;
+  min-width: 560px;
+}
+.opening-hours-day {
+  background: rgba(var(--v-theme-on-surface), 0.08);
+}
 .opening-hours-cell:focus-visible {
   outline: 2px solid rgb(var(--v-theme-primary));
   outline-offset: -2px;
