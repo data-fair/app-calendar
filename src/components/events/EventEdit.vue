@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { OccurrenceException } from '@/utils/recurrence'
 import { ref, computed, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Vjsf from '@koumoul/vjsf'
@@ -17,8 +18,7 @@ import {
   parseExceptions,
   removeOccurrenceException,
   serializeExceptions,
-  setOccurrenceException,
-  type OccurrenceException,
+  setOccurrenceException
 } from '@/utils/recurrence'
 
 const { t, locale } = useI18n()
@@ -109,7 +109,7 @@ function buildSchema (raw: VJSFSchema) {
       continue
     }
     if (prop['x-extension']) {
-      // colonnes calculées par la plateforme (lecture seule côté API), affichées mais jamais renvoyées en écriture
+      // columns computed by the platform (read-only on the API side), shown but never sent back on write
       foundExtensionKeys.push(key)
     }
     if (prop['x-concept']?.id === 'attachment') {
@@ -141,9 +141,9 @@ watch(schemaError, (e) => {
 function toISOAware (value: unknown, fieldType?: string): string | null {
   if (!value) return null
   const str = String(value)
-  // Une valeur au format "date" seule n'est valide que pour les champs de type
-  // "date". Pour un champ date-time il faut une ISO complète, sinon le
-  // formulaire vjsf rejette la valeur ("doit correspondre au format date-time").
+  // A "date"-only value is only valid for "date" fields. A date-time field
+  // needs a full ISO string, otherwise the vjsf form rejects the value
+  // ("doit correspondre au format date-time").
   if (fieldType === 'date') return dayjs(str).format('YYYY-MM-DD')
   // Keep the local offset (…T09:00:00+02:00), not UTC (…T07:00:00.000Z): the vjsf
   // time picker reads the hour straight from the string, so a UTC value shows and
@@ -240,8 +240,8 @@ watch(() => props.item, () => {
   initData()
 }, { immediate: true })
 
-// les extensions dérivent des autres champs : on les recalcule comme le formulaire data-fair,
-// sans quoi leurs valeurs affichées restent celles de la ligne stockée pendant l'édition
+// extensions derive from the other fields: they are recomputed like the data-fair form does,
+// otherwise their displayed values stay those of the stored line during editing
 const extensionInput = computed(() => {
   const input: Record<string, unknown> = {}
   for (const key of Object.keys(schema.value?.properties ?? {})) {
@@ -270,7 +270,7 @@ async function simulateExtensions (input: string) {
     }
     data.value = next
   } catch {
-    // simulation indisponible (permission, réseau, service distant) : on garde les valeurs stockées
+    // simulation unavailable (permission, network, remote service): keep the stored values
   }
 }
 
@@ -345,7 +345,7 @@ const { execute: saveEvent, loading: submitting } = useAsyncAction(
     if (lineId && exceptionsField.value) {
       body[exceptionsField.value] = serializeExceptions(currentExceptions.value, exceptionType())
     }
-    // _body: JSON natif, y compris les colonnes tableau/objet que le multipart ne sait pas typer
+    // _body: native JSON, including the array/object columns multipart cannot type
     formData.append('_body', JSON.stringify(body))
     const url = lineId
       ? `${mainDataset.value.href}/lines/${lineId}`

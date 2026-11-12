@@ -1,5 +1,6 @@
 // Visual regression of the three main views, desktop and mobile, plus the dark theme.
-import { test, expect, openApp, jepConfig, datasets, type Page } from './fixtures'
+import type { Page } from './fixtures'
+import { test, expect, openApp, jepConfig, datasets } from './fixtures'
 
 const views = { month: 'dayGridMonth', week: 'timeGridWeek', planning: 'planning' }
 

@@ -1,5 +1,6 @@
 // Per-occurrence exceptions of an opening hours series.
-import { test, expect, openApp, datasets, recurrenceConfig, openingConfig, type Line, type Page } from './fixtures'
+import type { Line, Page } from './fixtures'
+import { test, expect, openApp, datasets, recurrenceConfig, openingConfig } from './fixtures'
 
 const ds = datasets.openingAdmin
 const line = (exceptions?: unknown[]): Line => ({

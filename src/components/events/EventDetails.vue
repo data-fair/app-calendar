@@ -124,13 +124,13 @@ const formatedDate = computed(() => {
 
 function cancel () {
   mode.value = 'read'
-  // une exception peut avoir été rétablie sans valider le formulaire : relire la ligne
+  // an exception may have been restored without submitting the form: reload the line
   timestamp.value = new Date().getTime()
   if (!prop.event?.id) emit('updated')
 }
 
 function closeOrCancel () {
-  // Si on ferme depuis le mode édition, on force un rafraîchissement du calendrier
+  // When closing from edit mode, force a calendar refresh
   if (mode.value === 'edit') {
     timestamp.value = new Date().getTime()
     emit('updated')

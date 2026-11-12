@@ -30,7 +30,7 @@ function setup (type: 'month' | 'week' | 'day', lines: Record<string, unknown>[]
 }
 
 describe('useCalendarEvents.splitMultiDayEvent', () => {
-  it('ne découpe pas un événement d\'un seul jour', () => {
+  it('does not split a single-day event', () => {
     const { events } = setup('week', [])
     const start = dayjs('2026-08-24 09:00:00')
     const end = dayjs('2026-08-24 11:00:00')
@@ -42,7 +42,7 @@ describe('useCalendarEvents.splitMultiDayEvent', () => {
     expect(segs[0].allDay).toBe(false)
   })
 
-  it('découpe un événement multi-jours daté en 3 segments en vue semaine', () => {
+  it('splits a timed multi-day event into 3 segments in week view', () => {
     const { events } = setup('week', [])
     const segs = events.splitMultiDayEvent({ id: '1', name: 'Voyage' }, dayjs('2026-08-24 09:00:00'), dayjs('2026-08-26 17:00:00'), '1', '2026-08-24T09:00:00.000Z', '2026-08-26T17:00:00.000Z')
     expect(segs).toHaveLength(3)
@@ -64,21 +64,21 @@ describe('useCalendarEvents.splitMultiDayEvent', () => {
     expect(last.end).toBe('2026-08-26 17:00')
   })
 
-  it('omet le dernier segment si la fin tombe à minuit exact', () => {
+  it('omits the last segment if the end falls exactly at midnight', () => {
     const { events } = setup('week', [])
     const segs = events.splitMultiDayEvent({ id: '1', name: 'Voyage' }, dayjs('2026-08-24 09:00:00'), dayjs('2026-08-26 00:00:00'), '1', '2026-08-24T09:00:00.000Z', '2026-08-26T00:00:00.000Z')
     expect(segs).toHaveLength(2)
     expect(segs.map(s => s.id)).toEqual(['1-2026-08-24', '1-middle'])
   })
 
-  it('n\'ajoute pas de segment intermédiaire pour une durée de 2 jours', () => {
+  it('adds no intermediate segment for a 2-day duration', () => {
     const { events } = setup('week', [])
     const segs = events.splitMultiDayEvent({ id: '1', name: 'Week-end' }, dayjs('2026-08-24 09:00:00'), dayjs('2026-08-25 17:00:00'), '1', '2026-08-24T09:00:00.000Z', '2026-08-25T17:00:00.000Z')
     expect(segs).toHaveLength(2)
     expect(segs.map(s => s.id)).toEqual(['1-2026-08-24', '1-2026-08-25'])
   })
 
-  it('ne découpe pas en vue mois', () => {
+  it('does not split in month view', () => {
     const { events } = setup('month', [])
     const segs = events.splitMultiDayEvent({ id: '1', name: 'Voyage' }, dayjs('2026-08-24 09:00:00'), dayjs('2026-08-26 17:00:00'), '1', '2026-08-24T09:00:00.000Z', '2026-08-26T17:00:00.000Z')
     expect(segs).toHaveLength(1)
@@ -87,7 +87,7 @@ describe('useCalendarEvents.splitMultiDayEvent', () => {
 })
 
 describe('useCalendarEvents.buildEvents', () => {
-  it('construit les événements all-day et datés depuis le fetch', async () => {
+  it('builds the all-day and timed events from the fetch', async () => {
     const { events } = setup('week', [
       { _id: '1', title: 'Ponctuel', start: '2026-08-24T10:00:00.000Z' },
       { _id: '2', title: 'Général', start: '2026-08-24T14:00:00.000Z', end: '2026-08-25T16:00:00.000Z' }
@@ -97,7 +97,7 @@ describe('useCalendarEvents.buildEvents', () => {
     const evts = events.allEventsRef.value
     expect(evts.length).toBeGreaterThanOrEqual(3)
     const punctual = evts.find(e => e.id === '1')!
-    // événement ponctuel étendu de 30 min pour la lisibilité
+    // one-off event extended by 30 min for readability
     expect(punctual.start).toBe(dayjs('2026-08-24T10:00:00.000Z').format('YYYY-MM-DD HH:mm'))
     expect(punctual.end).toBe(dayjs('2026-08-24T10:00:00.000Z').add(30, 'minute').format('YYYY-MM-DD HH:mm'))
     expect(punctual.isPunctual).toBe(true)
@@ -109,7 +109,7 @@ describe('useCalendarEvents.buildEvents', () => {
     expect(multi[1].isLastSegment).toBe(true)
   })
 
-  it('ignore les événements à date invalide et avertit pour ceux sans date', async () => {
+  it('ignores events with an invalid date and warns for those without a date', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const { events } = setup('week', [
       { _id: '1', title: 'Cassé', start: '2026-08-32T10:00:00.000Z', end: '2026-08-32T18:00:00.000Z' },
@@ -118,12 +118,12 @@ describe('useCalendarEvents.buildEvents', () => {
     await flushPromises()
 
     expect(events.allEventsRef.value).toEqual([])
-    // seul l'événement sans date déclenche l'avertissement
+    // only the event without a date triggers the warning
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('1 événement(s) ignoré(s)'))
     warnSpy.mockRestore()
   })
 
-  it('décale de 2 minutes les événements datés superposés', async () => {
+  it('shifts overlapping timed events by 2 minutes', async () => {
     const { events } = setup('week', [
       { _id: '1', title: 'A', start: '2026-08-24T10:00:00.000Z', end: '2026-08-24T11:00:00.000Z' },
       { _id: '2', title: 'B', start: '2026-08-24T10:00:00.000Z', end: '2026-08-24T11:00:00.000Z' }
@@ -138,7 +138,7 @@ describe('useCalendarEvents.buildEvents', () => {
     expect(b.end).toBe(dayjs(a.end as string).add(2, 'minute').format('YYYY-MM-DD HH:mm'))
   })
 
-  it('reconstruit les événements quand le type de vue change', async () => {
+  it('rebuilds the events when the view type changes', async () => {
     const { events, typeRef } = setup('week', [
       { _id: '1', title: 'Voyage', start: '2026-08-24T09:00:00.000Z', end: '2026-08-26T17:00:00.000Z' }
     ])

@@ -1,5 +1,6 @@
 // Navigation in the simple layout: periods, views, URL state, date picker.
-import { test, expect, openApp, type Page } from './fixtures'
+import type { Page } from './fixtures'
+import { test, expect, openApp } from './fixtures'
 
 const weekDays = (page: Page) => page.getByRole('grid').getByRole('button')
 

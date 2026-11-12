@@ -1,6 +1,6 @@
+import type { Dayjs } from 'dayjs'
 import { useConfig } from './config'
 import { useLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
-import type { Dayjs } from 'dayjs'
 
 export function useDateBounds () {
   const { config } = useConfig()

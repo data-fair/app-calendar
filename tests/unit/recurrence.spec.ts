@@ -13,7 +13,7 @@ import {
 } from '@/utils/recurrence'
 
 describe('recurrence exceptions', () => {
-  it('lit un tableau ou du JSON texte, et ignore les valeurs invalides', () => {
+  it('reads an array or JSON text, and ignores invalid values', () => {
     const entries = [{ occurrence: '2026-10-12T14:00', cancelled: true }]
     expect(parseExceptions(entries)).toEqual(entries)
     expect(parseExceptions(JSON.stringify(entries))).toEqual(entries)
@@ -23,11 +23,11 @@ describe('recurrence exceptions', () => {
     expect(parseExceptions([{ occurrence: 12 }, null])).toEqual([])
   })
 
-  it('construit une clé locale stable à la minute', () => {
+  it('builds a local key stable to the minute', () => {
     expect(occurrenceKey(dayjs('2026-10-12T14:00:00+02:00'))).toBe('2026-10-12T14:00')
   })
 
-  it('trouve et applique une exception sans toucher aux autres champs', () => {
+  it('finds and applies an exception without touching the other fields', () => {
     const entries = parseExceptions([{ occurrence: '2026-10-12T14:00', values: { title: 'Décalé' } }])
     const exception = findException(entries, '2026-10-12T14:00')
     expect(exception?.values).toEqual({ title: 'Décalé' })
@@ -35,7 +35,7 @@ describe('recurrence exceptions', () => {
     expect(mergeException({ title: 'Série' }, { occurrence: '2026-10-12T14:00', cancelled: true })).toEqual({ title: 'Série' })
   })
 
-  it('ne garde que les champs modifiés, null compris', () => {
+  it('keeps only the changed fields, null included', () => {
     expect(changedValues(
       { title: 'Décalé', start: '2026-10-13T10:00:00+02:00', room: null },
       { title: 'Série', start: '2026-10-12T14:00:00+02:00', room: 'A' },
@@ -48,7 +48,7 @@ describe('recurrence exceptions', () => {
     expect(changedValues({ title: 'Série' }, { title: 'Série' }, ['title'])).toEqual({})
   })
 
-  it('remplace, annule et retire une occurrence en gardant la liste triée', () => {
+  it('replaces, cancels and removes an occurrence keeping the list sorted', () => {
     let entries = setOccurrenceException([], '2026-10-19T14:00', { title: 'B' })
     entries = setOccurrenceException(entries, '2026-10-12T14:00', { title: 'A' })
     expect(entries.map(e => e.occurrence)).toEqual(['2026-10-12T14:00', '2026-10-19T14:00'])
@@ -63,7 +63,7 @@ describe('recurrence exceptions', () => {
     expect(entries).toHaveLength(1)
   })
 
-  it('sérialise en tableau ou en texte JSON selon la colonne', () => {
+  it('serializes as an array or JSON text depending on the column', () => {
     const entries = [{ occurrence: '2026-10-12T14:00', cancelled: true }]
     expect(serializeExceptions(entries)).toEqual(entries)
     expect(serializeExceptions(entries, 'array')).toEqual(entries)

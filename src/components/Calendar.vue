@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DragState } from '@/composables/useDragResize'
 import { mdiChevronLeft, mdiChevronRight } from '@mdi/js'
 import { ref, computed, watch, nextTick, onMounted, onUnmounted, capitalize } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -7,7 +8,7 @@ import reactiveSearchParams from '@data-fair/lib-vue/reactive-search-params-glob
 import { useConfig } from '@/composables/config'
 import { useLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
 import { useCalendarEvents } from '@/composables/useCalendarEvents'
-import { useDragResize, type DragState } from '@/composables/useDragResize'
+import { useDragResize } from '@/composables/useDragResize'
 import { useEventSelection } from '@/composables/useEventSelection'
 import { useDateBounds } from '@/composables/useDateBounds'
 import EventDetails from './events/EventDetails.vue'
@@ -19,7 +20,7 @@ const { xs } = useDisplay()
 const { config, layout, startDateField, endDateField, dateField, dataset } = useConfig()
 const { resolveMinDate, resolveMaxDate } = useDateBounds()
 
-// État partagé entre composables
+// State shared between composables
 const selectedEvent = ref<Record<string, unknown> | null>(null)
 const eventMenuOpen = ref<boolean | undefined>(undefined)
 const eventMenuActivator = ref<HTMLElement | undefined>(undefined)
@@ -27,7 +28,7 @@ const editMode = ref(false)
 const visibleDates = ref<string[]>([])
 const calendar = ref()
 
-// dragState créé ici pour éviter la dépendance circulaire entre useCalendarEvents et useDragResize
+// dragState created here to avoid the circular dependency between useCalendarEvents and useDragResize
 const dragState = ref<DragState | null>(null)
 
 const midDate = reactiveSearchParams.start && reactiveSearchParams.end
@@ -59,18 +60,18 @@ function toVuetifyView (view: string | undefined): 'month' | 'week' | 'day' | 'p
 const type = ref<'month' | 'week' | 'day' | 'planning'>(
   toVuetifyView(reactiveSearchParams.view || config.value.initialView)
 )
-// vuetifyType : valeur passée à v-calendar (ne connaît pas 'planning')
+// vuetifyType: value passed to v-calendar (which does not know 'planning')
 const vuetifyType = computed(() => type.value === 'planning' ? 'month' : type.value)
 
-// Écriture dans l'URL
+// Writing to the URL
 watch(type, (newType) => { reactiveSearchParams.view = newType })
 // immediate: the initial date is in the URL too, so a reload never falls back to the middle of start/end
 watch(currentDate, (newDate) => { if (newDate) reactiveSearchParams.date = newDate }, { immediate: true })
 
-// Flag pour distinguer nos propres écritures sur start/end de celles du parent (iframe)
+// Flag to tell our own start/end writes from those of the parent (iframe)
 let calendarIsUpdatingRange = false
 
-// Sync inverse pour le cas iframe (params reçus du parent après le montage)
+// Reverse sync for the iframe case (params received from the parent after mount)
 watch(() => reactiveSearchParams.view as string | undefined, (newView) => {
   if (!newView) return
   const resolved = toVuetifyView(newView)
@@ -79,7 +80,7 @@ watch(() => reactiveSearchParams.view as string | undefined, (newView) => {
 watch(() => reactiveSearchParams.date as string | undefined, (newDate) => {
   if (newDate && newDate !== currentDate.value) currentDate.value = newDate
 })
-// Fallback : si date n'est pas dans l'URL (ancienne URL) mais start/end y sont (sync parent async)
+// Fallback: if date is not in the URL (old URL) but start/end are (async parent sync)
 watch([() => reactiveSearchParams.start, () => reactiveSearchParams.end], ([start, end]) => {
   if (calendarIsUpdatingRange || reactiveSearchParams.date || !start || !end) return
   const mid = new Date((new Date(start as string).getTime() + new Date(end as string).getTime()) / 2)
@@ -131,7 +132,7 @@ function onMouseDownTime (nativeEvent: Event, { date, time }: { date: string, ti
     }
     pendingDrag.value = null
     hasDragged.value = false
-    // Initialiser l'heure connue
+    // Initialize the known time
     const [h, m] = time.split(':').map(Number)
     lastKnownHour.value = h
     lastKnownMinute.value = m
@@ -259,9 +260,9 @@ function onClickPlanningEvent (event: Record<string, unknown>, nativeEvent: Mous
 const nowTime = ref(dayjs().format('HH:mm'))
 let nowInterval: ReturnType<typeof setInterval> | null = null
 
-// Capture : la miniature doit montrer le calendrier rendu avec ses événements.
-// On déclenche dès que des événements sont affichés, avec un repli temporisé
-// (dataset vide, erreur de chargement) pour ne pas faire attendre le service.
+// Capture: the thumbnail must show the calendar rendered with its events.
+// It fires as soon as events are displayed, with a timed fallback
+// (empty dataset, loading error) so the service is not kept waiting.
 let captureTriggered = false
 let captureTimeout: ReturnType<typeof setTimeout> | null = null
 function triggerCaptureOnce () {

@@ -1,6 +1,7 @@
-import { inject, computed, ref, toRaw, type App, type Ref } from 'vue'
+import type { App, Ref } from 'vue'
 import type { Application, Dataset, Field } from '@data-fair/lib-common-types/application/index.js'
 import type { Config, ReglageDesCouleurs } from '@/config'
+import { inject, computed, ref, toRaw } from 'vue'
 import reactiveSearchParams from '@data-fair/lib-vue/reactive-search-params-global.js'
 import createDFrameAdapter from '@data-fair/frame/lib/vue-reactive/state-change-adapter.js'
 
@@ -120,8 +121,8 @@ export function createConfig (t: Translate) {
 
   function notifyConfigChange (field: string, value: unknown) {
     if (window.parent !== window) {
-      // L'origine du parent (backoffice data-fair) est déduite du referrer ;
-      // repli '*' si le referrer est masqué par une referrer-policy.
+      // The parent origin (data-fair back-office) is derived from the referrer;
+      // falls back on '*' if the referrer is hidden by a referrer-policy.
       let targetOrigin = '*'
       try {
         if (document.referrer) targetOrigin = new URL(document.referrer).origin
@@ -186,8 +187,8 @@ export function createConfig (t: Translate) {
           if (content.configuration) {
             config.value = content.configuration
           } else if (content.chart || content.datasets || content.layers || content.metrics) {
-            // Fusionner avec la config existante plutôt qu'écraser : certains
-            // émetteurs n'envoient qu'un sous-arbre modifié (perte des champs frères sinon).
+            // Merge with the existing config rather than overwrite: some emitters
+            // only send a modified subtree (sibling fields would be lost otherwise).
             config.value = { ...toRaw(config.value), ...content }
           } else if (content.field && 'value' in content) {
             const newConfig = JSON.parse(JSON.stringify(config.value))

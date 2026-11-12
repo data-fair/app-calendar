@@ -1,10 +1,11 @@
+import type { Translate } from './config'
+import type { Theme } from '@/config'
+import type { Ref } from 'vue'
 import { ref, computed, watch } from 'vue'
 import { useTheme } from 'vuetify'
 import { useCalendarData } from './useCalendarData'
-import { useConfig, type Translate } from './config'
+import { useConfig } from './config'
 import { useLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
-import type { Theme } from '@/config'
-import type { Ref } from 'vue'
 
 export function useCalendarEvents (
   dragState: Ref<{ originalId: string } | null>,
@@ -63,8 +64,8 @@ export function useCalendarEvents (
       originalEnd,
     }
 
-    // Premier segment : du début original jusqu'à la fin du premier jour
-    // Si le début est trop proche de minuit, on remonte l'affichage pour garantir la lisibilité
+    // First segment: from the original start to the end of the first day
+    // If the start is too close to midnight, the display is moved up to keep it readable
     const firstSegEnd = startDate.endOf('day')
     const firstSegDisplayStart = firstSegEnd.diff(startDate, 'minute') < 60
       ? firstSegEnd.subtract(50, 'minute')
@@ -83,7 +84,7 @@ export function useCalendarEvents (
       totalDays,
     })
 
-    // Segment médian : une seule barre all-day couvrant tous les jours intermédiaires
+    // Middle segment: a single all-day bar covering all the intermediate days
     if (totalDays > 2) {
       const firstMiddle = startDate.startOf('day').add(1, 'day')
       const lastMiddle = lastDay.subtract(1, 'day')
@@ -101,7 +102,7 @@ export function useCalendarEvents (
       })
     }
 
-    // Dernier segment : ignoré si l'événement se termine exactement à minuit (durée zéro)
+    // Last segment: skipped if the event ends exactly at midnight (zero duration)
     if (endDate.format('HH:mm') !== '00:00') {
       segments.push({
         ...baseSegment,

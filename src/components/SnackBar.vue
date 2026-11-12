@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import type { UiNotif } from '@data-fair/lib-vue/ui-notif.js'
 import { ref, watch } from 'vue'
-import { useUiNotif, type UiNotif } from '@data-fair/lib-vue/ui-notif.js'
+import { useUiNotif } from '@data-fair/lib-vue/ui-notif.js'
 
 const { notification } = useUiNotif()
 const visible = ref(false)

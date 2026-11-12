@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import type { WeekdayName, RecurringOpeningHours } from '@wojtekmaj/opening-hours-utils'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getDailyOpeningHours, encodeOpeningHours } from '@wojtekmaj/opening-hours-utils'
-import type { WeekdayName, RecurringOpeningHours } from '@wojtekmaj/opening-hours-utils'
 
 const { t } = useI18n()
 const model = defineModel({ type: String, default: '' })

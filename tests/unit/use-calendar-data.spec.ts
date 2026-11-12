@@ -25,7 +25,7 @@ function setup (schema: ReturnType<typeof field>[], lines: Record<string, unknow
 }
 
 describe('useCalendarData.events', () => {
-  it('mappe un événement date-time simple', async () => {
+  it('maps a simple date-time event', async () => {
     const schema = [
       field('title', 'text', LABEL_REFERS_TO),
       field('start', 'date-time', START_REFERS_TO),
@@ -45,7 +45,7 @@ describe('useCalendarData.events', () => {
     expect(e.editable).toBe(false)
   })
 
-  it('un événement sur champs date-only est all-day avec fin exclusive +1 jour', async () => {
+  it('an event on date-only fields is all-day with an exclusive end +1 day', async () => {
     const schema = [
       field('title', 'text', LABEL_REFERS_TO),
       field('start', 'date', START_REFERS_TO),
@@ -62,7 +62,7 @@ describe('useCalendarData.events', () => {
     expect(e.end).toBe('2026-08-27')
   })
 
-  it('un événement sur champ date unique est all-day sans fin', async () => {
+  it('an event on a single date field is all-day without an end', async () => {
     const schema = [
       field('title', 'text', LABEL_REFERS_TO),
       field('start', 'date', DATE_REFERS_TO)
@@ -77,14 +77,14 @@ describe('useCalendarData.events', () => {
     expect(e.end).toBeUndefined()
   })
 
-  it('déploie les horaires d\'ouverture par créneau en vue semaine (régression format dd)', async () => {
+  it('expands opening hours per slot in week view (format dd regression)', async () => {
     const schema = [
       field('title', 'text', LABEL_REFERS_TO),
       field('start', 'date-time', START_REFERS_TO),
       field('end', 'date-time', END_REFERS_TO),
       field('openingHours', 'text', OPENING_HOURS_REFERS_TO)
     ]
-    // Semaine du lundi 24 au vendredi 28 août 2026, horaires du lundi au vendredi
+    // Week from Monday 24 to Friday 28 August 2026, opening hours Monday to Friday
     const cal = setup(schema, [
       {
         _id: '1',
@@ -98,8 +98,8 @@ describe('useCalendarData.events', () => {
 
     expect(cal.events.value.length).toBeGreaterThanOrEqual(5)
     const days = cal.events.value.map(e => dayjs(e.start as string).locale('fr').format('dddd'))
-    // 5 jours ouvrés : le bug format('dd') omettrait les jours dont la clé
-    // 2 lettres ne matche pas le map 3 lettres fr
+    // 5 working days: the format('dd') bug would omit the days whose 2-letter
+    // key does not match the 3-letter fr map
     expect(new Set(days).size).toBe(5)
     const monday = cal.events.value.find(e => dayjs(e.start as string).locale('fr').format('dddd') === 'lundi')!
     expect(dayjs(monday.start as string).format('HH:mm')).toBe('09:00')
@@ -107,7 +107,7 @@ describe('useCalendarData.events', () => {
     expect(monday.allDay).toBe(false)
   })
 
-  it('applique les exceptions de série : occurrence annulée ou déplacée', async () => {
+  it('applies series exceptions: cancelled or moved occurrence', async () => {
     const schema = [
       field('title', 'text', LABEL_REFERS_TO),
       field('start', 'date-time', START_REFERS_TO),
@@ -150,7 +150,7 @@ describe('useCalendarData.events', () => {
     expect(dayjs(thursday.start as string).format('HH:mm')).toBe('09:00')
   })
 
-  it('ramène dans la période une occurrence déplacée depuis une autre période', async () => {
+  it('brings into the period an occurrence moved from another period', async () => {
     const schema = [
       field('title', 'text', LABEL_REFERS_TO),
       field('start', 'date-time', START_REFERS_TO),
@@ -182,7 +182,7 @@ describe('useCalendarData.events', () => {
     expect(cal.events.value.filter(e => e.recurrenceStart === '2026-08-27T09:00')).toHaveLength(1)
   })
 
-  it('ignore les exceptions quand le paramétrage est désactivé', async () => {
+  it('ignores exceptions when the setting is disabled', async () => {
     const schema = [
       field('title', 'text', LABEL_REFERS_TO),
       field('start', 'date-time', START_REFERS_TO),
@@ -204,7 +204,7 @@ describe('useCalendarData.events', () => {
     expect(cal.events.value.some(e => e.recurrenceStart === '2026-08-25T09:00')).toBe(true)
   })
 
-  it('laisse passer les dates invalides dans le mapping (filtrées par buildEvents)', async () => {
+  it('lets invalid dates through the mapping (filtered by buildEvents)', async () => {
     const schema = [
       field('title', 'text', LABEL_REFERS_TO),
       field('start', 'date-time', START_REFERS_TO),
@@ -218,7 +218,7 @@ describe('useCalendarData.events', () => {
     expect(cal.events.value).toHaveLength(1)
   })
 
-  it('renvoie un tableau vide sans champ libellé', async () => {
+  it('returns an empty array without a label field', async () => {
     const schema = [
       field('start', 'date-time', START_REFERS_TO),
       field('end', 'date-time', END_REFERS_TO)
@@ -249,7 +249,7 @@ describe('useCalendarData requests', () => {
   }
   const linesUrls = () => ofetchMock.mock.calls.map(([url]) => decodeURIComponent(url as string)).filter(url => url.includes('/lines'))
 
-  it('convertit les filtres statiques en paramètres REST de /lines', async () => {
+  it('converts static filters to /lines REST parameters', async () => {
     setupWithConfig({ staticFilters: [{ type: 'in', field: 'dep', values: ['75', '92'] }] }, () => ({ results: [] }))
     await flushPromises()
 
@@ -257,7 +257,7 @@ describe('useCalendarData requests', () => {
     expect(linesUrls().every(url => url.includes('dep_in=75,92') && !url.includes('qs='))).toBe(true)
   })
 
-  it('construit la palette multicolor depuis les valeurs du champ', async () => {
+  it('builds the multicolor palette from the field values', async () => {
     const cal = setupWithConfig({
       color: { type: 'multicolor', field: 'agg', colors: { type: 'palette', name: 'Spectral', offset: 0 } }
     }, (url) => url.includes('/values/agg') ? ['1', '2'] : { results: [] })
@@ -270,7 +270,7 @@ describe('useCalendarData requests', () => {
     expect(palette['1']).not.toBe(palette['2'])
   })
 
-  it('utilise les couleurs des catégories personnalisées', async () => {
+  it('uses the colors of the custom categories', async () => {
     const cal = setupWithConfig({
       color: { type: 'multicolor', field: 'grav', colors: { type: 'custom', categories: [{ value: '1', color: '#4caf50' }, { value: '2', color: '#f44336' }] } }
     }, () => ({ results: [] }))

@@ -1,6 +1,7 @@
+import type { ConfigState } from '@/composables/config'
 import { describe, expect, it } from 'vitest'
 import { createApp } from 'vue'
-import { createConfig, type ConfigState } from '@/composables/config'
+import { createConfig } from '@/composables/config'
 import { field, makeDataset, LABEL_REFERS_TO, START_REFERS_TO, createTestI18n } from './helpers'
 
 const i18n = createTestI18n()
@@ -27,7 +28,7 @@ describe('createConfig.exceptionsField', () => {
     field('exceptions', 'array')
   ]
 
-  it('reste désactivé par défaut et n\'active la colonne que si elle existe', () => {
+  it('stays disabled by default and only enables the column if it exists', () => {
     expect(exceptionsKey({ datasets: [makeDataset(schema)] })).toBeUndefined()
     expect(exceptionsKey({
       manageRecurrenceExceptions: false,
@@ -48,7 +49,7 @@ describe('createConfig.exceptionsField', () => {
 })
 
 describe('createConfig.error', () => {
-  it('signale le premier élément manquant de la configuration', () => {
+  it('reports the first missing item of the configuration', () => {
     const label = field('title', 'text', LABEL_REFERS_TO)
     const start = field('start', 'date-time', START_REFERS_TO)
     expect(configError({})).toBe('Veuillez sélectionner une source de données')

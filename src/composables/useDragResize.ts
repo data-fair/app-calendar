@@ -1,8 +1,8 @@
+import type { Ref } from 'vue'
 import { ref } from 'vue'
 import { useConfig } from './config'
 import { useLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
 import { useDateBounds } from './useDateBounds'
-import type { Ref } from 'vue'
 
 export type DragState = {
   originalId: string

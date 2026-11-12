@@ -2,7 +2,8 @@
 // mocks, injection of window.APPLICATION. Specs import `test` and `expect` from here,
 // never from '@playwright/test', so that the console guard applies to every test.
 // App-specific mocks (dataset routes, configurations) go below this base, in the same file.
-import { test as base, expect, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
+import { test as base, expect } from '@playwright/test'
 
 export const test = base.extend<{ consoleGuard: void, expectedConsole: string[] }>({
   // messages a test provokes on purpose (a failing request), named one by one:
@@ -191,7 +192,7 @@ export async function mockDataset (page: Page, ds: Dataset, lines: LinesMock = [
       return route.fulfill({ json: { total: pages.flat().length, results: pages[index] ?? [], next } })
     }
     if (url.pathname.endsWith('/safe-schema')) {
-      // comme l'API data-fair : les colonnes calculées et d'extension sont en lecture seule
+      // like the data-fair API: computed and extension columns are read-only
       const properties = Object.fromEntries(ds.schema.filter(f => f.key !== '_id').map(({ key, ...f }) => [key, { ...f, ...(f['x-extension'] || f['x-calculated'] ? { readOnly: true } : {}) }]))
       return route.fulfill({ contentType: 'application/schema+json', body: JSON.stringify({ type: 'object', properties }) })
     }

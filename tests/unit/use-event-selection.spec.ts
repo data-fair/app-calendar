@@ -41,7 +41,7 @@ function eventOnExisting (): Event {
 }
 
 describe('useEventSelection', () => {
-  it('démarre une sélection ponctuelle quand il n\'y a pas de champ de fin', () => {
+  it('starts a one-off selection when there is no end field', () => {
     const schema = [
       field('title', 'text', LABEL_REFERS_TO),
       field('start', 'date-time', START_REFERS_TO)
@@ -64,7 +64,7 @@ describe('useEventSelection', () => {
     expect(splitSpy).toHaveBeenCalled()
   })
 
-  it('démarre une sélection étendue quand un champ de fin existe', () => {
+  it('starts an extended selection when an end field exists', () => {
     const state = makeConfigState(dataset)
     const selectionEvents = ref<Record<string, unknown>[]>([])
     const menuOpen = ref(false)
@@ -79,7 +79,7 @@ describe('useEventSelection', () => {
     expect(sel.isPointSelect.value).toBe(false)
   })
 
-  it('ignore le clic sur un événement existant', () => {
+  it('ignores the click on an existing event', () => {
     const state = makeConfigState(dataset)
     const selectionEvents = ref<Record<string, unknown>[]>([])
     const menuOpen = ref(false)
@@ -94,7 +94,7 @@ describe('useEventSelection', () => {
     expect(selectionEvents.value).toEqual([])
   })
 
-  it('ignore le clic quand les champs sont de type date seule', () => {
+  it('ignores the click when the fields are date-only', () => {
     const state = makeConfigState(dateOnlyDataset)
     const selectionEvents = ref<Record<string, unknown>[]>([])
     const menuOpen = ref(false)
@@ -110,7 +110,7 @@ describe('useEventSelection', () => {
     expect(selectionEvents.value).toEqual([])
   })
 
-  it('ignore le clic avant la borne minimale configurée', () => {
+  it('ignores the click before the configured minimum bound', () => {
     const state = makeConfigState(dataset, { minDate: 'day' } as never)
     const selectionEvents = ref<Record<string, unknown>[]>([])
     const menuOpen = ref(false)
@@ -126,7 +126,7 @@ describe('useEventSelection', () => {
     expect(selectionEvents.value).toEqual([])
   })
 
-  it('met à jour l\'aperçu au déplacement de la souris', () => {
+  it('updates the preview on mouse move', () => {
     const state = makeConfigState(dataset)
     const selectionEvents = ref<Record<string, unknown>[]>([])
     const menuOpen = ref(false)
@@ -150,7 +150,7 @@ describe('useEventSelection', () => {
     expect(lastCall[2].format('YYYY-MM-DD HH:mm')).toBe('2026-08-24 12:00')
   })
 
-  it('finalise une sélection ponctuelle en événement sur le champ de début', () => {
+  it('finalizes a one-off selection into an event on the start field', () => {
     stubRaf()
     const schema = [
       field('title', 'text', LABEL_REFERS_TO),
@@ -173,7 +173,7 @@ describe('useEventSelection', () => {
     expect(selectionEvents.value).toEqual([])
   })
 
-  it('finalise une sélection étendue en événement début + fin', () => {
+  it('finalizes an extended selection into a start + end event', () => {
     stubRaf()
     const state = makeConfigState(dataset)
     const selectionEvents = ref<Record<string, unknown>[]>([])
@@ -191,7 +191,7 @@ describe('useEventSelection', () => {
     expect(menuOpen.value).toBe(true)
   })
 
-  it('normalise une sélection inversée (fin avant début)', () => {
+  it('normalizes a reversed selection (end before start)', () => {
     stubRaf()
     const state = makeConfigState(dataset)
     const selectionEvents = ref<Record<string, unknown>[]>([])

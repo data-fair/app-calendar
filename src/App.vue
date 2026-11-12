@@ -11,8 +11,8 @@ const { error } = useConfig()
 watch(error, (message) => {
   if (!message) return
   ofetch(window.APPLICATION.href + '/error', { body: { message }, method: 'POST' }).catch(() => undefined)
-  // Débloque le service de capture même sur configuration invalide
-  // (sinon chaque capture attend le délai complet de df:capture-delay).
+  // Unblocks the capture service even on an invalid configuration
+  // (otherwise every capture waits for the full df:capture-delay).
   window.triggerCapture?.(false)
 }, { immediate: true })
 

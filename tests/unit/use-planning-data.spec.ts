@@ -12,9 +12,8 @@ vi.mock('ofetch', () => ({ ofetch: ofetchMock }))
 
 const i18n = createTestI18n()
 
-// Le planning n'affiche que les événements à venir : utiliser des dates
-// dynamiques (dans ~10 jours) pour que la suite ne devienne pas obsolète
-// le jour où les dates fixes sont dans le passé.
+// The planning only shows upcoming events: use dynamic dates (in ~10 days)
+// so the suite does not become obsolete the day fixed dates are in the past.
 const T0 = dayjs().add(10, 'day').startOf('day')
 const T1 = T0.add(1, 'day')
 const T2 = T0.add(2, 'day')
@@ -42,7 +41,7 @@ const dateOnlySchema = [
 ]
 
 describe('usePlanningData.planningDays', () => {
-  it('étale un événement all-day sur tous les jours de sa période', async () => {
+  it('spreads an all-day event over all the days of its period', async () => {
     const { planning } = setup(dateOnlySchema, [
       { _id: '1', title: 'Festival', start: d(T0), end: d(T2) }
     ])
@@ -61,19 +60,19 @@ describe('usePlanningData.planningDays', () => {
     expect(last.id).toBe('1')
   })
 
-  it('un all-day daté-time à minuit est affiché "Toute la journée" et fin exclusive si minuit', async () => {
+  it('a date-time all-day at midnight is shown as "Toute la journée" with an exclusive end at midnight', async () => {
     const { planning } = setup(dateTimeSchema, [
       { _id: '1', title: 'Réservation', start: `${d(T1)}T00:00:00`, end: `${d(T3)}T00:00:00` }
     ])
     await planning.loadMore()
     await flushPromises()
 
-    // fin exacte à minuit = exclusive → dernier jour exclu
+    // exact end at midnight = exclusive → last day excluded
     expect(planning.planningDays.value.map(day => day.date)).toEqual([d(T1), d(T2)])
     expect(planning.planningDays.value[0].events[0].timeLabel).toBe('Toute la journée')
   })
 
-  it('un événement ponctuel (date-time même jour) porte l\'heure en timeLabel', async () => {
+  it('a one-off event (same-day date-time) carries the time in timeLabel', async () => {
     const { planning } = setup(dateTimeSchema, [
       { _id: '1', title: 'Réunion', start: `${d(T0)}T10:00:00`, end: `${d(T0)}T12:00:00` }
     ])
@@ -85,7 +84,7 @@ describe('usePlanningData.planningDays', () => {
     expect(planning.planningDays.value[0].events[0].allDay).toBe(false)
   })
 
-  it('un événement ponctuel sans champ de fin est affiché une seule fois', async () => {
+  it('a one-off event without an end field is shown only once', async () => {
     const { planning } = setup(dateTimeSchema, [
       { _id: '1', title: 'Point', start: `${d(T0)}T10:00:00` }
     ])
@@ -96,7 +95,7 @@ describe('usePlanningData.planningDays', () => {
     expect(planning.planningDays.value[0].events).toHaveLength(1)
   })
 
-  it('découpe un événement multi-jours daté en segments étiquetés', async () => {
+  it('splits a timed multi-day event into labelled segments', async () => {
     const { planning } = setup(dateTimeSchema, [
       { _id: '1', title: 'Voyage', start: `${d(T0)}T09:00:00`, end: `${d(T2)}T17:00:00` }
     ])
@@ -112,7 +111,7 @@ describe('usePlanningData.planningDays', () => {
     expect(days[0].events[0].totalDays).toBe(3)
   })
 
-  it('ignore les dates invalides (pas de boucle infinie)', async () => {
+  it('ignores invalid dates (no infinite loop)', async () => {
     const { planning } = setup(dateTimeSchema, [
       { _id: '1', title: 'Cassé', start: '2026-08-32T10:00:00.000Z', end: '2026-08-32T18:00:00.000Z' }
     ])
@@ -122,7 +121,7 @@ describe('usePlanningData.planningDays', () => {
     expect(planning.planningDays.value).toEqual([])
   })
 
-  it('ignore les événements sans date', async () => {
+  it('ignores events without a date', async () => {
     const { planning } = setup(dateTimeSchema, [
       { _id: '1', title: 'Sans date' }
     ])
@@ -132,7 +131,7 @@ describe('usePlanningData.planningDays', () => {
     expect(planning.planningDays.value).toEqual([])
   })
 
-  it('un événement daterend datetime (de type date seule) est all-day et ne déborde pas', async () => {
+  it('a datetime daterend event (date-only type) is all-day and does not overflow', async () => {
     const schema = [
       field('title', 'text', LABEL_REFERS_TO),
       field('start', 'date', DATE_REFERS_TO)
@@ -147,10 +146,10 @@ describe('usePlanningData.planningDays', () => {
     expect(planning.planningDays.value[0].events[0].allDay).toBe(true)
   })
 
-  it('trie par instant de début quand les dates mélangent UTC et décalage local', async () => {
+  it('sorts by start instant when dates mix UTC and local offset', async () => {
     const { planning } = setup(dateTimeSchema, [
-      // 08:30 locale écrite en UTC, 08:15 locale écrite avec son décalage : à l'est de
-      // Greenwich, l'ordre des chaînes est l'inverse de l'ordre des instants
+      // 08:30 local written in UTC, 08:15 local written with its offset: east of
+      // Greenwich, the order of the strings is the reverse of the order of instants
       { _id: 'late', title: 'Fêtes', start: dayjs(`${d(T1)}T08:30:00`).toISOString(), end: dayjs(`${d(T1)}T23:00:00`).toISOString() },
       { _id: 'early', title: 'Intervention', start: dayjs(`${d(T1)}T08:15:00`).format(), end: dayjs(`${d(T1)}T09:45:00`).format() }
     ])
@@ -160,7 +159,7 @@ describe('usePlanningData.planningDays', () => {
     expect(planning.planningDays.value[0].events.map(e => e.id)).toEqual(['early', 'late'])
   })
 
-  it('trie les événements : all-day d\'abord puis par date de début', async () => {
+  it('sorts events: all-day first then by start date', async () => {
     const { planning } = setup(dateTimeSchema, [
       { _id: '2', title: 'Réunion', start: `${d(T1)}T09:00:00`, end: `${d(T1)}T10:00:00` },
       { _id: '3', title: 'Journée entière', start: `${d(T1)}T00:00:00`, end: `${d(T1)}T00:00:00` }
@@ -173,7 +172,7 @@ describe('usePlanningData.planningDays', () => {
     expect(events[0].allDay).toBe(true)
   })
 
-  it('charge la page suivante via next et met à jour hasMore', async () => {
+  it('loads the next page through next and updates hasMore', async () => {
     const { planning } = setup(dateOnlySchema, [
       { _id: '1', title: 'Premier', start: d(T0), end: d(T0) }
     ])
@@ -189,10 +188,10 @@ describe('usePlanningData.planningDays', () => {
     expect(planning.planningDays.value.map(day => day.date)).toEqual([d(T0), d(T1)])
   })
 
-  it('n\'affiche pas les jours au-delà du dernier début chargé tant qu\'il reste des pages', async () => {
-    // page triée par date de début : un événement long (récurrent) ouvert jusqu'à T0+60
-    // ne doit pas faire défiler le planning au-delà de ce qui est chargé, sinon les
-    // événements ponctuels des pages suivantes n'apparaissent jamais
+  it('does not show days beyond the last loaded start while pages remain', async () => {
+    // page sorted by start date: a long (recurring) event open until T0+60
+    // must not scroll the planning beyond what is loaded, otherwise the
+    // one-off events of the following pages never show up
     const { planning } = setup(dateTimeSchema, [])
     ofetchMock.mockResolvedValueOnce({
       results: [
@@ -215,7 +214,7 @@ describe('usePlanningData.planningDays', () => {
     expect(planning.planningDays.value.at(-1)?.date).toBe(d(T0.add(60, 'day')))
   })
 
-  it('déploie un événement récurrent selon ses horaires d\'ouverture', async () => {
+  it('expands a recurring event according to its opening hours', async () => {
     const schema = [...dateTimeSchema, field('horaire', 'text', OPENING_HOURS_REFERS_TO)]
     const monday = T0.add((8 - T0.day()) % 7, 'day')
     const { planning } = setup(schema, [
@@ -230,7 +229,7 @@ describe('usePlanningData.planningDays', () => {
     expect(days[0].events[0].dayIndex).toBeUndefined()
   })
 
-  it('applique les exceptions de série : annulée ou déplacée sur un autre jour', async () => {
+  it('applies series exceptions: cancelled or moved to another day', async () => {
     const schema = [...dateTimeSchema, field('horaire', 'text', OPENING_HOURS_REFERS_TO), field('exceptions', 'array')]
     const monday = T0.add((8 - T0.day()) % 7, 'day')
     const { planning } = setup(schema, [{
@@ -256,7 +255,7 @@ describe('usePlanningData.planningDays', () => {
     expect(moved.recurrenceEnd).toBe(`${d(monday.add(7, 'day'))}T18:00`)
   })
 
-  it('remonte dans le planning une occurrence passée déplacée vers le futur', async () => {
+  it('brings into the planning a past occurrence moved to the future', async () => {
     const schema = [...dateTimeSchema, field('horaire', 'text', OPENING_HOURS_REFERS_TO), field('exceptions', 'array')]
     const monday = T0.add((8 - T0.day()) % 7, 'day')
     const pastOccurrence = monday.subtract(7, 'day')
@@ -281,7 +280,7 @@ describe('usePlanningData.planningDays', () => {
     expect(day?.events[0].recurrenceStart).toBe(`${d(pastOccurrence)}T14:00`)
   })
 
-  it('en cas d\'erreur serveur, hasMore passe à false et initialized à true', async () => {
+  it('on a server error, hasMore becomes false and initialized true', async () => {
     const { planning } = setup(dateOnlySchema, [])
     ofetchMock.mockRejectedValue({ response: { status: 500 }, message: 'boom' })
     await planning.loadMore()
@@ -294,7 +293,7 @@ describe('usePlanningData.planningDays', () => {
 })
 
 describe('usePlanningData.planningTitle', () => {
-  it('garde l\'année du premier mois quand la période change d\'année', async () => {
+  it('keeps the year of the first month when the period changes year', async () => {
     const first = dayjs('2030-10-07')
     const last = dayjs('2031-03-02')
     const { planning } = setup(dateOnlySchema, [
@@ -307,7 +306,7 @@ describe('usePlanningData.planningTitle', () => {
     expect(planning.planningTitle.value).toBe('octobre 2030 – mars 2031')
   })
 
-  it('renvoie le titre du planning pour un jour isolé', async () => {
+  it('returns the planning title for a single day', async () => {
     const { planning } = setup(dateOnlySchema, [
       { _id: '1', title: 'Solo', start: d(T0), end: d(T0) }
     ])

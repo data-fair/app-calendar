@@ -1,5 +1,6 @@
 // Planning view: upcoming events grouped by day, loaded page by page on scroll.
-import { test, expect, openApp, datasets, jepConfig, type Line } from './fixtures'
+import type { Line } from './fixtures'
+import { test, expect, openApp, datasets, jepConfig } from './fixtures'
 
 const planningConfig = (ds: typeof datasets.jep, labelKey = 'title_fr') =>
   ({ ...jepConfig, initialView: 'planning', labelField: { key: labelKey, label: 'Titre' }, datasets: [ds] })

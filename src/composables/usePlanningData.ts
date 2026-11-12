@@ -1,6 +1,7 @@
+import type { Translate } from './config'
 import { ref, computed, watch } from 'vue'
 import { useLocaleDayjs } from '@data-fair/lib-vue/locale-dayjs.js'
-import { useConfig, type Translate } from './config'
+import { useConfig } from './config'
 import { useUiNotif } from '@data-fair/lib-vue/ui-notif.js'
 import { ofetch } from 'ofetch'
 import { getConceptFilters } from '@data-fair/lib-vue/concept-filters.js'
@@ -96,7 +97,7 @@ export function usePlanningData (getColor: (value: string) => unknown, t: Transl
       if (key !== '_c_date_match') params.set(key, value as string)
     }
 
-    // _c_date_match doit contenir une virgule littérale (séparateur), pas encodée en %2C
+    // _c_date_match must contain a literal comma (separator), not encoded as %2C
     return `${dataset.value.href}/lines?_c_date_match=now/d,&${params.toString()}`
   }
 
@@ -108,9 +109,9 @@ export function usePlanningData (getColor: (value: string) => unknown, t: Transl
 
     isLoading.value = true
     try {
-      // ofetch direct conservé : useFetch est inadapté à la pagination impérative
-      // (nextUrl n'est connu qu'après le fetch précédent, ce qui empêche tout
-      // computed url stable). Cf. TODO P1-3.
+      // direct ofetch kept: useFetch does not fit imperative pagination
+      // (nextUrl is only known after the previous fetch, which prevents any
+      // stable computed url). Cf. TODO P1-3.
       const response = await ofetch(url)
       rawResults.value = [...rawResults.value, ...response.results]
       nextUrl.value = response.next ?? null
@@ -172,8 +173,8 @@ export function usePlanningData (getColor: (value: string) => unknown, t: Transl
 
       const startDate = dayjs(startStr)
       const rawEndDate = dayjs(endStr || startStr)
-      // Garde-fou : une date invalide (ex. "2026-08-32") rend les boucles while
-      // ci-dessous infinies (dayjs.isAfter/isSame retournent false et add() reste invalide).
+      // Safeguard: an invalid date (e.g. "2026-08-32") makes the while loops
+      // below infinite (dayjs.isAfter/isSame return false and add() stays invalid).
       if (!startDate.isValid() || !rawEndDate.isValid()) return
 
       const startHasTime = startDate.format('HH:mm') !== '00:00'
@@ -284,12 +285,12 @@ export function usePlanningData (getColor: (value: string) => unknown, t: Transl
       }
 
       if (isAllDay) {
-        // Convention d'exclusivité de la fin :
-        // - champs de type "date" : la fin est inclusive (dernier jour compris),
-        //   aucune soustraction.
-        // - date-time finissant à minuit sur un autre jour : fin exclusive
-        //   (l'événement se termine à la fin du jour précédent).
-        // - date-time même jour (début = fin à minuit) : jour unique inclus.
+        // End exclusivity convention:
+        // - "date" fields: the end is inclusive (last day included),
+        //   no subtraction.
+        // - date-time ending at midnight on another day: exclusive end
+        //   (the event ends at the end of the previous day).
+        // - same-day date-time (start = end at midnight): single day included.
         const endIsExclusiveMidnight =
           endDateType.value !== 'date' &&
           rawEndDate.format('HH:mm') === '00:00' &&
@@ -386,7 +387,7 @@ export function usePlanningData (getColor: (value: string) => unknown, t: Transl
     }
   })
 
-  // Réinitialise quand le dataset, les champs, les filtres statiques ou les concept filters changent
+  // Resets when the dataset, the fields, the static filters or the concept filters change
   const querySignature = computed(() => [
     dataset.value?.href,
     labelField.value,

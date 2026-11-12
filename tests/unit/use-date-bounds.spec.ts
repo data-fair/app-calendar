@@ -9,7 +9,7 @@ const dataset = makeDataset([
 ])
 
 describe('useDateBounds', () => {
-  it('resolveMinDate retourne null quand minDate est vide ou none', () => {
+  it('resolveMinDate returns null when minDate is empty or none', () => {
     for (const minDate of [undefined, 'none']) {
       const state = makeConfigState(dataset, { minDate } as never)
       const { resolveMinDate } = mountComposable(state, () => useDateBounds())
@@ -17,7 +17,7 @@ describe('useDateBounds', () => {
     }
   })
 
-  it('resolveMinDate renvoie les bornes attendues selon la valeur de config', () => {
+  it('resolveMinDate returns the expected bounds for the config value', () => {
     const cases: Array<[string, number, number]> = [
       ['day', 0, 0],
       ['tomorrow', 1, 0],
@@ -32,7 +32,7 @@ describe('useDateBounds', () => {
     }
   })
 
-  it('resolveMaxDate renvoie null quand maxDate est vide ou none', () => {
+  it('resolveMaxDate returns null when maxDate is empty or none', () => {
     for (const maxDate of [undefined, 'none']) {
       const state = makeConfigState(dataset, { maxDate } as never)
       const { resolveMaxDate } = mountComposable(state, () => useDateBounds())
@@ -40,7 +40,7 @@ describe('useDateBounds', () => {
     }
   })
 
-  it('resolveMaxDate renvoie la fin de journée pour les bornes configurées', () => {
+  it('resolveMaxDate returns the end of day for the configured bounds', () => {
     const cases: Array<[string, number, number]> = [
       ['one-week-later', 7, 0],
       ['one-month-later', 0, 1],

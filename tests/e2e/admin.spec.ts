@@ -1,5 +1,6 @@
 // Admin layout (REST dataset + line permissions): create, edit, delete, drag.
-import { test, expect, openApp, datasets, jepConfig, jepLines, openingConfig, type Page } from './fixtures'
+import type { Page } from './fixtures'
+import { test, expect, openApp, datasets, jepConfig, jepLines, openingConfig } from './fixtures'
 
 const weekConfig = { ...jepConfig, initialView: 'timeGridWeek', datasets: [datasets.jepAdmin] }
 const openAdmin = (page: Page) => openApp(page, { dataset: datasets.jepAdmin, config: weekConfig })

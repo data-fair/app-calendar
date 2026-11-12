@@ -10,8 +10,8 @@ const props = defineProps({
 
 const { config, labelField, descriptionField, imageField, attachmentField, linkField, fields } = useConfig()
 
-// Alt de l'image : libellé de l'événement sans balises HTML ; chaîne vide
-// (image décorative) si aucun libellé exploitable.
+// Image alt: event label without HTML tags; empty string
+// (decorative image) if no usable label.
 const imageAlt = computed(() => {
   if (!labelField.value || !props.item[labelField.value]) return ''
   return String(props.item[labelField.value]).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()

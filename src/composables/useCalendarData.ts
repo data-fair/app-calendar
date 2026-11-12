@@ -1,4 +1,5 @@
-import { useConfig, type Translate } from './config'
+import type { Translate } from './config'
+import { useConfig } from './config'
 import { getConceptFilters } from '@data-fair/lib-vue/concept-filters.js'
 import reactiveSearchParams from '@data-fair/lib-vue/reactive-search-params-global.js'
 import { useFetch } from '@data-fair/lib-vue/fetch'
