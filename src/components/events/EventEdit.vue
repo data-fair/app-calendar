@@ -416,7 +416,7 @@ function cancel () {
       </v-form>
       <template v-if="scope === 'series' && canManageExceptions && currentExceptions.length">
         <v-divider class="my-3" />
-        <div class="text-subtitle-2 mb-1">
+        <div class="text-title-small mb-1">
           {{ t('events.exceptionsTitle') }}
         </div>
         <v-list density="compact">
@@ -463,9 +463,8 @@ function cancel () {
     </template>
     <v-row
       v-else
-      align="center"
       style="height: 200px"
-      class="ma-0"
+      class="ma-0 align-center"
     >
       <v-col class="text-center">
         <v-progress-circular

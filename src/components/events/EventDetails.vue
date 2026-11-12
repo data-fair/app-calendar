@@ -226,9 +226,8 @@ function closeOrCancel () {
         </div>
         <template #fallback>
           <v-row
-            align="center"
             style="height:200px"
-            class="ma-0"
+            class="ma-0 align-center"
           >
             <v-col class="text-center">
               <v-progress-circular
@@ -244,9 +243,8 @@ function closeOrCancel () {
     </template>
     <v-row
       v-else
-      align="center"
       style="height:200px"
-      class="ma-0"
+      class="ma-0 align-center"
     >
       <v-col class="text-center">
         <v-progress-circular
