@@ -36,7 +36,7 @@ test('delete an event after confirmation', async ({ page }) => {
   await openAdmin(page)
   await page.getByText('Visite du musée').click()
   await page.getByRole('button', { name: 'Supprimer l\'événement' }).click()
-  await expect(page.getByText('Voulez vous vraiment supprimer l\'événement ?')).toBeVisible()
+  await expect(page.getByText('Voulez-vous vraiment supprimer l\'événement ?')).toBeVisible()
   const deleted = page.waitForRequest(req => req.method() === 'DELETE' && req.url().endsWith('/datasets/jep-admin/lines/jep-2'))
   // the confirmation button of the menu, after the activator of the same name
   await page.getByRole('button', { name: 'Supprimer l\'événement' }).last().click()
